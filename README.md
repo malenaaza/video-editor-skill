@@ -21,12 +21,55 @@ Working renders use the hardware encoder for speed. The final export always uses
 
 ## Install
 
-Copy the `video-editor` folder into your personal skills folder:
+The skill is the `video-editor` folder in this repository. It goes in your personal skills folder:
 
-- Windows: `C:\Users\<you>\.claude\skills\video-editor\`
-- macOS / Linux: `~/.claude/skills/video-editor/`
+- Windows: `C:\Users\<your name>\.claude\skills\`
+- macOS / Linux: `~/.claude/skills/`
 
-Then, in Claude Code, ask for an edit ("edit this video for Reels: ...") or type `/video-editor`. On first use it walks you through installing what's missing:
+Pick whichever way is easiest for you.
+
+### Option 1: ask Claude Code to install it (easiest)
+
+In Claude Code, type:
+
+> Install the skill from https://github.com/malenaaza/video-editor-skill into my personal skills folder.
+
+### Option 2: download the ZIP (no tools needed)
+
+1. At the top of this page, click the green **Code** button, then **Download ZIP**.
+2. Unzip it. Inside the `video-editor-skill-main` folder there's a folder called `video-editor`.
+3. Move that `video-editor` folder into your skills folder (paths above). If the `skills` folder doesn't exist, create it.
+   On a Mac, the `.claude` folder is hidden in Finder: press **Cmd + Shift + .** to show hidden folders.
+
+### Option 3: terminal
+
+macOS / Linux:
+
+```bash
+git clone https://github.com/malenaaza/video-editor-skill.git
+mkdir -p ~/.claude/skills
+cp -r video-editor-skill/video-editor ~/.claude/skills/
+```
+
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/malenaaza/video-editor-skill.git
+New-Item -ItemType Directory -Force "$HOME\.claude\skills"
+Copy-Item -Recurse video-editor-skill\video-editor "$HOME\.claude\skills\"
+```
+
+### Check it worked
+
+Restart Claude Code, then type `/video-editor` or ask for an edit ("edit this video for Reels: ..."). The first time, it checks your computer and asks a few setup questions.
+
+### Updating
+
+To get a newer version, replace the `video-editor` folder with the new one. Your settings are in `video-editor/my-setup.md`, so copy that file out first and put it back afterwards.
+
+### What it installs on first use
+
+On first use it walks you through installing what's missing:
 
 - FFmpeg 7+ and yt-dlp
 - Python 3.10–3.12 with `openai-whisper` and `faster-whisper`
