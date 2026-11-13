@@ -1,0 +1,5 @@
+[4:v]format=gray[m];
+[0:v]split[s0][s1];
+[s1]gblur=sigma=7,format=yuva444p[b0];
+[b0][m]alphamerge[bl];
+[s0][bl]overlay=format=yuv444,format=rgba[base];

@@ -1,0 +1,9 @@
+[0:v]split=3[base][s][t];
+[s]bilateral=sigmaS=9:sigmaR=0.085:planes=7,format=yuva444p[soft0];
+[1:v]format=gray[sm];
+[soft0][sm]alphamerge[soft];
+[t]eq=brightness=0.19:saturation=0.13:contrast=1.08,format=yuva444p[white0];
+[2:v]format=gray[tm];
+[white0][tm]alphamerge[white];
+[base][soft]overlay=format=yuv444[a];
+[a][white]overlay=format=yuv444,format=yuv420p[v]

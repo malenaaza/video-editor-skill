@@ -1,0 +1,66 @@
+# video-editor: a Claude skill for talking-head videos
+
+A skill for [Claude Code](https://claude.com/claude-code) that edits short-form and YouTube talking-head videos on your own computer with FFmpeg and Whisper. You stay the director: it asks before it decides anything that's a judgment call.
+
+## What it does
+
+- Removes retakes, pauses, fillers ("um", "uh", hums) and silent stretches, using word-level transcription, a filler-hunting second pass, and a mouth-movement check
+- Speeds up delivery slightly (optional) while keeping your pitch
+- Captions, titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
+- Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
+- Voice leveling, sound effects, animated emojis (via Remotion), dark-footage fixes
+- Face-tracked skin softening and teeth whitening, background blur that keeps held products sharp
+- Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
+- A ready-to-post pack for each video: caption, hashtags and cover frame
+
+## Adjusts to your computer
+
+On first use it runs `scripts/detect_setup.py`, which checks your CPU and GPU and **test-encodes video with every hardware encoder your FFmpeg has**: NVIDIA (NVENC), Intel (Quick Sync), AMD (AMF) and Apple (VideoToolbox). It recommends the fastest one that actually works, and checks whether Whisper can use an NVIDIA GPU. Then it asks you the few things it can't detect: your cameras, whether you shoot Log, your languages, your brands and where finished videos go. Everything is saved to `my-setup.md` in the skill folder, so it never asks twice.
+
+Working renders use the hardware encoder for speed. The final export always uses `libx264` at high quality, so the result looks the same on any computer.
+
+## Install
+
+Copy the `video-editor` folder into your personal skills folder:
+
+- Windows: `C:\Users\<you>\.claude\skills\video-editor\`
+- macOS / Linux: `~/.claude/skills/video-editor/`
+
+Then, in Claude Code, ask for an edit ("edit this video for Reels: ...") or type `/video-editor`. On first use it walks you through installing what's missing:
+
+- FFmpeg 7+ and yt-dlp
+- Python 3.10–3.12 with `openai-whisper` and `faster-whisper`
+- For retouch, blur and the mouth check: `mediapipe` and `opencv-python`, plus Google's MediaPipe face and hand models
+- Optional: Node 20+ for Remotion graphics
+- If you shoot Log: your camera maker's official LUT, which you download yourself
+
+It runs on your computer, so it's meant for Claude Code (the terminal, IDE extensions, or the Code tab in the Claude desktop app). In a regular Claude.ai chat it can't reach your files or your installed tools.
+
+## What's tested
+
+It was developed and used on Windows 11 with an Intel laptop (Intel Arc graphics, Quick Sync), on Spanish and English videos. The NVIDIA, AMD and Apple encoder settings, CUDA transcription, and macOS / Linux commands are included but haven't been tested on real hardware yet. Every encoder is test-encoded before it's used, so a setting that doesn't work on your machine is never picked. Reports and fixes are welcome.
+
+The skin mask's colour thresholds were tuned on light-to-medium skin. The skill tells Claude to check the mask and adjust them on the first retouch for each person (see `SKIN_CR_MIN` in `scripts/retouch/mask.py`).
+
+## Files
+
+```
+video-editor/
+  SKILL.md               the instructions Claude follows
+  setup-template.md      becomes my-setup.md on first use (your hardware, brands, choices)
+  scripts/
+    detect_setup.py      hardware, tools and encoder tests (standard library only)
+    transcribe.py        faster-whisper with word times, CPU or NVIDIA GPU
+    fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
+    retouch/             skin and teeth masks, background blur, mouth check
+    sfx/                 four small sound effects, generated with FFmpeg
+    remotion/EmojiPop.tsx  animated emoji pop for Remotion
+```
+
+`my-setup.md` holds your personal details, so keep it out of any copy you share. It's listed in `.gitignore`.
+
+## Licenses
+
+The skill, scripts and sound effects are under the MIT License (see `LICENSE`). Tools it uses have their own licenses: FFmpeg (LGPL/GPL), OpenAI Whisper (MIT), faster-whisper (MIT), MediaPipe and its models (Apache 2.0), yt-dlp (Unlicense). Remotion is free for individuals and companies of up to 3 people; larger companies need a paid license. Camera LUTs belong to their makers and aren't included.
+
+Only edit and download videos you own or have the right to use.
