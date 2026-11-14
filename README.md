@@ -13,6 +13,8 @@ A skill for [Claude Code](https://claude.com/claude-code) that edits short-form 
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame
 
+You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
+
 ## Adjusts to your computer
 
 On first use it runs `scripts/detect_setup.py`, which checks your CPU and GPU and **test-encodes video with every hardware encoder your FFmpeg has**: NVIDIA (NVENC), Intel (Quick Sync), AMD (AMF) and Apple (VideoToolbox). It recommends the fastest one that actually works, and checks whether Whisper can use an NVIDIA GPU. Then it asks you the few things it can't detect: your cameras, whether you shoot Log, your languages, your brands and where finished videos go. Everything is saved to `my-setup.md` in the skill folder, so it never asks twice.

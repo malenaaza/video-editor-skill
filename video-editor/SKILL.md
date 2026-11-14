@@ -26,6 +26,7 @@ Read `<skill>/my-setup.md` before every edit. It holds this user's hardware, enc
    - Where should finished videos go?
    - Remove every pause and filler, or keep a natural pace? Speed up a little after cutting?
 5. **Save** the answers: copy `<skill>/setup-template.md` to `<skill>/my-setup.md` and fill it in. Leave brand colors and fonts as `unknown` until the first video for that brand (Rule 5).
+6. **Show what you can do.** End setup by showing the menu from What I can do, so a new user knows the options before their first edit.
 
 **Run setup again** when the user says they have a new computer or camera, or when a saved encoder fails. If an encoder fails mid-job, fall back to the `libx264` line in `my-setup.md`, say so, finish the job, then offer to re-run detection.
 
@@ -84,6 +85,20 @@ Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`tr
 - **Placing:** the same as emojis: `setpts=PTS-STARTPTS+<frame>/(<fps>*TB)` and `overlay=0:0:format=rgb:eof_action=pass`, with `format=rgba` on both inputs.
 - **Check:** look at one frame mid-animation and one fully shown for each graphic, on the real footage: text readable, nothing covering the face, product, captions or logo.
 
+## What I can do
+
+New users don't know what's possible, so tell them. Show this menu at the end of first setup (Rule 0), and whenever the user asks what you can do, what the options are, or which effects exist. Show it in the user's language, as a short list like this, not a wall of text:
+
+- **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · speed up delivery slightly · split one long recording into several videos
+- **Text and graphics:** captions in your brand's style · animated title · product name and price tag · animated emojis on words · your handle and logo · end card
+- **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
+- **Sound:** voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
+- **Ready to post:** vertical and wide versions · caption, hashtags and cover image · a brand sheet with your fonts and colors
+
+End with one line: "Ask for any of these by name, or I'll suggest what fits each video."
+
+List only what this file has instructions for. When a new feature is added to this file, add it to the menu in the same change.
+
 ## Rule 1: Ask four questions before every edit
 
 Always ask, even if the request seems clear, unless the user already answered in the same message:
@@ -91,9 +106,11 @@ Always ask, even if the request seems clear, unless the user already answered in
 1. Who is the video for? (Offer the brands saved in `my-setup.md`.)
 2. Where is the video going? (Instagram, TikTok, YouTube...)
 3. What do you want the viewer to do at the end?
-4. Do you want captions and graphics, or just a clean cut?
+4. Clean cut, or extras? Ask this one once the transcript is ready (Rule 3): transcribe while the user answers questions 1 to 3, then suggest 2 or 3 extras from What I can do that fit this video, each with the moment it would go and the reason, in one or two lines. For example: "You name Glow Serum and its price at 0:12, so I could add a product tag there. You open with '3 serums I'd buy again', which would work as an animated title." Then ask which ones they want, or a clean cut. Mention once that the full menu is available if they ask.
 
 The answer to question 1 decides the branding in Rule 5. Skip any question the brand's saved defaults already answer, and say which defaults you're using.
+
+**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), dull or dark footage (color fix), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
 
 ## Rule 2: Never touch the original
 
