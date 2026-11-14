@@ -78,7 +78,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `TitleCard` | The hook title in the first seconds | `lines` (1 to 3 short lines), `highlight` (one word in the accent color), `top` | 2.5 s |
 | `ProductTag` | Product name and price when a product is shown | `name`, `price` (written as it should appear, e.g. `€24,90`), `note` (e.g. "Link in bio"), `side`, `top` | 3.5 s |
 | `EmojiPop` | Emojis on words (see Animated emojis) | `emoji`, `left`, `top` | 43 frames |
-| `CoverCard` | Cover image with the products (see Cover with products) | `background`, `products` (image, `label`, `price`), `lines`, `numbered` | a still: `npx remotion still` |
+| `CoverCard` | Cover image with the products (see Cover with products) | `background`, `products` (one `image` each), `lines`, `numbered` | a still: `npx remotion still` |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
 
@@ -379,7 +379,7 @@ Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt
 
 ### Cover with products
 
-A cover with the speaker, the title and pictures of the products shown in the video, made with the `CoverCard` template.
+A cover with the speaker, the title and pictures of the products shown in the video, made with the `CoverCard` template. Show only the pictures: no product names or prices on the cover, since those belong in the video (product tags). Add them only if the user asks for that video.
 
 1. **Pick the products:** the main ones named in the transcript, 1 to 4. For more, ask which to show.
 2. **Get a picture of each,** in the order the brand's `Product photos:` line gives, or this order if it's empty:
@@ -388,7 +388,7 @@ A cover with the speaker, the title and pictures of the products shown in the vi
    - **A frame from the video:** the sharpest frame where the product is held still and facing the camera, cut out with `--crop` around it.
    The first time the user names a shop website, tell them once, in plain words: product photos on shop websites usually belong to the brand or the shop, so using them on a cover is common but not risk-free; the brand's press kit or the shop's affiliate program images come with permission. Save their answer in `Product photos:` and don't ask again.
 3. **Cut each out:** `<cutout python> -I <skill>/scripts/cover/cutout.py <image> <work folder>/cover/<product>.png`, with `--white` for shop photos on a plain white background (fast, crisp edges), and without it for video frames or colored backgrounds. White or clear packaging can vanish with `--white` and turn see-through without it: run both and keep the better one. If the script warns about the share kept, the cutout failed: try the other mode or a tighter crop. Put all the cutouts on one contact sheet over a colored background, and show it to the user before building the cover.
-4. **Build it:** copy the background frame (picked as for the plain cover) and the cutouts into the Remotion project's `public/cover/` folder, write the props to `cover.json`, and render with `npx remotion still src/index.ts CoverCard out/cover.png --props=cover.json`. Use the brand's colors and font, `numbered` for ranking and "3 things" videos, and prices only if the user gave them or they're said in the video. Set `titleTop` and `productsTop` so the title stays off the face and the products sit over the body or the background, never over the face.
-5. **Check:** look at the cover. Product names spelled as on the packaging, every product recognizable, and the title and products inside the middle 3:4 of a vertical cover (y 240 to 1680 on 1080x1920), which is what Instagram's profile grid shows. Save it as `<video-name>-cover.png` and the plain frame as `<video-name>-cover-plain.png`, never overwriting existing files, and list the image sources in the pack's notes.
+4. **Build it:** copy the background frame (picked as for the plain cover) and the cutouts into the Remotion project's `public/cover/` folder, write the props to `cover.json`, and render with `npx remotion still src/index.ts CoverCard out/cover.png --props=cover.json`. Use the brand's colors and font, and `numbered` for ranking and "3 things" videos. Leave out `label` and `price`. Set `titleTop` and `productsTop` so the title stays off the face and the products sit over the body or the background, never over the face.
+5. **Check:** look at the cover. Every product recognizable, and the title and products inside the middle 3:4 of a vertical cover (y 240 to 1680 on 1080x1920), which is what Instagram's profile grid shows. Save it as `<video-name>-cover.png` and the plain frame as `<video-name>-cover-plain.png`, never overwriting existing files, and list the image sources in the pack's notes.
 
 Never post for the user. Tell them where the file is saved, and remind them to watch it once before they post. They're the director.

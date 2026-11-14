@@ -1,5 +1,6 @@
 // Cover image with the products from the video: a frame of the speaker as the background,
-// the title, and a row of product cutouts, each with an optional number and price.
+// the title, and a row of product cutouts, optionally numbered. Names and prices are
+// optional and off by default: they belong in the video (ProductTag), not on the cover.
 // Renders a single PNG with `npx remotion still` (see SKILL.md, Cover with products).
 //
 // Copy this file and brandFont.ts into the Remotion project's src folder, then register it
@@ -16,8 +17,8 @@ import { useBrandFont } from "./brandFont";
 
 type Product = {
   image: string; // inside public/, e.g. "cover/serum-1.png"
-  label?: string; // short name under the product, e.g. "Glow Serum"
-  price?: string; // written the way it should appear, e.g. "€24,90"
+  label?: string; // optional, only if asked: short name under the product
+  price?: string; // optional, only if asked: written as it should appear
 };
 
 export type CoverCardProps = {
@@ -233,7 +234,7 @@ export const CoverCardComposition: React.FC = () => (
     defaultProps={
       {
         background: "cover/frame.png",
-        products: [{ image: "cover/product-1.png", label: "Glow Serum", price: "$24" }],
+        products: [{ image: "cover/product-1.png" }],
         lines: ["My new favorite"],
       } as CoverCardProps
     }
