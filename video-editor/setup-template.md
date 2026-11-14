@@ -74,6 +74,7 @@ Copy this block for each brand or channel the user makes videos for.
 - End card: <layout, call to action, contact details>
 - Loudness: <e.g. loudnorm=I=-14:TP=-1:LRA=11>
 - Default platforms: <Reels, TikTok, Shorts, YouTube...>
+- Niche and hashtags: <niche and audience, e.g. skincare for over-40s in Spain; core hashtags per platform, and the date they were checked>
 - Other rules: <e.g. no zooms, always soften skin, one export only>
 
 ## Notes from feedback

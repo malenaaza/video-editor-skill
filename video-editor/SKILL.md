@@ -365,7 +365,13 @@ Before reporting, check the export with `ffprobe` (resolution, duration, audio p
 Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt` next to the export, named `<video-name>-post.txt`, with sections for the caption, hashtags, video file, cover file and before-you-post notes. Never overwrite an existing file. In the chat, give the file's path instead of repeating the text. The pack includes:
 
 - **Caption:** in the video's language and the brand's voice (Rule 5), 1 to 3 short lines. Open with the hook, end with the action from Rule 1, question 3. Use only facts from the video, and don't reuse another creator's lines. Add contact details if the brand's end card has them.
-- **Hashtags:** 3 to 5 that fit the topic and audience. Don't pad the list with generic tags.
+- **Hashtags:** the most popular hashtags for the brand's niche and this video's topic, looked up fresh for every video. Popularity changes from month to month, so don't pick them from memory.
+  - **Look them up:** search the web for the hashtags currently most used and most viewed for the niche and topic, on each platform the video is going to, in the video's language (and the audience's country, if the brand has one). Use recent sources, from the last few months, and check at least two. Popular tags differ by platform, so give each platform in the pack its own list.
+  - **Pick:** lead with the most popular tags that truly fit the video, then add 1 or 2 specific ones (the product category, the exact topic), so the video can also stand out in a smaller feed. Never add a popular tag that doesn't match the video: platforms treat that as spam. Skip tags that sources report as banned or restricted.
+  - **How many:** follow each platform's current rule or recommendation found in the search; if none is found, use 3 to 5.
+  - **Save:** keep the niche and its core tags, with the date checked, in the brand's `Niche and hashtags:` line in `my-setup.md`. If the line is empty, ask the user once what their niche is (for example "skincare for over-40s in Spain"), and save it.
+  - **Without web access:** use the saved core tags, and write "not checked online this time" next to the hashtags in the pack, and in the chat.
+  - Don't state post counts or view numbers unless a source gave them; then add the source and date in the pack's notes.
 - **Cover:** pick a sharp frame with the title readable and the speaker's eyes open, and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop.
 - **Reminder:** the user can add a trending sound in the app, and should keep it quiet under the voice. Point out anything the video promises, like a follow-up video.
 
