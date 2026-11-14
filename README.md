@@ -8,7 +8,7 @@ A skill for [Claude Code](https://claude.com/claude-code) that edits short-form 
 - Speeds up delivery slightly (optional) while keeping your pitch
 - Captions, titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
-- Voice leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
+- Background noise and hum removal, voice polish and leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
 - Face-tracked skin softening and teeth whitening, background blur that keeps held products sharp
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
@@ -76,7 +76,7 @@ On first use it walks you through installing what's missing:
 - FFmpeg 7+ and yt-dlp
 - Python 3.10–3.12 with `openai-whisper` and `faster-whisper`
 - For retouch, blur and the mouth check: `mediapipe` and `opencv-python`, plus Google's MediaPipe face and hand models
-- Optional: Node 20+ for Remotion graphics, and rembg for product cutouts on covers
+- Optional: Node 20+ for Remotion graphics, rembg for product cutouts on covers, and an RNNoise model (or DeepFilterNet's `deep-filter`) for noise removal
 - If you shoot Log: your camera maker's official LUT, which you download yourself
 
 It runs on your computer, so it's meant for Claude Code (the terminal, IDE extensions, or the Code tab in the Claude desktop app). In a regular Claude.ai chat it can't reach your files or your installed tools.
@@ -106,6 +106,7 @@ video-editor/
     remotion/brandFont.ts   loads the brand font for the templates
     cover/cutout.py      cuts products out of shop photos or video frames
     cover/face_box.py    finds the face so the products go around it
+    voice/clean_voice.py measures background noise, removes it and polishes the voice
 ```
 
 `my-setup.md` holds your personal details, so keep it out of any copy you share. It's listed in `.gitignore`.

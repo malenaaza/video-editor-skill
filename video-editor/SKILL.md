@@ -1,6 +1,6 @@
 ---
 name: video-editor
-description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack.
+description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, noise removal and voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack.
 ---
 
 # Video Editor
@@ -43,6 +43,7 @@ Ask before installing anything. Use the system's package manager.
     - `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`
     - `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`
   - `cutout` (only needed for covers with products): `pip install "rembg[cpu]" pillow numpy`. Its model (about 180 MB) downloads on first use.
+- **Voice cleaning** (optional, Rule 7): the RNNoise model `cb.rnnn`, saved as `~/.video-editor/models/cb.rnnn`, from `https://raw.githubusercontent.com/GregorR/rnnoise-models/master/conjoined-burgers-2018-08-28/cb.rnnn` (about 300 KB; FFmpeg runs it, no other install). For the best noise removal, also DeepFilterNet's standalone `deep-filter` program for the user's system from `https://github.com/Rikorose/DeepFilterNet/releases` (one file, no Python packages), on the PATH or with its path saved in `my-setup.md`. The script uses `deep-filter` first, then RNNoise, then FFmpeg's weaker `afftdn`.
 - **Node 20+** for Remotion graphics (optional): create a project once with `npx create-video@latest --yes --blank remotion` in the work folder, and copy every file in `<skill>/scripts/remotion/` into its `src` folder.
 - **Log LUTs** (only if the user shoots Log): the camera maker's official Log-to-Rec.709 LUT. Apple publishes Apple Log LUTs on developer.apple.com, and Sony, Panasonic, Canon, Fujifilm and Blackmagic publish their own. The user downloads it. Never redistribute it.
 
@@ -94,7 +95,7 @@ New users don't know what's possible, so tell them. Show this menu at the end of
 - **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · speed up delivery slightly · split one long recording into several videos
 - **Text and graphics:** captions in your brand's style · animated title · product name and price tag · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
-- **Sound:** voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
+- **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
 - **Ready to post:** vertical and wide versions · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
 
 End with one line: "Ask for any of these by name, or I'll suggest what fits each video."
@@ -112,7 +113,7 @@ Always ask, even if the request seems clear, unless the user already answered in
 
 The answer to question 1 decides the branding in Rule 5. Skip any question the brand's saved defaults already answer, and say which defaults you're using.
 
-**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
+**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), background noise or hum in the measure (voice cleaning), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
 
 ## Rule 2: Never touch the original
 
@@ -254,7 +255,19 @@ Keep the source frame rate and do cuts with a re-encode so they land exactly.
 
 Burn captions from an `.ass` file. Run FFmpeg from the folder that holds it and use a relative filename (`-vf ass=captions.ass:fontsdir=fonts`), because Windows paths break that filter. Copy the brand's font files into that `fonts` folder. A wrong font name silently falls back to Arial, so check the `fontselect` lines with `-v verbose`. Keep captions in the middle of the safe area on vertical video so app buttons don't cover them.
 
-## Rule 7: Level each voice separately
+## Rule 7: Clean and level each voice
+
+### Clean the voice
+
+Background noise (fans, air conditioning, fridge hum, street noise) and mains hum stay under the words unless they're removed. Use `<skill>/scripts/voice/clean_voice.py`, run with any Python that has numpy (the `speech` environment works).
+
+1. **Measure** each original recording, before any cuts, while it still has its pauses: `python -I clean_voice.py measure <original>`. It gives the noise floor, the gap between speech and noise, any mains hum (50 or 60 Hz) and a suggested strength: none (gap 45 dB or more), light, or strong (gap under 30 dB).
+2. **Ask once per brand,** the first time a recording needs cleaning, and save the answer in the brand's `Voice cleaning:` line: "Should I remove background noise and polish your voice? **Automatic** (suggested: only when a recording needs it, at the strength it needs), always light, always strong, or never?" Polish is part of it: rumble cut, gentle evening out of loud and quiet words, softer "s" sounds and a little clarity. If the user only wants noise removal, add `--no-polish`.
+3. **Clean** the cut voice track, after cuts and speed-up and before leveling: `python -I clean_voice.py clean <voice.wav> <voice-clean.wav> --strength <light|strong> [--hum <50|60>]`, with `--hum` when the measure found hum. With "automatic", skip cleaning when the suggestion is none, but still offer the polish once. The script picks the best engine installed and says which it used. If it reports that an engine made the voice quieter, it already retried more gently or fell back; mention it to the user.
+4. **Check:** compare the "Before" and "After" lines it prints: the gap should grow and the hum should be gone. Transcribe the cleaned voice with `medium` and compare it with the transcript of the uncleaned cut: if any word changed or dropped, clean again one step lighter (strong, light, then `--no-polish` or no cleaning) and say so. You can't hear the result, so ask the user to listen to the first cleaned video and say if the voice sounds too processed (hollow, watery, robotic) or still noisy, then save the answer in `Voice cleaning:`.
+5. Clean only the voice: sound effects are mixed in afterwards (Sound effects, Build order), and never run cleaning on music.
+
+### Level each voice
 
 If a video mixes voices (an AI voice and the user, an off-camera interviewer), level each one on its own. Use the transcript to mark which time ranges belong to which voice, and run `loudnorm` on each separately (two passes for accuracy), with the brand's loudness target from `my-setup.md` (default `loudnorm=I=-14:TP=-1:LRA=11` for social video). Join them, then verify with `ebur128` that the voices match within about 1 LU. Never cut an off-camera voice's pauses as silence.
 
@@ -315,7 +328,7 @@ Add these when the user asks; don't ask them to supply sounds.
 ffmpeg -i voice-final.wav -i pop.wav -i whoosh.wav -i sparkle.wav -i cash.wav -/filter_complex sfx-mix.txt -map "[a]" -ar 48000 -c:a pcm_s16le voice-sfx.wav
 ```
 
-- **Build order:** level the voice first, mix in the effects, then mux with `-c:v copy`.
+- **Build order:** clean the voice (Rule 7) and level it first, mix in the effects, then mux with `-c:v copy`.
 - **New sounds** with `aevalsrc`: use `gt(t,0.08)` instead of `t>0.08`, which FFmpeg rejects.
 - **Check:** confirm loudness with `ebur128` and transcribe the opening with `medium`, with and without effects. Speech must stay the same. You can't hear the mix, so ask the user to listen and say if the effects are too loud or quiet.
 

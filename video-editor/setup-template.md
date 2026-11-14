@@ -75,6 +75,7 @@ Copy this block for each brand or channel the user makes videos for.
 - Cover: <plain frame / with products (CoverCard)>; products <around the face / in a row>, <may overlap face and hair / kept clear>; title <above the head / below the face / none>; on the cover <nothing else / names / prices / numbers>
 - Product photos: <where to get them, in order: own photos, websites the user named (e.g. cultbeauty.co.uk, sephora.com), video frames; and the date the user was told about shop photo rights>
 - Loudness: <e.g. loudnorm=I=-14:TP=-1:LRA=11>
+- Voice cleaning: <not asked yet / automatic / always light / always strong / never>; polish <on / off>; notes from listening
 - Default platforms: <Reels, TikTok, Shorts, YouTube...>
 - Niche and hashtags: <niche and audience, e.g. skincare for over-40s in Spain; core hashtags per platform, and the date they were checked>
 - Other rules: <e.g. no zooms, always soften skin, one export only>
