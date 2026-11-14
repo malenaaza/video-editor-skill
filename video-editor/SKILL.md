@@ -379,7 +379,16 @@ Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt
 
 ### Cover with products
 
-A cover with the speaker, the title and pictures of the products shown in the video, made with the `CoverCard` template. Place the product pictures around the speaker's face, big enough to fill the empty background; they may overlap the edge of the face and the hair a little. The title goes above the head, over the top of the hair if there isn't room. Show only the pictures: no names, prices, numbers or cards behind them, since names and prices belong in the video (product tags). Add any of those only if the user asks for that video.
+A cover with the speaker, the title and pictures of the products shown in the video, made with the `CoverCard` template.
+
+**Ask the cover style once per brand,** the first time you make this cover for it, in one message, with the suggested answer first, then save the answers in the brand's `Cover:` line in `my-setup.md` and follow them every time:
+
+- Where should the products go? **Around your face** (suggested), or in a row under the title?
+- Can they overlap the edge of your face and hair a little? **Yes** (suggested: they can be bigger), or keep them clear?
+- Where should the title go? **Above your head**, running over the top of the hair if there isn't room (suggested), below your face, or no title?
+- Product names, prices or numbers on the cover? **None** (suggested: names and prices are already in the video's product tags), or which ones?
+
+Until the user answers, use the suggested answers. To change one later, they just say so (Rule 0, feedback).
 
 1. **Pick the products:** the main ones named in the transcript, 1 to 4. For more, ask which to show.
 2. **Get a picture of each,** in the order the brand's `Product photos:` line gives, or this order if it's empty:
@@ -391,7 +400,11 @@ A cover with the speaker, the title and pictures of the products shown in the vi
 4. **Build it:** pick the background frame as for the plain cover. Find the face: `<face python> -I <skill>/scripts/cover/face_box.py <frame.png> <face_landmarker.task>` prints `faceX`, `faceY` and `faceSize`; copy them into `cover.json`. Copy the frame and the cutouts into the Remotion project's `public/cover/` folder and render with `npx remotion still src/index.ts CoverCard out/cover.png --props=cover.json`, with the brand's colors and font. The template picks the placement from the face's size:
    - **Medium shot** (room beside the face): products beside and slightly below the face, tilted a little, sized to fill the space.
    - **Close-up** (the face fills most of the frame, the usual talking-head video): the first two products go in the strips of background beside the face, at cheek level, and any others below the chin, over the shoulders. With no background beside the face, all go below the chin.
-   Leave out `titleTop`: the title then goes above the head, and over the top of the hair when there isn't room, with the products below it. If products cover the eyes, nose or mouth, raise `spread` (for example 1.2); if they look small, set `productSize`. If no good frame shows the face, use `"layout": "row"`, with the products in a row under the title.
-5. **Check:** look at the cover. Every product recognizable, the eyes, nose and mouth uncovered, and the title and products inside the middle 3:4 of a vertical cover (y 240 to 1680 on 1080x1920), which is what Instagram's profile grid shows. Save it as `<video-name>-cover.png` and the plain frame as `<video-name>-cover-plain.png`, never overwriting existing files, and list the image sources in the pack's notes.
+   Follow the brand's `Cover:` line:
+   - **Title above the head:** leave out `titleTop`; the title goes above the head, over the top of the hair when there isn't room, with the products below it. **Below the face:** set `titleTop` below the chin; products stay above it. **No title:** leave out `lines`.
+   - **Products kept clear of the face:** set `spread` to about 1.4. With overlap allowed, keep the default and only raise `spread` (for example 1.2) if products cover the eyes, nose or mouth. If products look small, set `productSize`.
+   - **In a row**, or no good frame shows the face: `"layout": "row"`, with the products in a row under the title.
+   - **Names, prices or numbers** only if the brand's line says so: `label` and `price` per product, `numbered: true`. Prices only if the user gave them or they're said in the video.
+5. **Check:** look at the cover. Every product recognizable, the eyes, nose and mouth uncovered (and the whole face, if the brand keeps products clear), and the title and products inside the middle 3:4 of a vertical cover (y 240 to 1680 on 1080x1920), which is what Instagram's profile grid shows. Save it as `<video-name>-cover.png` and the plain frame as `<video-name>-cover-plain.png`, never overwriting existing files, and list the image sources in the pack's notes.
 
 Never post for the user. Tell them where the file is saved, and remind them to watch it once before they post. They're the director.
