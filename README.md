@@ -102,9 +102,10 @@ video-editor/
     remotion/EmojiPop.tsx  animated emoji pop for Remotion
     remotion/TitleCard.tsx  animated hook title for Remotion
     remotion/ProductTag.tsx product name and price lower third for Remotion
-    remotion/CoverCard.tsx  cover image with the speaker, title and products
+    remotion/CoverCard.tsx  cover image with products around the speaker's face
     remotion/brandFont.ts   loads the brand font for the templates
     cover/cutout.py      cuts products out of shop photos or video frames
+    cover/face_box.py    finds the face so the products go around it
 ```
 
 `my-setup.md` holds your personal details, so keep it out of any copy you share. It's listed in `.gitignore`.

@@ -1,6 +1,8 @@
 // Cover image with the products from the video: a frame of the speaker as the background,
-// the title, and a row of product cutouts, optionally numbered. Names and prices are
-// optional and off by default: they belong in the video (ProductTag), not on the cover.
+// the title, and the product cutouts placed around the face ("around", the default) or in a
+// row ("row", for frames where the face is too big or missing). Numbers, cards, names and
+// prices are optional and off by default: names and prices belong in the video (ProductTag).
+// For "around", get faceX, faceY and faceSize from scripts/cover/face_box.py.
 // Renders a single PNG with `npx remotion still` (see SKILL.md, Cover with products).
 //
 // Copy this file and brandFont.ts into the Remotion project's src folder, then register it
@@ -26,7 +28,13 @@ export type CoverCardProps = {
   products: Product[]; // 1 to 4
   lines?: string[]; // title lines, e.g. ["3 serums", "I'd buy again"]
   highlight?: string; // a title word in the accent color
-  numbered?: boolean; // 1, 2, 3 badges, for ranking and "3 things" videos
+  layout?: "around" | "row"; // "around" needs faceX, faceY and faceSize; without them it uses "row"
+  faceX?: number; // middle of the face, in pixels of the background frame
+  faceY?: number;
+  faceSize?: number; // forehead-to-chin height in pixels
+  productSize?: number; // "around": size of each product; default about the face's size
+  spread?: number; // "around": how far from the face, 1 = default; raise it if products touch the hair
+  numbered?: boolean; // 1, 2, 3 badges, only if asked
   cards?: boolean; // a light rounded card behind each product, for busy backgrounds
   font?: string;
   fontFile?: string;
@@ -46,8 +54,10 @@ export type CoverCardProps = {
 
 const defaults = {
   lines: [] as string[],
+  layout: "around" as "around" | "row",
+  spread: 1,
   numbered: false,
-  cards: true,
+  cards: false,
   font: "sans-serif",
   fontSize: 104,
   textColor: "#FFFFFF",
@@ -55,12 +65,103 @@ const defaults = {
   accentColor: "#FF4F8B",
   cardColor: "rgba(255,255,255,0.92)",
   labelColor: "#111111",
-  dim: 0.35,
+  dim: 0,
   titleTop: 330,
   productsTop: 1060,
   productHeight: 380,
   width: 1080,
   height: 1920,
+};
+
+// Angles around the face for 1 to 4 products: 0 is to the right, 90 straight below.
+const ANGLES: Record<number, number[]> = {
+  1: [-5],
+  2: [185, -5],
+  3: [195, -15, 60],
+  4: [195, -15, 125, 55],
+};
+
+const AroundFace: React.FC<{
+  products: Product[];
+  faceX: number;
+  faceY: number;
+  faceSize: number;
+  size?: number;
+  spread: number;
+  width: number;
+  height: number;
+  numbered: boolean;
+  accentColor: string;
+}> = ({ products, faceX, faceY, faceSize, size, spread, width, height, numbered, accentColor }) => {
+  const angles = ANGLES[Math.max(1, products.length)] ?? ANGLES[4];
+  // Keep products inside the middle 3:4 of the frame, which profile grids show.
+  const safeTop = (height - (width * 4) / 3) / 2;
+  const safeBottom = height - safeTop;
+  // Each product a bit bigger than the face, but narrow enough to fit beside it. The box is
+  // taller than wide, so bottles and tubes can be big too.
+  const room = Math.min(faceX, width - faceX) - faceSize * 0.55 * spread - 16;
+  const scale = products.length >= 4 ? 0.8 : products.length === 3 ? 0.95 : 1;
+  const s = Math.max(120, Math.min(size ?? faceSize * 1.2 * scale, room * scale));
+  const bh = s * 1.5;
+  const rx = faceSize * 0.55 * spread + s * 0.5;
+  const ry = faceSize * 0.8 * spread + bh * 0.3;
+  return (
+    <>
+      {products.map((product, i) => {
+        const a = (angles[i] * Math.PI) / 180;
+        const cx = Math.min(width - s / 2 - 16, Math.max(s / 2 + 16, faceX + Math.cos(a) * rx));
+        const cy = Math.min(safeBottom - bh / 2, Math.max(safeTop + bh / 2, faceY + Math.sin(a) * ry));
+        const tilt = cx < faceX ? 8 : -8;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: cx - s / 2,
+              top: cy - bh / 2,
+              width: s,
+              height: bh,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: `rotate(${tilt}deg)`,
+            }}
+          >
+            <Img
+              src={staticFile(product.image)}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+                filter: "drop-shadow(0 14px 18px rgba(0,0,0,0.35))",
+              }}
+            />
+            {numbered ? (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: 70,
+                  height: 70,
+                  borderRadius: 35,
+                  background: accentColor,
+                  color: "#FFFFFF",
+                  fontSize: 42,
+                  fontWeight: 800,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {i + 1}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </>
+  );
 };
 
 const clean = (word: string) => word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -71,6 +172,8 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
   const count = Math.max(1, Math.min(p.products.length, 4));
   const gap = 28;
   const slot = Math.min((p.width - 80 - gap * (count - 1)) / count, p.productHeight * 0.9);
+  const around =
+    p.layout === "around" && p.faceX !== undefined && p.faceY !== undefined && p.faceSize !== undefined;
 
   return (
     <AbsoluteFill style={{ fontFamily: p.font }}>
@@ -123,6 +226,20 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
         </div>
       ) : null}
 
+      {around ? (
+        <AroundFace
+          products={p.products.slice(0, 4)}
+          faceX={p.faceX as number}
+          faceY={p.faceY as number}
+          faceSize={p.faceSize as number}
+          size={p.productSize}
+          spread={p.spread}
+          width={p.width}
+          height={p.height}
+          numbered={p.numbered}
+          accentColor={p.accentColor}
+        />
+      ) : (
       <div
         style={{
           position: "absolute",
@@ -221,6 +338,7 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
           </div>
         ))}
       </div>
+      )}
     </AbsoluteFill>
   );
 };
@@ -235,7 +353,6 @@ export const CoverCardComposition: React.FC = () => (
       {
         background: "cover/frame.png",
         products: [{ image: "cover/product-1.png" }],
-        lines: ["My new favorite"],
       } as CoverCardProps
     }
     calculateMetadata={({ props }) => {
