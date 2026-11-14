@@ -8,7 +8,7 @@ A skill for [Claude Code](https://claude.com/claude-code) that edits short-form 
 - Speeds up delivery slightly (optional) while keeping your pitch
 - Captions, titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
-- Voice leveling, sound effects, animated emojis (via Remotion), dark-footage fixes
+- Voice leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
 - Face-tracked skin softening and teeth whitening, background blur that keeps held products sharp
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame
@@ -98,6 +98,9 @@ video-editor/
     retouch/             skin and teeth masks, background blur, mouth check
     sfx/                 four small sound effects, generated with FFmpeg
     remotion/EmojiPop.tsx  animated emoji pop for Remotion
+    remotion/TitleCard.tsx  animated hook title for Remotion
+    remotion/ProductTag.tsx product name and price lower third for Remotion
+    remotion/brandFont.ts   loads the brand font for the templates
 ```
 
 `my-setup.md` holds your personal details, so keep it out of any copy you share. It's listed in `.gitignore`.
