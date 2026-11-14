@@ -45,7 +45,7 @@ export type CoverCardProps = {
   cardColor?: string;
   labelColor?: string;
   dim?: number; // 0 to 1: darken the bottom of the background so products stand out
-  titleTop?: number; // keep the title and products inside the platform's grid crop
+  titleTop?: number; // leave it out to put the title above the head (needs faceY and faceSize)
   productsTop?: number;
   productHeight?: number;
   width?: number;
@@ -66,7 +66,6 @@ const defaults = {
   cardColor: "rgba(255,255,255,0.92)",
   labelColor: "#111111",
   dim: 0,
-  titleTop: 330,
   productsTop: 1060,
   productHeight: 380,
   width: 1080,
@@ -87,11 +86,12 @@ type Box = { cx: number; cy: number; w: number; h: number; tilt: number };
 const besideFace = (n: number, faceX: number, faceY: number, faceSize: number, spread: number,
   size: number | undefined, width: number, safeTop: number, safeBottom: number): Box[] => {
   const angles = ANGLES[Math.max(1, n)] ?? ANGLES[4];
-  const room = Math.min(faceX, width - faceX) - faceSize * 0.55 * spread - 16;
+  // Products may overlap the edge of the face and the hair a little.
+  const room = Math.min(faceX, width - faceX) - faceSize * 0.4 * spread - 16;
   const scale = n >= 4 ? 0.8 : n === 3 ? 0.95 : 1;
   const w = Math.max(120, Math.min(size ?? faceSize * 1.2 * scale, room * scale));
   const h = w * 1.5;
-  const rx = faceSize * 0.55 * spread + w * 0.5;
+  const rx = faceSize * 0.4 * spread + w * 0.5;
   const ry = faceSize * 0.8 * spread + h * 0.3;
   return angles.slice(0, n).map((deg) => {
     const a = (deg * Math.PI) / 180;
@@ -107,7 +107,7 @@ const besideFace = (n: number, faceX: number, faceY: number, faceSize: number, s
 const closeUpLayout = (n: number, faceX: number, faceY: number, faceSize: number, spread: number,
   size: number | undefined, width: number, safeTop: number, safeBottom: number): Box[] => {
   const gap = 16;
-  const sideRoom = Math.min(faceX, width - faceX) - faceSize * 0.45 * spread - 16;
+  const sideRoom = Math.min(faceX, width - faceX) - faceSize * 0.3 * spread - 16; // may overlap cheek and hair
   const useSides = sideRoom >= 140;
   const sideCount = useSides ? Math.min(n, 2) : 0;
   const boxes: Box[] = [];
@@ -126,7 +126,7 @@ const closeUpLayout = (n: number, faceX: number, faceY: number, faceSize: number
 
   const below = n - sideCount;
   if (below > 0) {
-    const chin = faceY + faceSize * 0.5 * spread;
+    const chin = faceY + faceSize * 0.42 * spread; // may overlap the chin a little
     const maxH = safeBottom - chin - 10;
     const w = Math.min(size ?? Infinity, (width - 32 - gap * (below - 1)) / below, maxH / 1.5, faceSize * 0.9);
     const h = Math.min(w * 1.5, maxH);
@@ -152,11 +152,13 @@ const AroundFace: React.FC<{
   numbered: boolean;
   accentColor: string;
   titleTop?: number; // a title below the face: products stay above it
-}> = ({ products, faceX, faceY, faceSize, size, spread, width, height, numbered, accentColor, titleTop }) => {
+  minTop?: number; // a title above the face: products stay below it
+}> = ({ products, faceX, faceY, faceSize, size, spread, width, height, numbered, accentColor, titleTop, minTop }) => {
   // Keep products inside the middle 3:4 of the frame, which profile grids show,
   // and above a title placed below the face.
-  const safeTop = (height - (width * 4) / 3) / 2;
-  const safeBottom = Math.min(height - safeTop, titleTop !== undefined && titleTop > faceY ? titleTop - 20 : Infinity);
+  const gridTop = (height - (width * 4) / 3) / 2;
+  const safeTop = Math.max(gridTop, minTop ?? 0);
+  const safeBottom = Math.min(height - gridTop, titleTop !== undefined && titleTop > faceY ? titleTop - 20 : Infinity);
   const room = Math.min(faceX, width - faceX) - faceSize * 0.55 * spread - 16;
   const closeUp = room < faceSize * 0.45;
   const boxes = closeUp
@@ -228,6 +230,19 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
   const slot = Math.min((p.width - 80 - gap * (count - 1)) / count, p.productHeight * 0.9);
   const around =
     p.layout === "around" && p.faceX !== undefined && p.faceY !== undefined && p.faceSize !== undefined;
+  // Without titleTop, the title sits above the head, its bottom on the top of the hair. If there
+  // isn't room, it starts at the top of the grid crop and runs over the head.
+  const safeTop = (p.height - (p.width * 4) / 3) / 2;
+  const titleHeight = p.lines.length * p.fontSize * 1.26 + Math.max(0, p.lines.length - 1) * p.fontSize * 0.12;
+  const titleTop =
+    p.titleTop ??
+    (p.faceY !== undefined && p.faceSize !== undefined
+      ? Math.max(safeTop + 10, p.faceY - p.faceSize * 0.62 - titleHeight)
+      : safeTop + 90);
+  const titlePosition: React.CSSProperties = { top: titleTop };
+  // A title above the face pushes the products below it.
+  const productsMinTop =
+    p.lines.length > 0 && p.faceY !== undefined && titleTop < p.faceY ? titleTop + titleHeight + 10 : undefined;
 
   return (
     <AbsoluteFill style={{ fontFamily: p.font }}>
@@ -249,7 +264,8 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
           height={p.height}
           numbered={p.numbered}
           accentColor={p.accentColor}
-          titleTop={p.lines.length > 0 ? p.titleTop : undefined}
+          titleTop={p.lines.length > 0 ? titleTop : undefined}
+          minTop={productsMinTop}
         />
       ) : (
       <div
@@ -356,13 +372,13 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
         <div
           style={{
             position: "absolute",
-            top: p.titleTop,
             left: 0,
             right: 0,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: p.fontSize * 0.12,
+            ...titlePosition,
           }}
         >
           {p.lines.map((line, li) => (
