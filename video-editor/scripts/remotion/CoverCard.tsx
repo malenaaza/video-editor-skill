@@ -81,6 +81,65 @@ const ANGLES: Record<number, number[]> = {
   4: [195, -15, 125, 55],
 };
 
+type Box = { cx: number; cy: number; w: number; h: number; tilt: number };
+
+// Medium shot: products beside and slightly below the face.
+const besideFace = (n: number, faceX: number, faceY: number, faceSize: number, spread: number,
+  size: number | undefined, width: number, safeTop: number, safeBottom: number): Box[] => {
+  const angles = ANGLES[Math.max(1, n)] ?? ANGLES[4];
+  const room = Math.min(faceX, width - faceX) - faceSize * 0.55 * spread - 16;
+  const scale = n >= 4 ? 0.8 : n === 3 ? 0.95 : 1;
+  const w = Math.max(120, Math.min(size ?? faceSize * 1.2 * scale, room * scale));
+  const h = w * 1.5;
+  const rx = faceSize * 0.55 * spread + w * 0.5;
+  const ry = faceSize * 0.8 * spread + h * 0.3;
+  return angles.slice(0, n).map((deg) => {
+    const a = (deg * Math.PI) / 180;
+    const cx = Math.min(width - w / 2 - 16, Math.max(w / 2 + 16, faceX + Math.cos(a) * rx));
+    const cy = Math.min(safeBottom - h / 2, Math.max(safeTop + h / 2, faceY + Math.sin(a) * ry));
+    return { cx, cy, w, h, tilt: cx < faceX ? 8 : -8 };
+  });
+};
+
+// Close-up (the face fills the frame): the first two products go in the strips of background
+// beside the face, at cheek level, when they're wide enough; the rest go below the chin, over
+// the shoulders. With no room beside the face, all go below the chin.
+const closeUpLayout = (n: number, faceX: number, faceY: number, faceSize: number, spread: number,
+  size: number | undefined, width: number, safeTop: number, safeBottom: number): Box[] => {
+  const gap = 16;
+  const sideRoom = Math.min(faceX, width - faceX) - faceSize * 0.45 * spread - 16;
+  const useSides = sideRoom >= 140;
+  const sideCount = useSides ? Math.min(n, 2) : 0;
+  const boxes: Box[] = [];
+
+  if (sideCount > 0) {
+    const w = Math.min(size ?? Infinity, sideRoom, faceSize * 0.9);
+    // The strips beside a close-up face are tall, so let tall products (bottles, tubes) use it.
+    const h = Math.min(w * 2.2, faceSize * 1.1, safeBottom - safeTop);
+    const cy = Math.min(safeBottom - h / 2, Math.max(safeTop + h / 2, faceY));
+    const sides = sideCount === 1 ? [1] : [-1, 1];
+    for (const side of sides) {
+      const cx = side < 0 ? 16 + w / 2 : width - 16 - w / 2;
+      boxes.push({ cx, cy, w, h, tilt: side < 0 ? 6 : -6 });
+    }
+  }
+
+  const below = n - sideCount;
+  if (below > 0) {
+    const chin = faceY + faceSize * 0.5 * spread;
+    const maxH = safeBottom - chin - 10;
+    const w = Math.min(size ?? Infinity, (width - 32 - gap * (below - 1)) / below, maxH / 1.5, faceSize * 0.9);
+    const h = Math.min(w * 1.5, maxH);
+    const rowWidth = below * w + (below - 1) * gap;
+    const left = (width - rowWidth) / 2;
+    for (let i = 0; i < below; i++) {
+      const cx = left + w / 2 + i * (w + gap);
+      boxes.push({ cx, cy: chin + 10 + h / 2, w, h, tilt: cx < faceX ? 4 : -4 });
+    }
+  }
+  return boxes;
+};
+
 const AroundFace: React.FC<{
   products: Product[];
   faceX: number;
@@ -92,35 +151,30 @@ const AroundFace: React.FC<{
   height: number;
   numbered: boolean;
   accentColor: string;
-}> = ({ products, faceX, faceY, faceSize, size, spread, width, height, numbered, accentColor }) => {
-  const angles = ANGLES[Math.max(1, products.length)] ?? ANGLES[4];
-  // Keep products inside the middle 3:4 of the frame, which profile grids show.
+  titleTop?: number; // a title below the face: products stay above it
+}> = ({ products, faceX, faceY, faceSize, size, spread, width, height, numbered, accentColor, titleTop }) => {
+  // Keep products inside the middle 3:4 of the frame, which profile grids show,
+  // and above a title placed below the face.
   const safeTop = (height - (width * 4) / 3) / 2;
-  const safeBottom = height - safeTop;
-  // Each product a bit bigger than the face, but narrow enough to fit beside it. The box is
-  // taller than wide, so bottles and tubes can be big too.
+  const safeBottom = Math.min(height - safeTop, titleTop !== undefined && titleTop > faceY ? titleTop - 20 : Infinity);
   const room = Math.min(faceX, width - faceX) - faceSize * 0.55 * spread - 16;
-  const scale = products.length >= 4 ? 0.8 : products.length === 3 ? 0.95 : 1;
-  const s = Math.max(120, Math.min(size ?? faceSize * 1.2 * scale, room * scale));
-  const bh = s * 1.5;
-  const rx = faceSize * 0.55 * spread + s * 0.5;
-  const ry = faceSize * 0.8 * spread + bh * 0.3;
+  const closeUp = room < faceSize * 0.45;
+  const boxes = closeUp
+    ? closeUpLayout(products.length, faceX, faceY, faceSize, spread, size, width, safeTop, safeBottom)
+    : besideFace(products.length, faceX, faceY, faceSize, spread, size, width, safeTop, safeBottom);
   return (
     <>
       {products.map((product, i) => {
-        const a = (angles[i] * Math.PI) / 180;
-        const cx = Math.min(width - s / 2 - 16, Math.max(s / 2 + 16, faceX + Math.cos(a) * rx));
-        const cy = Math.min(safeBottom - bh / 2, Math.max(safeTop + bh / 2, faceY + Math.sin(a) * ry));
-        const tilt = cx < faceX ? 8 : -8;
+        const { cx, cy, w, h, tilt } = boxes[i];
         return (
           <div
             key={i}
             style={{
               position: "absolute",
-              left: cx - s / 2,
-              top: cy - bh / 2,
-              width: s,
-              height: bh,
+              left: cx - w / 2,
+              top: cy - h / 2,
+              width: w,
+              height: h,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -182,49 +236,6 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
         style={{ background: `linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,${p.dim}) 100%)` }}
       />
 
-      {p.lines.length > 0 ? (
-        <div
-          style={{
-            position: "absolute",
-            top: p.titleTop,
-            left: 0,
-            right: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: p.fontSize * 0.12,
-          }}
-        >
-          {p.lines.map((line, li) => (
-            <div
-              key={li}
-              style={{
-                background: p.boxColor,
-                borderRadius: p.fontSize * 0.18,
-                padding: `${p.fontSize * 0.08}px ${p.fontSize * 0.3}px`,
-                maxWidth: p.width - 120,
-                textAlign: "center",
-                fontSize: p.fontSize,
-                fontWeight: 800,
-                lineHeight: 1.1,
-                color: p.textColor,
-              }}
-            >
-              {line.split(" ").map((word, wi, words) => (
-                <span
-                  key={wi}
-                  style={{
-                    color: p.highlight !== undefined && clean(word) === clean(p.highlight) ? p.accentColor : undefined,
-                  }}
-                >
-                  {word}
-                  {wi < words.length - 1 ? " " : ""}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      ) : null}
 
       {around ? (
         <AroundFace
@@ -238,6 +249,7 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
           height={p.height}
           numbered={p.numbered}
           accentColor={p.accentColor}
+          titleTop={p.lines.length > 0 ? p.titleTop : undefined}
         />
       ) : (
       <div
@@ -339,6 +351,50 @@ export const CoverCard: React.FC<CoverCardProps> = (input) => {
         ))}
       </div>
       )}
+      {/* The title goes last, so it's drawn on top of everything. */}
+      {p.lines.length > 0 ? (
+        <div
+          style={{
+            position: "absolute",
+            top: p.titleTop,
+            left: 0,
+            right: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: p.fontSize * 0.12,
+          }}
+        >
+          {p.lines.map((line, li) => (
+            <div
+              key={li}
+              style={{
+                background: p.boxColor,
+                borderRadius: p.fontSize * 0.18,
+                padding: `${p.fontSize * 0.08}px ${p.fontSize * 0.3}px`,
+                maxWidth: p.width - 120,
+                textAlign: "center",
+                fontSize: p.fontSize,
+                fontWeight: 800,
+                lineHeight: 1.1,
+                color: p.textColor,
+              }}
+            >
+              {line.split(" ").map((word, wi, words) => (
+                <span
+                  key={wi}
+                  style={{
+                    color: p.highlight !== undefined && clean(word) === clean(p.highlight) ? p.accentColor : undefined,
+                  }}
+                >
+                  {word}
+                  {wi < words.length - 1 ? " " : ""}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </AbsoluteFill>
   );
 };
