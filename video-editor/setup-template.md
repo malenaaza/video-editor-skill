@@ -72,6 +72,8 @@ Copy this block for each brand or channel the user makes videos for.
 - Title: <style, length on screen; still, or animated with the TitleCard template>
 - Product tag: <none / ProductTag template: side, position, colors if different from the brand's>
 - End card: <layout, call to action, contact details>
+- Cover: <plain frame / with products (CoverCard)>
+- Product photos: <where to get them, in order: own photos, websites the user named (e.g. cultbeauty.co.uk, sephora.com), video frames; and the date the user was told about shop photo rights>
 - Loudness: <e.g. loudnorm=I=-14:TP=-1:LRA=11>
 - Default platforms: <Reels, TikTok, Shorts, YouTube...>
 - Niche and hashtags: <niche and audience, e.g. skincare for over-40s in Spain; core hashtags per platform, and the date they were checked>

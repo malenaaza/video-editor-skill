@@ -42,6 +42,7 @@ Ask before installing anything. Use the system's package manager.
   - `face` (only needed for retouch, blur and the mouth check): `pip install mediapipe opencv-python numpy`, and download Google's MediaPipe models into `~/.video-editor/models/`:
     - `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`
     - `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`
+  - `cutout` (only needed for covers with products): `pip install "rembg[cpu]" pillow numpy`. Its model (about 180 MB) downloads on first use.
 - **Node 20+** for Remotion graphics (optional): create a project once with `npx create-video@latest --yes --blank remotion` in the work folder, and copy every file in `<skill>/scripts/remotion/` into its `src` folder.
 - **Log LUTs** (only if the user shoots Log): the camera maker's official Log-to-Rec.709 LUT. Apple publishes Apple Log LUTs on developer.apple.com, and Sony, Panasonic, Canon, Fujifilm and Blackmagic publish their own. The user downloads it. Never redistribute it.
 
@@ -77,6 +78,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `TitleCard` | The hook title in the first seconds | `lines` (1 to 3 short lines), `highlight` (one word in the accent color), `top` | 2.5 s |
 | `ProductTag` | Product name and price when a product is shown | `name`, `price` (written as it should appear, e.g. `€24,90`), `note` (e.g. "Link in bio"), `side`, `top` | 3.5 s |
 | `EmojiPop` | Emojis on words (see Animated emojis) | `emoji`, `left`, `top` | 43 frames |
+| `CoverCard` | Cover image with the products (see Cover with products) | `background`, `products` (image, `label`, `price`), `lines`, `numbered` | a still: `npx remotion still` |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
 
@@ -93,7 +95,7 @@ New users don't know what's possible, so tell them. Show this menu at the end of
 - **Text and graphics:** captions in your brand's style · animated title · product name and price tag · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
 - **Sound:** voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
-- **Ready to post:** vertical and wide versions · caption, hashtags and cover image · a brand sheet with your fonts and colors
+- **Ready to post:** vertical and wide versions · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
 
 End with one line: "Ask for any of these by name, or I'll suggest what fits each video."
 
@@ -110,7 +112,7 @@ Always ask, even if the request seems clear, unless the user already answered in
 
 The answer to question 1 decides the branding in Rule 5. Skip any question the brand's saved defaults already answer, and say which defaults you're using.
 
-**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), dull or dark footage (color fix), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
+**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
 
 ## Rule 2: Never touch the original
 
@@ -372,7 +374,21 @@ Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt
   - **Save:** keep the niche and its core tags, with the date checked, in the brand's `Niche and hashtags:` line in `my-setup.md`. If the line is empty, ask the user once what their niche is (for example "skincare for over-40s in Spain"), and save it.
   - **Without web access:** use the saved core tags, and write "not checked online this time" next to the hashtags in the pack, and in the chat.
   - Don't state post counts or view numbers unless a source gave them; then add the source and date in the pack's notes.
-- **Cover:** pick a sharp frame with the title readable and the speaker's eyes open, and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop.
+- **Cover:** pick a sharp frame with the title readable and the speaker's eyes open, and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop. If the brand's `Cover:` line says with products, or the user asks, build it as in Cover with products below.
 - **Reminder:** the user can add a trending sound in the app, and should keep it quiet under the voice. Point out anything the video promises, like a follow-up video.
+
+### Cover with products
+
+A cover with the speaker, the title and pictures of the products shown in the video, made with the `CoverCard` template.
+
+1. **Pick the products:** the main ones named in the transcript, 1 to 4. For more, ask which to show.
+2. **Get a picture of each,** in the order the brand's `Product photos:` line gives, or this order if it's empty:
+   - **The user's own photos:** a `B-roll kit` folder, or the brand's own website if the products are the user's.
+   - **Shop or brand websites the user names** (for example Cult Beauty or Sephora): search that site for the exact product, with its shade and size, open the product page and download the main product image at its largest size. Compare it with a frame from the video to check it's the same product and shade; if it isn't, don't use it. Write the page address in the pack's notes. If the site blocks the download, ask the user to save the image into `<work folder>/product-photos/`, named after the product.
+   - **A frame from the video:** the sharpest frame where the product is held still and facing the camera, cut out with `--crop` around it.
+   The first time the user names a shop website, tell them once, in plain words: product photos on shop websites usually belong to the brand or the shop, so using them on a cover is common but not risk-free; the brand's press kit or the shop's affiliate program images come with permission. Save their answer in `Product photos:` and don't ask again.
+3. **Cut each out:** `<cutout python> -I <skill>/scripts/cover/cutout.py <image> <work folder>/cover/<product>.png`, with `--white` for shop photos on a plain white background (fast, crisp edges), and without it for video frames or colored backgrounds. White or clear packaging can vanish with `--white` and turn see-through without it: run both and keep the better one. If the script warns about the share kept, the cutout failed: try the other mode or a tighter crop. Put all the cutouts on one contact sheet over a colored background, and show it to the user before building the cover.
+4. **Build it:** copy the background frame (picked as for the plain cover) and the cutouts into the Remotion project's `public/cover/` folder, write the props to `cover.json`, and render with `npx remotion still src/index.ts CoverCard out/cover.png --props=cover.json`. Use the brand's colors and font, `numbered` for ranking and "3 things" videos, and prices only if the user gave them or they're said in the video. Set `titleTop` and `productsTop` so the title stays off the face and the products sit over the body or the background, never over the face.
+5. **Check:** look at the cover. Product names spelled as on the packaging, every product recognizable, and the title and products inside the middle 3:4 of a vertical cover (y 240 to 1680 on 1080x1920), which is what Instagram's profile grid shows. Save it as `<video-name>-cover.png` and the plain frame as `<video-name>-cover-plain.png`, never overwriting existing files, and list the image sources in the pack's notes.
 
 Never post for the user. Tell them where the file is saved, and remind them to watch it once before they post. They're the director.
