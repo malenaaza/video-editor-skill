@@ -10,7 +10,7 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - System: <e.g. Windows 11, macOS 15 on Apple M3, Ubuntu 24.04>
 - CPU: <name, threads>
 - GPU: <name, or none>
-- Laptop: <yes / no>. If yes, check it's plugged in before long jobs (`detect_setup.py power`).
+- Laptop: <yes / no>. If yes: power mode on battery <e.g. Best power efficiency / Best performance, from `detect_setup.py`>; measured slowdown on battery <e.g. 1.5x for transcription, or not measured>. Check with `detect_setup.py power` before long jobs.
 - FFmpeg version: <e.g. 7.1>. Filter files: <`-/filter_complex file.txt` on FFmpeg 7+, `-filter_complex_script file.txt` on older>
 
 ## Encoders
@@ -51,6 +51,8 @@ Checked on: <date>, with `scripts/detect_setup.py`
   - Teeth whitening: `eq=brightness=0.19:saturation=0.13:contrast=1.08`
   - Background blur: `gblur=sigma=7`
   - Skin mask threshold (`SKIN_CR_MIN` in mask.py): <139, or the value that fit this person's skin>
+  - Close-up softening (`CLOSE_LO`, `CLOSE_HI` in mask.py): <0.31, 0.40 of the frame height, or the values the user chose>
+  - Cover skin: <same as the video (it already has the close-up softening) / one step more>
 
 ## Brands
 Copy this block for each brand or channel the user makes videos for.
@@ -69,10 +71,15 @@ Copy this block for each brand or channel the user makes videos for.
 - Font: <name, and where the font files are>
 - Logos: `<paths; copy into the work folder before use>`
 - Captions: <style: e.g. white text with black outline, or white on a colored box; case; position>
-- Title: <style, length on screen>
+- Title: <style, length on screen; still, or animated with the TitleCard template>
+- Product tag: <none / ProductTag template: side, position, colors if different from the brand's>
 - End card: <layout, call to action, contact details>
+- Cover: <plain frame / with products (CoverCard)>; products <around the face / in a row>, <may overlap face and hair / kept clear>; title <above the head / below the face / none>; on the cover <nothing else / names / prices / numbers>
+- Product photos: <where to get them, in order: own photos, websites the user named (e.g. cultbeauty.co.uk, sephora.com), video frames; and the date the user was told about shop photo rights>
 - Loudness: <e.g. loudnorm=I=-14:TP=-1:LRA=11>
+- Voice cleaning: <not asked yet / automatic / always light / always strong / never>; polish <on / off>; notes from listening
 - Default platforms: <Reels, TikTok, Shorts, YouTube...>
+- Niche and hashtags: <niche and audience, e.g. skincare for over-40s in Spain; core hashtags per platform, and the date they were checked>
 - Other rules: <e.g. no zooms, always soften skin, one export only>
 
 ## Notes from feedback

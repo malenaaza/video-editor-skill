@@ -5,7 +5,8 @@ Usage:
   python detect_setup.py --json          the same, as JSON
   python detect_setup.py --speech-python <path to the speech venv's python>
                                          also check whether Whisper can use an NVIDIA GPU
-  python detect_setup.py power           only say whether a laptop is plugged in
+  python detect_setup.py power           only say whether a laptop is plugged in, and which
+                                         power mode it uses on battery
 
 Uses only the Python standard library, so it runs before anything else is installed.
 """
@@ -95,6 +96,73 @@ def power():
     return "unknown"
 
 
+# Windows power-mode overlays (Settings > System > Power > Power mode), set separately
+# for plugged in (AC) and on battery (DC).
+WINDOWS_OVERLAYS = {
+    "961cc777-2547-4f9d-8174-7d86181b8a7a": ("Best power efficiency", True),
+    "00000000-0000-0000-0000-000000000000": ("Balanced", False),
+    "3af9b8d9-7c97-431d-ad78-34a8bfea439f": ("Better performance", False),
+    "ded574b5-45a0-4f42-8737-46345c09c238": ("Best performance", False),
+}
+# Classic power plans, used when no overlay is saved.
+WINDOWS_PLANS = {
+    "a1841308-3541-4fab-bc81-f71556f20b4a": ("Power saver plan", True),
+    "381b4222-f694-41f0-9685-ff5bb260df2e": ("Balanced plan", False),
+    "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c": ("High performance plan", False),
+    "e9a42b02-d5df-448d-aa00-03f14749eb61": ("Ultimate performance plan", False),
+}
+
+
+def battery_power_mode():
+    """The power mode used on battery: (name, saves_power), with saves_power True, False or None (unknown).
+
+    Being on battery is not slow by itself: the power mode chosen for battery is what throttles.
+    """
+    if SYSTEM == "Windows":
+        try:
+            import winreg
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                 r"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes")
+            values = {}
+            for name in ("ActiveOverlayDcPowerScheme", "ActivePowerScheme"):
+                try:
+                    values[name] = str(winreg.QueryValueEx(key, name)[0]).lower()
+                except OSError:
+                    pass
+        except (ImportError, OSError):
+            return ("unknown", None)
+        dc = values.get("ActiveOverlayDcPowerScheme")
+        if dc in WINDOWS_OVERLAYS:
+            return WINDOWS_OVERLAYS[dc]
+        plan = values.get("ActivePowerScheme")
+        if plan in WINDOWS_PLANS:
+            return WINDOWS_PLANS[plan]
+        return ("unknown", None)
+    if SYSTEM == "Darwin":
+        _, out = run(["pmset", "-g", "custom"])
+        section = out.split("Battery Power:", 1)[1].split("AC Power:", 1)[0] if "Battery Power:" in out else ""
+        m = re.search(r"(?:lowpowermode|powermode)\s+(\d)", section)
+        if not m:
+            return ("unknown", None)
+        return ("Low Power Mode", True) if m.group(1) == "1" else ("normal", False)
+    return ("unknown", None)
+
+
+def power_report():
+    """One line for the `power` command: whether it's plugged in, and whether battery will slow jobs down."""
+    state = power()
+    if state in ("no battery", "unknown"):
+        return state
+    mode, saves = battery_power_mode()
+    if state == "plugged in":
+        return f"plugged in (on battery this laptop uses: {mode})"
+    if saves:
+        return f"on battery, power mode {mode}: long jobs will be slower"
+    if saves is False:
+        return f"on battery, power mode {mode}: close to full speed, but the battery drains fast"
+    return "on battery, power mode unknown: long jobs may be slower"
+
+
 def gpus():
     if SYSTEM == "Windows":
         _, out = run(["powershell", "-NoProfile", "-Command",
@@ -166,7 +234,7 @@ def test_encoder(args, ten_bit, tmp):
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "power":
-        print(power())
+        print(power_report())
         return
     as_json = "--json" in sys.argv
     speech_python = None
@@ -179,6 +247,7 @@ def main():
         "cpu_threads": os.cpu_count(),
         "gpus": gpus(),
         "power": power(),
+        "battery_power_mode": battery_power_mode()[0],
         "tools": {n: tool_version(n) for n in ("ffmpeg", "ffprobe")},
         "encoders": {},
     }
@@ -230,6 +299,8 @@ def main():
     print(f"CPU:        {report['cpu']} ({report['cpu_threads']} threads)")
     print(f"GPU:        {', '.join(report['gpus']) or 'none found'}")
     print(f"Power:      {report['power']}")
+    if report["power"] not in ("no battery", "unknown"):
+        print(f"On battery: power mode {report['battery_power_mode']}")
     for n, t in report["tools"].items():
         print(f"{n + ':':12}{t['version'] if t else 'NOT FOUND'}")
     if ff and report.get("ffmpeg_major") and report["ffmpeg_major"] < 7:

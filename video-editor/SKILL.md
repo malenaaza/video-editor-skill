@@ -1,6 +1,6 @@
 ---
 name: video-editor
-description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack.
+description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, noise removal and voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack.
 ---
 
 # Video Editor
@@ -20,12 +20,12 @@ Read `<skill>/my-setup.md` before every edit. It holds this user's hardware, enc
 3. **Confirm in one short message**, in plain words. For example: "I found an NVIDIA RTX 4060. I'll use it for working renders (`h264_nvenc`) and transcription. The final export always uses `libx264` at top quality, so the result looks the same on any computer. OK?"
 4. **Ask only what can't be detected**, all in one message:
    - Which cameras or phones do you film with? Do you ever shoot Log (Apple Log, S-Log, V-Log, C-Log...)?
-   - Is this a laptop you sometimes use on battery?
    - Which languages do you speak in your videos?
    - Who are the videos for? List each brand or channel (a business, your personal account...).
    - Where should finished videos go?
    - Remove every pause and filler, or keep a natural pace? Speed up a little after cutting?
 5. **Save** the answers: copy `<skill>/setup-template.md` to `<skill>/my-setup.md` and fill it in. Leave brand colors and fonts as `unknown` until the first video for that brand (Rule 5).
+6. **Show what you can do.** End setup by showing the menu from What I can do, so a new user knows the options before their first edit.
 
 **Run setup again** when the user says they have a new computer or camera, or when a saved encoder fails. If an encoder fails mid-job, fall back to the `libx264` line in `my-setup.md`, say so, finish the job, then offer to re-run detection.
 
@@ -41,14 +41,23 @@ Ask before installing anything. Use the system's package manager.
   - `face` (only needed for retouch, blur and the mouth check): `pip install mediapipe opencv-python numpy`, and download Google's MediaPipe models into `~/.video-editor/models/`:
     - `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`
     - `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`
-- **Node 20+** for Remotion graphics (optional): create a project once with `npx create-video@latest --blank` in the work folder, and copy `<skill>/scripts/remotion/EmojiPop.tsx` into its `src` folder.
+  - `cutout` (only needed for covers with products): `pip install "rembg[cpu]" pillow numpy`. Its model (about 180 MB) downloads on first use.
+- **Voice cleaning** (optional, Rule 7): the RNNoise model `cb.rnnn`, saved as `~/.video-editor/models/cb.rnnn`, from `https://raw.githubusercontent.com/GregorR/rnnoise-models/master/conjoined-burgers-2018-08-28/cb.rnnn` (about 300 KB; FFmpeg runs it, no other install). For the best noise removal, also DeepFilterNet's standalone `deep-filter` program for the user's system from `https://github.com/Rikorose/DeepFilterNet/releases` (one file, no Python packages), on the PATH or with its path saved in `my-setup.md`. The script uses `deep-filter` first, then RNNoise, then FFmpeg's weaker `afftdn`.
+- **Node 20+** for Remotion graphics (optional): create a project once with `npx create-video@latest --yes --blank remotion` in the work folder, and copy every file in `<skill>/scripts/remotion/` into its `src` folder.
 - **Log LUTs** (only if the user shoots Log): the camera maker's official Log-to-Rec.709 LUT. Apple publishes Apple Log LUTs on developer.apple.com, and Sony, Panasonic, Canon, Fujifilm and Blackmagic publish their own. The user downloads it. Never redistribute it.
 
 Run every Python script with `-I` and the right environment's interpreter (`<venv>/Scripts/python.exe` on Windows, `<venv>/bin/python` elsewhere), as saved in `my-setup.md`.
 
 ### Power
 
-On a laptop, run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export). If it says "on battery", tell the user before starting: on battery, laptops throttle and every step is much slower.
+On a laptop, run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export). Being on battery isn't slow by itself: what slows jobs down is the power mode the laptop uses on battery, and each user sets that differently. So say only what the check found:
+
+- **"plugged in"**: start, no warning.
+- **"on battery, power mode … long jobs will be slower"** (a power-saving mode): tell the user before starting, and offer two fixes: plug in, or switch the power mode for battery to Best performance (Windows: Settings > System > Power & battery > Power mode; Mac: turn off Low Power Mode). If `my-setup.md` has a measured slowdown for this laptop, give that number instead of a guess.
+- **"on battery, power mode … close to full speed"**: start, and only mention that a long job will drain the battery.
+- **"unknown"**: say it may be slower on battery, without claiming it is.
+
+The first time a long job runs on battery in a power-saving mode, time it against the same job plugged in if the user agrees, and save the result on the `Laptop:` line in `my-setup.md` (for example "transcription took 1.5x longer on battery in Best power efficiency").
 
 ### Animated graphics
 
@@ -67,6 +76,38 @@ npx remotion render src/index.ts <composition-id> out/intro.mp4 --codec=h264 --c
 
 Then bring the result into FFmpeg and do the final export as in Rule 6. Look at a few rendered frames before using it.
 
+#### Ready-made templates
+
+Use these before writing a new graphic from scratch. Each renders one short transparent clip; register its composition in `src/Root.tsx` once (the import line is at the top of each file). Write the props to a JSON file and pass `--props=<file>.json`, so quotes, emoji and currency symbols survive on Windows. Fill the brand's colors from `my-setup.md`, and the font by its name plus `fontFile`, a path inside the project's `public` folder (copy the brand's font file to `public/fonts/` first). A missing font file stops the render with an error instead of falling back to another font. Always pass the video's `fps`, `width` and `height`.
+
+| Template | Use it for | Main props | Default length |
+|---|---|---|---|
+| `TitleCard` | The hook title in the first seconds | `lines` (1 to 3 short lines), `highlight` (one word in the accent color), `top` | 2.5 s |
+| `ProductTag` | Product name and price when a product is shown | `name`, `price` (written as it should appear, e.g. `€24,90`), `note` (e.g. "Link in bio"), `side`, `top` | 3.5 s |
+| `EmojiPop` | Emojis on words (see Animated emojis) | `emoji`, `left`, `top` | 43 frames |
+| `CoverCard` | Cover image with the products (see Cover with products) | `background`, `products` (one `image` each), `faceX`/`faceY`/`faceSize`, `lines` | a still: `npx remotion still` |
+
+Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
+
+- **TitleCard:** keep it under about 6 words. Start it on the first frame, or a few frames in if the video opens on a word. Keep it below the app's top bar and off the face (see Titles and captions under Lessons). When the brand's title style in `my-setup.md` is a still title, use that instead unless the user asks for an animated one.
+- **ProductTag:** show it when the product is first named or held up, starting a few frames after the name is said. Use it only for the main products, once each, unless asked for more. Keep it above the caption area from `my-setup.md` and on the side away from the speaker's face and the product. Put the price only if the user gave it or it's said in the video; never guess a price.
+- **Placing:** the same as emojis: `setpts=PTS-STARTPTS+<frame>/(<fps>*TB)` and `overlay=0:0:format=rgb:eof_action=pass`, with `format=rgba` on both inputs.
+- **Check:** look at one frame mid-animation and one fully shown for each graphic, on the real footage: text readable, nothing covering the face, product, captions or logo.
+
+## What I can do
+
+New users don't know what's possible, so tell them. Show this menu at the end of first setup (Rule 0), and whenever the user asks what you can do, what the options are, or which effects exist. Show it in the user's language, as a short list like this, not a wall of text:
+
+- **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · speed up delivery slightly · split one long recording into several videos
+- **Text and graphics:** captions in your brand's style · animated title · product name and price tag · animated emojis on words · your handle and logo · end card
+- **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
+- **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
+- **Ready to post:** vertical and wide versions · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
+
+End with one line: "Ask for any of these by name, or I'll suggest what fits each video."
+
+List only what this file has instructions for. When a new feature is added to this file, add it to the menu in the same change.
+
 ## Rule 1: Ask four questions before every edit
 
 Always ask, even if the request seems clear, unless the user already answered in the same message:
@@ -74,9 +115,11 @@ Always ask, even if the request seems clear, unless the user already answered in
 1. Who is the video for? (Offer the brands saved in `my-setup.md`.)
 2. Where is the video going? (Instagram, TikTok, YouTube...)
 3. What do you want the viewer to do at the end?
-4. Do you want captions and graphics, or just a clean cut?
+4. Clean cut, or extras? Ask this one once the transcript is ready (Rule 3): transcribe while the user answers questions 1 to 3, then suggest 2 or 3 extras from What I can do that fit this video, each with the moment it would go and the reason, in one or two lines. For example: "You name Glow Serum and its price at 0:12, so I could add a product tag there. You open with '3 serums I'd buy again', which would work as an animated title." Then ask which ones they want, or a clean cut. Mention once that the full menu is available if they ask.
 
 The answer to question 1 decides the branding in Rule 5. Skip any question the brand's saved defaults already answer, and say which defaults you're using.
+
+**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), background noise or hum in the measure (voice cleaning), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
 
 ## Rule 2: Never touch the original
 
@@ -124,6 +167,7 @@ Then, from the word timestamps:
   - `findfill.py`: maps times in the finished video to edges in the source, from a 10 ms level map. Run from the build folder; see its header for the `plan.py` it expects.
   - `checkcuts.py --language <code> a1 b1 ...`: for each cut, transcribes the removed piece (must be only the filler) and the 2 s before and after joined (every word must be whole). Tighten and recheck until both pass.
   - A drawn-out "and": if the sentence still works, shorten it to about 0.15 s. A filler that the `small` model times as 0.5 s is often a normal word plus the next one, so check the level map first.
+- **Fillers glued onto words:** a user can still hear "ehhh" after both passes come back clean, because Whisper merges a filler that touches a word into that word ("y ehh prefiero", a hum before "menos"). Before the first export, run the short-window pass on the cut voice: `<speech python> -I <skill>/scripts/hunt_fillers.py --language <code> cut.wav hunt.json`. It transcribes 6 s windows every 3 s with the filler prompt and without carrying text between windows, and lists each filler and each word longer than 0.6 s. For each hit, map it to the source, read the level map (a filler is a flat, steady stretch), and test the cut as with `checkcuts.py`: the removed piece must transcribe as only the filler, and the joined phrase must keep every word whole. Leave a hit alone if every cut clips a word, and tell the user where it is.
 - **Over-long words hide repeats and hums:** Whisper often stretches one word over a repeat, a hum, or the word before it, so the duplicate never shows up in either transcript. Before the first export, list every word longer than about 0.8 s in either transcript (except naturally long words), and check each one:
   1. Re-transcribe those 2–3 s alone with the `small` model and a prompt that invites the suspected repeat or hum.
   2. Read a 50 ms level map for extra syllables or a steady stretch.
@@ -218,7 +262,19 @@ Keep the source frame rate and do cuts with a re-encode so they land exactly.
 
 Burn captions from an `.ass` file. Run FFmpeg from the folder that holds it and use a relative filename (`-vf ass=captions.ass:fontsdir=fonts`), because Windows paths break that filter. Copy the brand's font files into that `fonts` folder. A wrong font name silently falls back to Arial, so check the `fontselect` lines with `-v verbose`. Keep captions in the middle of the safe area on vertical video so app buttons don't cover them.
 
-## Rule 7: Level each voice separately
+## Rule 7: Clean and level each voice
+
+### Clean the voice
+
+Background noise (fans, air conditioning, fridge hum, street noise) and mains hum stay under the words unless they're removed. Use `<skill>/scripts/voice/clean_voice.py`, run with any Python that has numpy (the `speech` environment works).
+
+1. **Measure** each original recording, before any cuts, while it still has its pauses: `python -I clean_voice.py measure <original>`. It gives the noise floor, the gap between speech and noise, any mains hum (50 or 60 Hz) and a suggested strength: none (gap 45 dB or more), light, or strong (gap under 30 dB).
+2. **Ask once per brand,** the first time a recording needs cleaning, and save the answer in the brand's `Voice cleaning:` line: "Should I remove background noise and polish your voice? **Automatic** (suggested: only when a recording needs it, at the strength it needs), always light, always strong, or never?" Polish is part of it: rumble cut, gentle evening out of loud and quiet words, softer "s" sounds and a little clarity. If the user only wants noise removal, add `--no-polish`.
+3. **Clean** the cut voice track, after cuts and speed-up and before leveling: `python -I clean_voice.py clean <voice.wav> <voice-clean.wav> --strength <light|strong> [--hum <50|60>]`, with `--hum` when the measure found hum. With "automatic", skip cleaning when the suggestion is none, but still offer the polish once. The script picks the best engine installed and says which it used. If it reports that an engine made the voice quieter, it already retried more gently or fell back; mention it to the user.
+4. **Check:** compare the "Before" and "After" lines it prints: the gap should grow and the hum should be gone. Transcribe the cleaned voice with `medium` and compare it with the transcript of the uncleaned cut: if any word changed or dropped, clean again one step lighter (strong, light, then `--no-polish` or no cleaning) and say so. You can't hear the result, so ask the user to listen to the first cleaned video and say if the voice sounds too processed (hollow, watery, robotic) or still noisy, then save the answer in `Voice cleaning:`.
+5. Clean only the voice: sound effects are mixed in afterwards (Sound effects, Build order), and never run cleaning on music.
+
+### Level each voice
 
 If a video mixes voices (an AI voice and the user, an off-camera interviewer), level each one on its own. Use the transcript to mark which time ranges belong to which voice, and run `loudnorm` on each separately (two passes for accuracy), with the brand's loudness target from `my-setup.md` (default `loudnorm=I=-14:TP=-1:LRA=11` for social video). Join them, then verify with `ebur128` that the voices match within about 1 LU. Never cut an off-camera voice's pauses as silence.
 
@@ -233,7 +289,7 @@ Apply the color choice from the brand's `Look:` lines in the clean render. If th
 Retouch when the brand's `Look:` lines say "every video", or when the user asks. Color alone can't separate skin from things like cardboard, so use face-tracked masks. Files are in `<skill>/scripts/retouch/`: `mask.py` builds the masks, `retouch.txt` is the FFmpeg filter.
 
 1. Render a clean edit (cuts, Log conversion, grade, zooms; no title, captions or handle) as `clean.mp4`, with the in-between encoder. The filter runs underneath the text so the text stays sharp.
-2. From that folder, build `skin.mkv` and `teeth.mkv`:
+2. From that folder, build `skin.mkv`, `teeth.mkv` and `skin_strong.mkv`:
 
 ```
 <face python> -I <skill>/scripts/retouch/mask.py "<face_landmarker.task>"
@@ -242,8 +298,10 @@ Retouch when the brand's `Look:` lines say "every video", or when the user asks.
 3. Copy `retouch.txt` into the folder, set the levels from `my-setup.md`, and apply it, setting `-frames:v` to the frame count of `clean.mp4`:
 
 ```
-ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -/filter_complex retouch.txt -map "[v]" -frames:v <count> <8-bit in-between encoder> retouched.mp4
+ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -i skin_strong.mkv -/filter_complex retouch.txt -map "[v]" -frames:v <count> <8-bit in-between encoder> retouched.mp4
 ```
+
+   With background blur, add `bgmask.mkv` as a fifth input (`[4:v]`) and put the blur lines after the retouch in the same filter.
 
 4. Add the title, captions, handle and end card to `retouched.mp4`, then do the final export.
 
@@ -252,6 +310,10 @@ ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -/filter_complex retouch.txt -map "
 Default levels are in `my-setup.md`. If the user asks for more or less, change one step at a time and save it. To change only the skin strength without rebuilding masks, scale the skin mask in the filter: `format=gray,lut=y='min(val*1.13,255)'`.
 
 The mask protects the eyes, brows, lips and mouth, and only whitens teeth while the lips are visible, so objects passing the mouth aren't touched. Compare close-ups before and after, including a frame where teeth show. Say so if braces or shadows limit the result. Report how many frames had no face detected.
+
+**Neck and clothing:** the skin area includes the neck under the jaw (`NECK = True` in `mask.py`); a softened face over an untouched neck looks odd. `SKIN_CR_MAX` keeps very red pixels out, so a red top or scarf isn't softened. Check one frame of `skin.mkv` that shows the neck and the top.
+
+**Close-ups:** the same softening that looks right when the face is a normal size leaves texture visible when the speaker leans in or a punch-in zooms: pores are magnified 3 to 4 times. `skin_strong.mkv` adds a second, stronger softening (`bilateral=sigmaS=12:sigmaR=0.10`) on top of the normal one, ramping from nothing when the face is below `CLOSE_LO` of the frame height to full above `CLOSE_HI`, smoothed between frames so it doesn't flicker. Show the user before/after frames of the biggest-face moments before the full render. If they want it stronger, weaker, or starting earlier, change `CLOSE_LO`/`CLOSE_HI` or the second bilateral, one step at a time, and save it in `my-setup.md`.
 
 **Small faces:** in full-body framing the face tracker can miss most frames. Run detection on a 2x enlarged crop around the head, track it from frame to frame, and map the points back.
 
@@ -263,7 +325,7 @@ Add these when the user asks; don't ask them to supply emoji files.
 - **Placing:** FFmpeg places each clip with `setpts=PTS-STARTPTS+<frame>/(<fps>*TB)` and `overlay=...:eof_action=pass`. That's much faster than one transparent overlay as long as the whole video.
 - **Timing:** read the caption times from the `.ass` file and match each emoji to the word it illustrates. Start it a few frames after that caption appears, and end it with the caption or before the next emoji.
 - **Look:** 150 px, a spring pop, a small wobble, a soft shadow. Keep it off the face and away from captions, logos and text. Pick a clear spot for each video, away from where the speaker moves: spots near head height can touch the hair when the speaker leans.
-- **Layer order:** footage, retouch, title, emojis, then captions and handle, and finally the end card.
+- **Layer order:** footage, retouch, title, product tags, emojis, then captions and handle, and finally the end card.
 - **Choosing:** match literal words in the speech. Offer to pick them if the user only asks for "emojis". Use them only occasionally unless asked for more, and say which ones you'd remove first if it feels busy.
 - **Check:** look at one frame per emoji to confirm full color and that nothing important is covered.
 
@@ -279,7 +341,7 @@ Add these when the user asks; don't ask them to supply sounds.
 ffmpeg -i voice-final.wav -i pop.wav -i whoosh.wav -i sparkle.wav -i cash.wav -/filter_complex sfx-mix.txt -map "[a]" -ar 48000 -c:a pcm_s16le voice-sfx.wav
 ```
 
-- **Build order:** level the voice first, mix in the effects, then mux with `-c:v copy`.
+- **Build order:** clean the voice (Rule 7) and level it first, mix in the effects, then mux with `-c:v copy`.
 - **New sounds** with `aevalsrc`: use `gt(t,0.08)` instead of `t>0.08`, which FFmpeg rejects.
 - **Check:** confirm loudness with `ebur128` and transcribe the opening with `medium`, with and without effects. Speech must stay the same. You can't hear the mix, so ask the user to listen and say if the effects are too loud or quiet.
 
@@ -317,6 +379,8 @@ Files in `<skill>/scripts/retouch/`: `blurmask.py` (builds the mask) and `backgr
 - **Mirrored video:** front-camera clips can be flipped. If logos or text read backwards, use `hflip`.
 - **Rotation:** check `ffprobe` rotation data before calling a clip horizontal.
 - **Audio sample rate:** read it with `ffprobe` before cutting by sample number; it may not be 48 kHz. Tell the user if it's low, because the voice may sound dull.
+- **Audio that starts late:** check each stream's `start_time` with `ffprobe`. Some phone and camera-app files start the audio a little after the video (0.056 s in one iPhone recording). A wav extracted from the file starts at 0, so cut times measured on it are early for the picture by that amount: add the audio's start time when cutting the video, or the lips drift out of sync.
+- **Cut on the frame grid:** round every kept segment to whole video frames, and cut the audio at exactly those frame times. Otherwise each join rounds differently and picture and sound drift apart over many cuts. Check that the finished video and voice have the same duration.
 - **Whisper can miss words:** a sentence may start later than its timestamps show. The re-check on the finished video (Rule 3) finds this, and `silencedetect` or a waveform shows the exact cut point.
 - **Muxing:** don't use `-shortest` when joining finished video and audio of the same length; it can drop the last frames. Check that `nb_frames` matches the expected count.
 - **Titles and captions:** keep the title off the speaker's face. When the face fills the top of the frame, put the title on the clothing below the captions, and emojis in the background beside the head.
@@ -331,8 +395,46 @@ Before reporting, check the export with `ffprobe` (resolution, duration, audio p
 Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt` next to the export, named `<video-name>-post.txt`, with sections for the caption, hashtags, video file, cover file and before-you-post notes. Never overwrite an existing file. In the chat, give the file's path instead of repeating the text. The pack includes:
 
 - **Caption:** in the video's language and the brand's voice (Rule 5), 1 to 3 short lines. Open with the hook, end with the action from Rule 1, question 3. Use only facts from the video, and don't reuse another creator's lines. Add contact details if the brand's end card has them.
-- **Hashtags:** 3 to 5 that fit the topic and audience. Don't pad the list with generic tags.
-- **Cover:** pick a sharp frame with the title readable and the speaker's eyes open, and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop.
+- **Hashtags:** the most popular hashtags for the brand's niche and this video's topic, looked up fresh for every video. Popularity changes from month to month, so don't pick them from memory.
+  - **Look them up:** search the web for the hashtags currently most used and most viewed for the niche and topic, on each platform the video is going to, in the video's language (and the audience's country, if the brand has one). Use recent sources, from the last few months, and check at least two. Popular tags differ by platform, so give each platform in the pack its own list.
+  - **Pick:** lead with the most popular tags that truly fit the video, then add 1 or 2 specific ones (the product category, the exact topic), so the video can also stand out in a smaller feed. Never add a popular tag that doesn't match the video: platforms treat that as spam. Skip tags that sources report as banned or restricted.
+  - **How many:** follow each platform's current rule or recommendation found in the search; if none is found, use 3 to 5.
+  - **Save:** keep the niche and its core tags, with the date checked, in the brand's `Niche and hashtags:` line in `my-setup.md`. If the line is empty, ask the user once what their niche is (for example "skincare for over-40s in Spain"), and save it.
+  - **Without web access:** use the saved core tags, and write "not checked online this time" next to the hashtags in the pack, and in the chat.
+  - Don't state post counts or view numbers unless a source gave them; then add the source and date in the pack's notes.
+- **Cover:** pick a sharp frame with the title readable and the speaker's eyes open, and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop. If the brand's `Cover:` line says with products, or the user asks, build it as in Cover with products below.
 - **Reminder:** the user can add a trending sound in the app, and should keep it quiet under the voice. Point out anything the video promises, like a follow-up video.
+
+### Cover with products
+
+A cover with the speaker, the title and pictures of the products shown in the video, made with the `CoverCard` template.
+
+**Ask the cover style once per brand,** the first time you make this cover for it, in one message, with the suggested answer first, then save the answers in the brand's `Cover:` line in `my-setup.md` and follow them every time:
+
+- Where should the products go? **Around your face** (suggested), or in a row under the title?
+- Can they overlap the edge of your face and hair a little? **Yes** (suggested: they can be bigger), or keep them clear?
+- Where should the title go? **Above your head**, running over the top of the hair if there isn't room (suggested), below your face, or no title?
+- Product names, prices or numbers on the cover? **None** (suggested: names and prices are already in the video's product tags), or which ones?
+
+Until the user answers, use the suggested answers. To change one later, they just say so (Rule 0, feedback).
+
+1. **Pick the products:** the main ones named in the transcript, 1 to 4. For more, ask which to show.
+2. **Get a picture of each,** in the order the brand's `Product photos:` line gives, or this order if it's empty:
+   - **The user's own photos:** a `B-roll kit` folder, or the brand's own website if the products are the user's.
+   - **Shop or brand websites the user names** (for example Cult Beauty or Sephora): search that site for the exact product, with its shade and size, open the product page and download the main product image at its largest size. Compare it with a frame from the video to check it's the same product and shade; if it isn't, don't use it. Write the page address in the pack's notes. If the site blocks the download, ask the user to save the image into `<work folder>/product-photos/`, named after the product.
+   - **A frame from the video:** the sharpest frame where the product is held still and facing the camera, cut out with `--crop` around it.
+   The first time the user names a shop website, tell them once, in plain words: product photos on shop websites usually belong to the brand or the shop, so using them on a cover is common but not risk-free; the brand's press kit or the shop's affiliate program images come with permission. Save their answer in `Product photos:` and don't ask again.
+3. **Cut each out,** in both modes, each with a check image: `<cutout python> -I <skill>/scripts/cover/cutout.py <image> <work folder>/cover/<product>-white.png --white --check <work folder>/cover/<product>-white-check.png`, and the same without `--white` (the AI model) into `<product>-ai.png`. The check image shows the cutout over red and over black, where any part that turned see-through shows at once. Both modes make the inside of the product solid, so white boxes, white pencils and white caps stay white. Pick the cutout where the whole product is solid, with no background patches, no grey shadow blob under it, and no specks. Shop photos on a plain light background usually come out best with `--white`, and video frames or busy backgrounds with the AI model, which may also leave out the box and keep only the product. If the script warns about the share kept, that cutout failed. Show the user the chosen check images and wait for their OK before building the cover; a see-through cutout is what makes a cover look broken.
+4. **Build it:** pick the background frame as for the plain cover. Find the face: `<face python> -I <skill>/scripts/cover/face_box.py <frame.png> <face_landmarker.task>` prints `faceX`, `faceY` and `faceSize`; copy them into `cover.json`. Copy the frame and the cutouts into the Remotion project's `public/cover/` folder and render with `npx remotion still src/index.ts CoverCard out/cover.png --props=cover.json`, with the brand's colors and font. The template picks the placement from the face's size:
+   - **Medium shot** (room beside the face): products beside and slightly below the face, tilted a little, sized to fill the space.
+   - **Close-up** (the face fills most of the frame, the usual talking-head video): the first two products go in the strips of background beside the face, at cheek level, and any others below the chin, over the shoulders. With no background beside the face, all go below the chin.
+   Follow the brand's `Cover:` line:
+   - **Title above the head:** leave out `titleTop`; the title goes above the head, over the top of the hair when there isn't room, with the products below it. **Below the face:** set `titleTop` below the chin; products stay above it. **No title:** leave out `lines`.
+   - **Products kept clear of the face:** set `spread` to about 1.4. With overlap allowed, keep the default and only raise `spread` (for example 1.2) if products cover the eyes, nose or mouth. If products look small, set `productSize`.
+   - **In a row**, or no good frame shows the face: `"layout": "row"`, with the products in a row under the title.
+   - **Names, prices or numbers** only if the brand's line says so: `label` and `price` per product, `numbered: true`. Prices only if the user gave them or they're said in the video.
+   - **Very close close-ups:** when the face fills nearly the whole frame, the strips beside the face are narrow and the template keeps those products small. If `productSize` doesn't help, pick a frame from an unzoomed shot with more room, or place the cutouts yourself with FFmpeg overlays (about a quarter of the frame height each, a slight tilt), and draw the title with the brand's caption file in the `ass` filter so it gets the brand's outline. A title without an outline is hard to read where it crosses the forehead.
+   - **Skin on the cover:** use a frame from the retouched footage. A close-up frame already has the close-up softening (Rule 9), so don't soften the cover again: that doubles it and looks airbrushed. If the user still finds the skin on the cover lacking, offer one step more on the cover only, shown as "now" and "+1" side by side: build the frame's face-and-neck mask with `mask.py` on a 3-frame still video, soften the whole frame (`bilateral=sigmaS=12:sigmaR=0.10`), and blend the two in Python with the mask (`mask / 224`). An FFmpeg `alphamerge` on a single still softened the eyes in testing; check that eyes, lashes, brows and lips stay as sharp as before.
+5. **Check:** look at the cover. Every product recognizable, the eyes, nose and mouth uncovered (and the whole face, if the brand keeps products clear), and the title and products inside the middle 3:4 of a vertical cover (y 240 to 1680 on 1080x1920), which is what Instagram's profile grid shows. Save it as `<video-name>-cover.png` and the plain frame as `<video-name>-cover-plain.png`, never overwriting existing files, and list the image sources in the pack's notes.
 
 Never post for the user. Tell them where the file is saved, and remind them to watch it once before they post. They're the director.
