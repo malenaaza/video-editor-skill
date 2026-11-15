@@ -167,6 +167,7 @@ Then, from the word timestamps:
   - `findfill.py`: maps times in the finished video to edges in the source, from a 10 ms level map. Run from the build folder; see its header for the `plan.py` it expects.
   - `checkcuts.py --language <code> a1 b1 ...`: for each cut, transcribes the removed piece (must be only the filler) and the 2 s before and after joined (every word must be whole). Tighten and recheck until both pass.
   - A drawn-out "and": if the sentence still works, shorten it to about 0.15 s. A filler that the `small` model times as 0.5 s is often a normal word plus the next one, so check the level map first.
+- **Fillers glued onto words:** a user can still hear "ehhh" after both passes come back clean, because Whisper merges a filler that touches a word into that word ("y ehh prefiero", a hum before "menos"). Before the first export, run the short-window pass on the cut voice: `<speech python> -I <skill>/scripts/hunt_fillers.py --language <code> cut.wav hunt.json`. It transcribes 6 s windows every 3 s with the filler prompt and without carrying text between windows, and lists each filler and each word longer than 0.6 s. For each hit, map it to the source, read the level map (a filler is a flat, steady stretch), and test the cut as with `checkcuts.py`: the removed piece must transcribe as only the filler, and the joined phrase must keep every word whole. Leave a hit alone if every cut clips a word, and tell the user where it is.
 - **Over-long words hide repeats and hums:** Whisper often stretches one word over a repeat, a hum, or the word before it, so the duplicate never shows up in either transcript. Before the first export, list every word longer than about 0.8 s in either transcript (except naturally long words), and check each one:
   1. Re-transcribe those 2–3 s alone with the `small` model and a prompt that invites the suspected repeat or hum.
   2. Read a 50 ms level map for extra syllables or a steady stretch.
@@ -288,7 +289,7 @@ Apply the color choice from the brand's `Look:` lines in the clean render. If th
 Retouch when the brand's `Look:` lines say "every video", or when the user asks. Color alone can't separate skin from things like cardboard, so use face-tracked masks. Files are in `<skill>/scripts/retouch/`: `mask.py` builds the masks, `retouch.txt` is the FFmpeg filter.
 
 1. Render a clean edit (cuts, Log conversion, grade, zooms; no title, captions or handle) as `clean.mp4`, with the in-between encoder. The filter runs underneath the text so the text stays sharp.
-2. From that folder, build `skin.mkv` and `teeth.mkv`:
+2. From that folder, build `skin.mkv`, `teeth.mkv` and `skin_strong.mkv`:
 
 ```
 <face python> -I <skill>/scripts/retouch/mask.py "<face_landmarker.task>"
@@ -297,8 +298,10 @@ Retouch when the brand's `Look:` lines say "every video", or when the user asks.
 3. Copy `retouch.txt` into the folder, set the levels from `my-setup.md`, and apply it, setting `-frames:v` to the frame count of `clean.mp4`:
 
 ```
-ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -/filter_complex retouch.txt -map "[v]" -frames:v <count> <8-bit in-between encoder> retouched.mp4
+ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -i skin_strong.mkv -/filter_complex retouch.txt -map "[v]" -frames:v <count> <8-bit in-between encoder> retouched.mp4
 ```
+
+   With background blur, add `bgmask.mkv` as a fifth input (`[4:v]`) and put the blur lines after the retouch in the same filter.
 
 4. Add the title, captions, handle and end card to `retouched.mp4`, then do the final export.
 
@@ -307,6 +310,10 @@ ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -/filter_complex retouch.txt -map "
 Default levels are in `my-setup.md`. If the user asks for more or less, change one step at a time and save it. To change only the skin strength without rebuilding masks, scale the skin mask in the filter: `format=gray,lut=y='min(val*1.13,255)'`.
 
 The mask protects the eyes, brows, lips and mouth, and only whitens teeth while the lips are visible, so objects passing the mouth aren't touched. Compare close-ups before and after, including a frame where teeth show. Say so if braces or shadows limit the result. Report how many frames had no face detected.
+
+**Neck and clothing:** the skin area includes the neck under the jaw (`NECK = True` in `mask.py`); a softened face over an untouched neck looks odd. `SKIN_CR_MAX` keeps very red pixels out, so a red top or scarf isn't softened. Check one frame of `skin.mkv` that shows the neck and the top.
+
+**Close-ups:** the same softening that looks right when the face is a normal size leaves texture visible when the speaker leans in or a punch-in zooms: pores are magnified 3 to 4 times. `skin_strong.mkv` adds a second, stronger softening (`bilateral=sigmaS=12:sigmaR=0.10`) on top of the normal one, ramping from nothing when the face is below `CLOSE_LO` of the frame height to full above `CLOSE_HI`, smoothed between frames so it doesn't flicker. Show the user before/after frames of the biggest-face moments before the full render. If they want it stronger, weaker, or starting earlier, change `CLOSE_LO`/`CLOSE_HI` or the second bilateral, one step at a time, and save it in `my-setup.md`.
 
 **Small faces:** in full-body framing the face tracker can miss most frames. Run detection on a 2x enlarged crop around the head, track it from frame to frame, and map the points back.
 
@@ -372,6 +379,8 @@ Files in `<skill>/scripts/retouch/`: `blurmask.py` (builds the mask) and `backgr
 - **Mirrored video:** front-camera clips can be flipped. If logos or text read backwards, use `hflip`.
 - **Rotation:** check `ffprobe` rotation data before calling a clip horizontal.
 - **Audio sample rate:** read it with `ffprobe` before cutting by sample number; it may not be 48 kHz. Tell the user if it's low, because the voice may sound dull.
+- **Audio that starts late:** check each stream's `start_time` with `ffprobe`. Some phone and camera-app files start the audio a little after the video (0.056 s in one iPhone recording). A wav extracted from the file starts at 0, so cut times measured on it are early for the picture by that amount: add the audio's start time when cutting the video, or the lips drift out of sync.
+- **Cut on the frame grid:** round every kept segment to whole video frames, and cut the audio at exactly those frame times. Otherwise each join rounds differently and picture and sound drift apart over many cuts. Check that the finished video and voice have the same duration.
 - **Whisper can miss words:** a sentence may start later than its timestamps show. The re-check on the finished video (Rule 3) finds this, and `silencedetect` or a waveform shows the exact cut point.
 - **Muxing:** don't use `-shortest` when joining finished video and audio of the same length; it can drop the last frames. Check that `nb_frames` matches the expected count.
 - **Titles and captions:** keep the title off the speaker's face. When the face fills the top of the frame, put the title on the clothing below the captions, and emojis in the background beside the head.
@@ -424,6 +433,8 @@ Until the user answers, use the suggested answers. To change one later, they jus
    - **Products kept clear of the face:** set `spread` to about 1.4. With overlap allowed, keep the default and only raise `spread` (for example 1.2) if products cover the eyes, nose or mouth. If products look small, set `productSize`.
    - **In a row**, or no good frame shows the face: `"layout": "row"`, with the products in a row under the title.
    - **Names, prices or numbers** only if the brand's line says so: `label` and `price` per product, `numbered: true`. Prices only if the user gave them or they're said in the video.
+   - **Very close close-ups:** when the face fills nearly the whole frame, the strips beside the face are narrow and the template keeps those products small. If `productSize` doesn't help, pick a frame from an unzoomed shot with more room, or place the cutouts yourself with FFmpeg overlays (about a quarter of the frame height each, a slight tilt), and draw the title with the brand's caption file in the `ass` filter so it gets the brand's outline. A title without an outline is hard to read where it crosses the forehead.
+   - **Skin on the cover:** use a frame from the retouched footage. A close-up frame already has the close-up softening (Rule 9), so don't soften the cover again: that doubles it and looks airbrushed. If the user still finds the skin on the cover lacking, offer one step more on the cover only, shown as "now" and "+1" side by side: build the frame's face-and-neck mask with `mask.py` on a 3-frame still video, soften the whole frame (`bilateral=sigmaS=12:sigmaR=0.10`), and blend the two in Python with the mask (`mask / 224`). An FFmpeg `alphamerge` on a single still softened the eyes in testing; check that eyes, lashes, brows and lips stay as sharp as before.
 5. **Check:** look at the cover. Every product recognizable, the eyes, nose and mouth uncovered (and the whole face, if the brand keeps products clear), and the title and products inside the middle 3:4 of a vertical cover (y 240 to 1680 on 1080x1920), which is what Instagram's profile grid shows. Save it as `<video-name>-cover.png` and the plain frame as `<video-name>-cover-plain.png`, never overwriting existing files, and list the image sources in the pack's notes.
 
 Never post for the user. Tell them where the file is saved, and remind them to watch it once before they post. They're the director.

@@ -6,4 +6,9 @@
 [2:v]format=gray[tm];
 [white0][tm]alphamerge[white];
 [base][soft]overlay=format=yuv444[a];
-[a][white]overlay=format=yuv444,format=yuv420p[v]
+[a]split[a0][a1];
+[a1]bilateral=sigmaS=12:sigmaR=0.10:planes=7,format=yuva444p[close0];
+[3:v]format=gray[cm];
+[close0][cm]alphamerge[close];
+[a0][close]overlay=format=yuv444[a2];
+[a2][white]overlay=format=yuv444,format=yuv420p[v]

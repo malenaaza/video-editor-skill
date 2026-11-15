@@ -51,6 +51,8 @@ Checked on: <date>, with `scripts/detect_setup.py`
   - Teeth whitening: `eq=brightness=0.19:saturation=0.13:contrast=1.08`
   - Background blur: `gblur=sigma=7`
   - Skin mask threshold (`SKIN_CR_MIN` in mask.py): <139, or the value that fit this person's skin>
+  - Close-up softening (`CLOSE_LO`, `CLOSE_HI` in mask.py): <0.31, 0.40 of the frame height, or the values the user chose>
+  - Cover skin: <same as the video (it already has the close-up softening) / one step more>
 
 ## Brands
 Copy this block for each brand or channel the user makes videos for.
