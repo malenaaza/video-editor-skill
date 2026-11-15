@@ -20,7 +20,6 @@ Read `<skill>/my-setup.md` before every edit. It holds this user's hardware, enc
 3. **Confirm in one short message**, in plain words. For example: "I found an NVIDIA RTX 4060. I'll use it for working renders (`h264_nvenc`) and transcription. The final export always uses `libx264` at top quality, so the result looks the same on any computer. OK?"
 4. **Ask only what can't be detected**, all in one message:
    - Which cameras or phones do you film with? Do you ever shoot Log (Apple Log, S-Log, V-Log, C-Log...)?
-   - Is this a laptop you sometimes use on battery?
    - Which languages do you speak in your videos?
    - Who are the videos for? List each brand or channel (a business, your personal account...).
    - Where should finished videos go?
@@ -51,7 +50,14 @@ Run every Python script with `-I` and the right environment's interpreter (`<ven
 
 ### Power
 
-On a laptop, run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export). If it says "on battery", tell the user before starting: on battery, laptops throttle and every step is much slower.
+On a laptop, run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export). Being on battery isn't slow by itself: what slows jobs down is the power mode the laptop uses on battery, and each user sets that differently. So say only what the check found:
+
+- **"plugged in"**: start, no warning.
+- **"on battery, power mode … long jobs will be slower"** (a power-saving mode): tell the user before starting, and offer two fixes: plug in, or switch the power mode for battery to Best performance (Windows: Settings > System > Power & battery > Power mode; Mac: turn off Low Power Mode). If `my-setup.md` has a measured slowdown for this laptop, give that number instead of a guess.
+- **"on battery, power mode … close to full speed"**: start, and only mention that a long job will drain the battery.
+- **"unknown"**: say it may be slower on battery, without claiming it is.
+
+The first time a long job runs on battery in a power-saving mode, time it against the same job plugged in if the user agrees, and save the result on the `Laptop:` line in `my-setup.md` (for example "transcription took 1.5x longer on battery in Best power efficiency").
 
 ### Animated graphics
 

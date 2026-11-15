@@ -10,7 +10,7 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - System: <e.g. Windows 11, macOS 15 on Apple M3, Ubuntu 24.04>
 - CPU: <name, threads>
 - GPU: <name, or none>
-- Laptop: <yes / no>. If yes, check it's plugged in before long jobs (`detect_setup.py power`).
+- Laptop: <yes / no>. If yes: power mode on battery <e.g. Best power efficiency / Best performance, from `detect_setup.py`>; measured slowdown on battery <e.g. 1.5x for transcription, or not measured>. Check with `detect_setup.py power` before long jobs.
 - FFmpeg version: <e.g. 7.1>. Filter files: <`-/filter_complex file.txt` on FFmpeg 7+, `-filter_complex_script file.txt` on older>
 
 ## Encoders
