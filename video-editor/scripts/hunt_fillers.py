@@ -12,13 +12,14 @@ otherwise smooth over. It lists every filler it hears and every word longer than
 Each hit is only a candidate. Read the level map around it (a filler is a flat, steady stretch),
 then test the cut: the removed piece alone must transcribe as only the filler, and the 2 s
 before and after, joined, must keep every word whole (checkcuts.py does this).
-Needs openai-whisper (the speech environment) and a 16 kHz mono wav.
+Needs openai-whisper (the speech environment). Takes any audio or video file: FFmpeg converts it
+to the 16 kHz mono that Whisper expects.
 """
 import argparse
 import json
 import os
+import subprocess
 import sys
-import wave
 
 import numpy as np
 import whisper
@@ -35,11 +36,11 @@ p.add_argument("out", nargs="?", default="hunt.json")
 p.add_argument("--model", default="small")
 a = p.parse_args()
 
-w = wave.open(a.audio)
-sr = w.getframerate()
-audio = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
-if w.getnchannels() > 1:
-    audio = audio.reshape(-1, w.getnchannels()).mean(axis=1)
+sys.stdout.reconfigure(encoding="utf-8")
+sr = 16000
+pcm = subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", a.audio, "-vn", "-f", "s16le", "-ac", "1",
+                      "-ar", str(sr), "-"], capture_output=True, check=True).stdout
+audio = np.frombuffer(pcm, np.int16).astype(np.float32) / 32768
 model = whisper.load_model(a.model)
 prompt = prompt_for(a.language)
 

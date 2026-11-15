@@ -1,6 +1,6 @@
 """Writes a soft background mask (bgmask.mkv): white is blurred, black stays sharp.
 
-Usage (from the folder with the source): python -I blurmask.py <face_landmarker.task> [frame numbers to test]
+Usage (from the folder with clean.mp4): python -I blurmask.py <face_landmarker.task> [frame numbers to test]
 With frame numbers it only writes a test sheet, bg/blurtest.png. Without, it builds bgmask.mkv.
 
 Keeps sharp: the tracked head and neck, plus anything matching color_keys(). Edit
@@ -23,7 +23,7 @@ from mediapipe.tasks.python.vision import (
 
 MODEL = sys.argv[1]
 TEST = [int(x) for x in sys.argv[2:]]
-SOURCE = "retouched.mp4"  # the clean render to build the mask from
+SOURCE = "clean.mp4"  # the clean render to build the mask from (before retouch, titles and captions)
 OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379,
         378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
         162, 21, 54, 103, 67, 109]

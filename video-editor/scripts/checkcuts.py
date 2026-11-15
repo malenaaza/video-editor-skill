@@ -38,9 +38,9 @@ def text(path):
 
 for start, end in zip(a.times[::2], a.times[1::2]):
     removed, joined = tmp / "removed.wav", tmp / "joined.wav"
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{start}", "-to", f"{end}", "-i", a.audio, str(removed)])
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{start}", "-to", f"{end}", "-i", a.audio, str(removed)], check=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", a.audio, "-filter_complex",
                     f"[0:a]atrim={max(start - 2.0, 0)}:{start},asetpts=PTS-STARTPTS,afade=t=out:st=1.988:d=0.012[x];"
                     f"[0:a]atrim={end}:{end + 2.0},asetpts=PTS-STARTPTS,afade=t=in:d=0.012[y];[x][y]concat=n=2:v=0:a=1[o]",
-                    "-map", "[o]", str(joined)])
+                    "-map", "[o]", str(joined)], check=True)
     print(f"{start:.2f}-{end:.2f}  removed: {text(removed)!r}\n             joined:  {text(joined)!r}")

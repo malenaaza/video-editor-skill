@@ -1,6 +1,7 @@
 # My video setup
 
-Filled in by the video-editor skill on first use and saved as `my-setup.md` next to `SKILL.md`.
+Filled in by the video-editor skill on first use and saved as `~/.video-editor/my-setup.md`,
+outside the skill folder, so updating the skill never deletes it.
 The skill reads this file before every edit. Edit it by hand any time, or ask Claude to change it.
 Leave a field as `unknown` rather than guessing.
 
@@ -26,7 +27,10 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - Face Python (mediapipe, opencv): `<path, or not installed>`
 - Face model: `<path to face_landmarker.task, or not installed>`
 - Hand model: `<path to hand_landmarker.task, or not installed>`
+- Cutout Python (rembg, for covers with products): `<path, or not installed>`
+- Noise removal: `<path to deep-filter, or not installed>`; RNNoise model `<path to cb.rnnn, or not installed>`
 - Remotion project: `<folder, or not installed>`
+- Remotion license: <not asked yet / free (individual or up to 3 employees) / company license held>
 
 ## Camera and footage
 - Cameras / phones: <e.g. iPhone 16 Pro with the Blackmagic Camera app, Sony ZV-E10>

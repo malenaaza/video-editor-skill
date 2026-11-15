@@ -17,7 +17,7 @@ You don't need to remember this list: ask the skill "what can you do?" for a men
 
 ## Adjusts to your computer
 
-On first use it runs `scripts/detect_setup.py`, which checks your CPU and GPU and **test-encodes video with every hardware encoder your FFmpeg has**: NVIDIA (NVENC), Intel (Quick Sync), AMD (AMF) and Apple (VideoToolbox). It recommends the fastest one that actually works, and checks whether Whisper can use an NVIDIA GPU. Then it asks you the few things it can't detect: your cameras, whether you shoot Log, your languages, your brands and where finished videos go. Everything is saved to `my-setup.md` in the skill folder, so it never asks twice.
+On first use it runs `scripts/detect_setup.py`, which checks your CPU and GPU and **test-encodes video with every hardware encoder your FFmpeg has**: NVIDIA (NVENC), Intel (Quick Sync), AMD (AMF) and Apple (VideoToolbox). It recommends the fastest one that actually works, and checks whether Whisper can use an NVIDIA GPU. Then it asks you the few things it can't detect: your cameras, whether you shoot Log, your languages, your brands and where finished videos go. Everything is saved to `~/.video-editor/my-setup.md`, so it never asks twice.
 
 Working renders use the hardware encoder for speed. The final export always uses `libx264` at high quality, so the result looks the same on any computer.
 
@@ -67,7 +67,9 @@ Restart Claude Code, then type `/video-editor` or ask for an edit ("edit this vi
 
 ### Updating
 
-To get a newer version, replace the `video-editor` folder with the new one. Your settings are in `video-editor/my-setup.md`, so copy that file out first and put it back afterwards.
+To get a newer version, replace the `video-editor` folder with the new one. Your settings are in `~/.video-editor/my-setup.md`, outside the skill folder, so they survive the update.
+
+If you installed an earlier version, your settings are still in `video-editor/my-setup.md`: copy that file out before replacing the folder, and put it back afterwards. The skill moves it to the new place the next time you edit.
 
 ### What it installs on first use
 
@@ -91,11 +93,15 @@ The skin mask's colour thresholds were tuned on light-to-medium skin. The skill 
 
 ```
 video-editor/
-  SKILL.md               the instructions Claude follows
-  setup-template.md      becomes my-setup.md on first use (your hardware, brands, choices)
+  SKILL.md               the instructions Claude follows on every edit
+  references/            details Claude reads only when a video needs them: setup, fillers,
+                         Log footage, sound, retouch and blur, graphics, covers, brand sheet
+  setup-template.md      becomes ~/.video-editor/my-setup.md on first use (your hardware, brands, choices)
   scripts/
     detect_setup.py      hardware, tools and encoder tests (standard library only)
     transcribe.py        faster-whisper with word times, CPU or NVIDIA GPU
+    cutplan.py           builds the cut plan: pauses and listed cuts, snapped to whole frames
+    captions.py          writes the captions for the cut, in the brand's style
     fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
     hunt_fillers.py      short-window pass for fillers glued onto words
     retouch/             skin and teeth masks, background blur, mouth check
@@ -110,7 +116,7 @@ video-editor/
     voice/clean_voice.py measures background noise, removes it and polishes the voice
 ```
 
-`my-setup.md` holds your personal details, so keep it out of any copy you share. It's listed in `.gitignore`.
+`my-setup.md` holds your personal details. It's saved in `~/.video-editor/`, outside the skill folder, so it isn't in any copy of the skill you share.
 
 ## Licenses
 
