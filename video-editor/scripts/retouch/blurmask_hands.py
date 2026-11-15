@@ -1,12 +1,15 @@
 """Soft background mask (white = blur) with face and hand tracking, for close-framed hauls.
 
-Keeps sharp: head and hair, neck, the clothing colour set in color_keys(), skin, and a
-generous area around each tracked hand so held products stay sharp whatever their colour.
+Keeps sharp: head and hair, neck, skin, the clothing colour given as a key in retouch.json
+("blur_keys", see settings.py), and a generous area around each tracked hand so held products
+stay sharp whatever their colour. Don't edit this file for a video: put the clothing key in
+retouch.json in the folder you run this from.
 
 Usage: python -I blurmask_hands.py <source.mp4> <out.mkv> <face model> <hand model> write|test [test frames]
 "write" builds the mask (and a test sheet if frames are given); "test" stops after the last test frame.
 Works at half resolution for speed (about 0.17 s per frame on a laptop CPU).
 """
+import os
 import subprocess
 import sys
 
@@ -18,14 +21,18 @@ from mediapipe.tasks.python.vision import (
     FaceLandmarker, FaceLandmarkerOptions, HandLandmarker, HandLandmarkerOptions, RunningMode,
 )
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import settings  # noqa: E402
+
+CFG = settings.load()
 SOURCE, OUT, FACE_MODEL, HAND_MODEL = sys.argv[1:5]
 TEST = [int(x) for x in sys.argv[6:]]
 WRITE = sys.argv[5] == "write"  # "write" builds the mask; "test" stops after the last test frame
 OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379,
         378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
         162, 21, 54, 103, 67, 109]
-HAND_PAD = 60    # pixels kept around a hand, for the product it holds
-HAND_HOLD = 6    # frames to keep a hand after tracking loses it
+HAND_PAD = CFG["hand_pad"]    # pixels kept around a hand, for the product it holds
+HAND_HOLD = CFG["hand_hold"]  # frames to keep a hand after tracking loses it
 
 
 def ellipse(size):
@@ -33,15 +40,10 @@ def ellipse(size):
 
 
 def color_keys(frame, height):
-    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB).astype(np.int16)
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV).astype(np.int16)
-    lum, a, b = lab[..., 0], lab[..., 1] - 128, lab[..., 2] - 128
-    hue, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
-    # Clothing: set this for each video by sampling the top in HSV/Lab. Example: a red sweater.
-    clothing = ((hue <= 7) | (hue >= 170)) & (sat > 130) & (val > 70) & (a > 35)
-    skin = (a > 12) & (b > 12) & (lum > 90) & (sat > 50)  # tune for the speaker's skin tone
-    mask = (clothing | skin).astype(np.uint8) * 255
-    mask[: int(height * 0.45)] = 0
+    skin = CFG["blur_skin"] or {"a": [13, None], "b": [13, None], "lum": [91, None], "sat": [51, None]}
+    mask = settings.key_mask(frame, [skin] + CFG["blur_keys"]).astype(np.uint8) * 255
+    below = 0.45 if CFG["blur_keys_below"] is None else CFG["blur_keys_below"]
+    mask[: int(height * below)] = 0
     return cv2.morphologyEx(mask, cv2.MORPH_OPEN, ellipse(7))
 
 

@@ -27,7 +27,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 
 Each step works on the result of the one before. Skip the steps a video doesn't need.
 
-1. Copy the original into the work folder (Rule 2). Log footage: convert to a light copy first (`references/log.md`).
+1. Find or start the project folder and its `project.md` (Rule 2). Copy the original into it. Log footage: convert to a light copy first (`references/log.md`).
 2. Transcribe (Rule 3). Measure the voice's noise on the original (Rule 7).
 3. Decide the cuts: retakes, pauses, fillers. Build `plan.json` with `cutplan.py` (Rule 3).
 4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, grade, zooms. No text yet.
@@ -80,16 +80,18 @@ End with one line: "Ask for any of these by name, or I'll suggest what fits each
 
 List only what this file has instructions for. When a new feature is added to this file, add it to the menu in the same change.
 
-## Rule 1: Ask four questions before every edit
+## Rule 1: Four questions before the edit, one line for returning users
 
-Always ask, even if the request seems clear, unless the user already answered in the same message:
+For a new brand, or a brand whose defaults aren't saved yet, always ask, even if the request seems clear, unless the user already answered in the same message:
 
 1. Who is the video for? (Offer the brands saved in `my-setup.md`.)
 2. Where is the video going? (Instagram, TikTok, YouTube...)
 3. What do you want the viewer to do at the end?
 4. Clean cut, or extras? Ask this one once the transcript is ready (Rule 3): transcribe while the user answers questions 1 to 3, then suggest 2 or 3 extras from What I can do that fit this video, each with the moment it would go and the reason, in one or two lines. For example: "You name Glow Serum and its price at 0:12, so I could add a product tag there. You open with '3 serums I'd buy again', which would work as an animated title." Then ask which ones they want, or a clean cut. Mention once that the full menu is available if they ask.
 
-The answer to question 1 decides the branding in Rule 5. Skip any question the brand's saved defaults already answer, and say which defaults you're using.
+The answer to question 1 decides the branding in Rule 5.
+
+**Returning users get one line, not four questions.** When `my-setup.md` already answers questions 1 to 3 (the brand, its `Default platforms:` and its `Usual call to action:`), don't ask them again. Confirm in one line and start working without waiting for the reply: "Reels and TikTok for [brand], ending on 'Link in bio', your usual style. Tell me if anything's different this time." If only one brand is saved, the video is for that brand. If several are saved and the request doesn't say which, ask only that. Ask a question only where its saved answer is missing or says "ask every time", and save new answers so the next edit is shorter. Question 4 stays: once the transcript is ready, suggest extras only if something in this video stands out; if nothing does, don't ask, and go ahead with the brand's defaults.
 
 **Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), background noise or hum in the measure (voice cleaning), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
 
@@ -100,6 +102,9 @@ The answer to question 1 decides the branding in Rule 5. Skip any question the b
 - Do all the work on that copy.
 - Save each finished video under a new name, like `<original-name>-edited-reels.mp4`, in the finished-videos folder from `my-setup.md`, or next to the original. Never overwrite an existing file; add `-v2`, `-v3` instead.
 - If the user asks for a storyboard, show it and get their answers before exporting.
+- **Keep a `project.md` in the project folder**, so the edit can continue in a new conversation without redoing slow work. Start it from `<skill>/project-template.md`. Update it after every step of the Build order: what was done, the file it produced, the settings used, each choice the user made, and anything still waiting for their answer.
+- **Before starting any edit, look for the video's project folder.** If it has a `project.md`, read it, check that the files it names still exist, tell the user in one line where things stand ("The cut and retouch are done; captions and export are left"), and continue from there. Don't transcribe, cut or build masks again unless the source or the cuts changed.
+- Per-video files live in the project's build folder: `cuts.json` and `plan.json` (Rule 3), `captions.json`, and `retouch.json` (retouch and blur levels for this video). Never edit the skill's scripts for one video.
 
 **When the user gives a link instead of a file,** download it with `yt-dlp` into the project's work folder at the best available quality:
 

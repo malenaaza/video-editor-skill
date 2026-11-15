@@ -3,11 +3,12 @@
 Usage (from the folder with clean.mp4): python -I blurmask.py <face_landmarker.task> [frame numbers to test]
 With frame numbers it only writes a test sheet, bg/blurtest.png. Without, it builds bgmask.mkv.
 
-Keeps sharp: the tracked head and neck, plus anything matching color_keys(). Edit
-color_keys() for each video: sample the held object and the clothing in Lab and HSV
-on a frame first, because guessed values fail. The example key below is for a
-cardboard box (Lab a 1..9, b 4..20, hue 9..24).
+Keeps sharp: the tracked head and neck, the speaker's skin, plus anything matching the
+colour keys in retouch.json ("blur_keys", see settings.py). Don't edit this file for a video:
+sample the held object and the clothing in Lab and HSV on a frame, because guessed values
+fail, and write them as keys in retouch.json in the folder you run this from.
 """
+import os
 import subprocess
 import sys
 
@@ -21,6 +22,10 @@ from mediapipe.tasks.python.vision import (
     RunningMode,
 )
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import settings  # noqa: E402
+
+CFG = settings.load()
 MODEL = sys.argv[1]
 TEST = [int(x) for x in sys.argv[2:]]
 SOURCE = "clean.mp4"  # the clean render to build the mask from (before retouch, titles and captions)
@@ -34,15 +39,10 @@ def ellipse(size):
 
 
 def color_keys(frame, height):
-    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB).astype(np.int16)
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV).astype(np.int16)
-    lum, a, b = lab[..., 0], lab[..., 1] - 128, lab[..., 2] - 128
-    hue, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
-    skin = (a > 15) & (b > 10) & (lum > 95)  # tune for the speaker's skin tone
-    # Example extra key, a held cardboard box. Replace or add keys for each video:
-    held = (lum > 105) & (a > 1) & (a < 9) & (b > 4) & (b < 20) & (hue >= 9) & (hue <= 24) & (sat < 95)
-    mask = (skin | held).astype(np.uint8) * 255
-    mask[: int(height * 0.42)] = 0  # colour keys only count in the lower part of the frame
+    skin = CFG["blur_skin"] or {"a": [16, None], "b": [11, None], "lum": [96, None]}
+    mask = settings.key_mask(frame, [skin] + CFG["blur_keys"]).astype(np.uint8) * 255
+    below = 0.42 if CFG["blur_keys_below"] is None else CFG["blur_keys_below"]
+    mask[: int(height * below)] = 0  # colour keys only count in the lower part of the frame
     return cv2.morphologyEx(mask, cv2.MORPH_OPEN, ellipse(15))
 
 
@@ -126,7 +126,6 @@ if writer:
     writer.stdin.close()
     writer.wait()
 else:
-    import os
     os.makedirs("bg", exist_ok=True)
     cv2.imwrite("bg/blurtest.png", np.hstack(tiles))
 print("frames", n)

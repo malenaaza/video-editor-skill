@@ -87,7 +87,7 @@ It runs on your computer, so it's meant for Claude Code (the terminal, IDE exten
 
 It was developed and used on Windows 11 with an Intel laptop (Intel Arc graphics, Quick Sync), on Spanish and English videos. The NVIDIA, AMD and Apple encoder settings, CUDA transcription, and macOS / Linux commands are included but haven't been tested on real hardware yet. Every encoder is test-encoded before it's used, so a setting that doesn't work on your machine is never picked. Reports and fixes are welcome.
 
-The skin mask's colour thresholds were tuned on light-to-medium skin. The skill tells Claude to check the mask and adjust them on the first retouch for each person (see `SKIN_CR_MIN` in `scripts/retouch/mask.py`).
+The skin mask's colour thresholds were tuned on light-to-medium skin. The skill tells Claude to check the mask and adjust them on the first retouch for each person (see `skin_cr_min` in `scripts/retouch/settings.py`). Values for one video go in a `retouch.json` in that video's folder, so the scripts themselves are never edited.
 
 ## Files
 
@@ -96,6 +96,7 @@ video-editor/
   SKILL.md               the instructions Claude follows on every edit
   references/            details Claude reads only when a video needs them: setup, fillers,
                          Log footage, sound, retouch and blur, graphics, covers, brand sheet
+  project-template.md    becomes project.md in each video's folder, so an edit can continue later
   setup-template.md      becomes ~/.video-editor/my-setup.md on first use (your hardware, brands, choices)
   scripts/
     detect_setup.py      hardware, tools and encoder tests (standard library only)
@@ -104,7 +105,8 @@ video-editor/
     captions.py          writes the captions for the cut, in the brand's style
     fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
     hunt_fillers.py      short-window pass for fillers glued onto words
-    retouch/             skin and teeth masks, background blur, mouth check
+    retouch/             skin and teeth masks, background blur, mouth check; settings.py reads
+                         each video's retouch.json
     sfx/                 four small sound effects, generated with FFmpeg
     remotion/EmojiPop.tsx  animated emoji pop for Remotion
     remotion/TitleCard.tsx  animated hook title for Remotion
@@ -117,6 +119,14 @@ video-editor/
 ```
 
 `my-setup.md` holds your personal details. It's saved in `~/.video-editor/`, outside the skill folder, so it isn't in any copy of the skill you share.
+
+## Tests and changes
+
+`tests/test_skill.py` runs the cut plan, captions and filter files on a small generated clip (it needs Python, FFmpeg and numpy; the colour key test also needs OpenCV). GitHub runs it on every push. `CHANGELOG.md` lists what each update brings.
+
+```bash
+python tests/test_skill.py
+```
 
 ## Licenses
 

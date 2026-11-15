@@ -3,19 +3,23 @@ skin_strong.mkv: extra softening for close-ups, weighted by how big the face is 
 
 Usage (from the folder with the clean render): python -I mask.py <face_landmarker.task> [clean.mp4]
 
+Don't edit this file for a video. Its levels come from retouch.json in the folder you run it
+from (see settings.py for every setting and its default); with no retouch.json, the defaults.
+
 Skin is found inside the tracked face oval by colour (YCrCb red channel), with the eyes,
-brows, lips and mouth protected. SKIN_CR_MIN and LIPS_CR_MIN were tuned on one person's
+brows, lips and mouth protected. skin_cr_min and lips_cr_min were tuned on one person's
 light-to-medium skin. They will need adjusting for other skin tones: look at a test frame
-of skin.mkv, and lower SKIN_CR_MIN if parts of the face are missing from the mask, or raise it
+of skin.mkv, and lower skin_cr_min if parts of the face are missing from the mask, or raise it
 if hair or background is included.
 
-The skin area covers the face oval and, with NECK = True, the neck under the jaw.
-SKIN_CR_MAX keeps very red pixels out (a red top or scarf), which aren't skin.
+The skin area covers the face oval and, with neck true, the neck under the jaw.
+skin_cr_max keeps very red pixels out (a red top or scarf), which aren't skin.
 Close-ups: when the face is big in the frame, skin texture is magnified and the normal level
-isn't enough. skin_strong.mkv ramps from 0 (face height below CLOSE_LO of the frame height) to
-full (above CLOSE_HI), smoothed from frame to frame so it doesn't flicker. retouch.txt adds a
+isn't enough. skin_strong.mkv ramps from 0 (face height below close_lo of the frame height) to
+full (above close_hi), smoothed from frame to frame so it doesn't flicker. retouch.txt adds a
 second, stronger softening on top of the normal one where this mask allows.
 """
+import os
 import subprocess
 import sys
 
@@ -29,12 +33,16 @@ from mediapipe.tasks.python.vision import (
     RunningMode,
 )
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import settings  # noqa: E402
+
+CFG = settings.load()
 MODEL = sys.argv[1]
 SOURCE = sys.argv[2] if len(sys.argv) > 2 else "clean.mp4"
-SKIN_STRENGTH = 0.88  # 0 = no softening, 1 = full
-SKIN_CR_MIN = 139    # YCrCb red level where skin starts (see above)
-SKIN_CR_MAX = 185    # redder than this is clothing, not skin (a red top had about 224, skin 157-161)
-LIPS_CR_MIN = 146    # lips redder than this count as visible (teeth only whiten then)
+SKIN_STRENGTH = CFG["skin_strength"]
+SKIN_CR_MIN = CFG["skin_cr_min"]
+SKIN_CR_MAX = CFG["skin_cr_max"]
+LIPS_CR_MIN = CFG["lips_cr_min"]
 
 OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379,
         378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
@@ -47,8 +55,8 @@ LIPS = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0
         37, 39, 40, 185]
 MOUTH = [78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308, 415, 310, 311, 312, 13,
          82, 81, 80, 191]
-NECK = True          # also soften the neck under the jaw
-CLOSE_LO, CLOSE_HI = 0.31, 0.40  # face height (forehead 10 to chin 152) as a share of frame height
+NECK = CFG["neck"]
+CLOSE_LO, CLOSE_HI = CFG["close_lo"], CFG["close_hi"]  # face height (forehead 10 to chin 152) as a share of frame height
 JAW = [234, 93, 132, 58, 172, 136, 150, 149, 176, 148, 152, 377, 400, 378, 379, 365, 397, 288, 361, 323, 454]
 NOSE = [64, 98, 97, 2, 326, 327, 294, 278, 344, 440, 275, 4, 45, 220, 115, 48]
 

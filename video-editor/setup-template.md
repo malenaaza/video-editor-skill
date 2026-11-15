@@ -54,8 +54,8 @@ Checked on: <date>, with `scripts/detect_setup.py`
   - Skin softening: `bilateral=sigmaS=9:sigmaR=0.085`, strength 0.88
   - Teeth whitening: `eq=brightness=0.19:saturation=0.13:contrast=1.08`
   - Background blur: `gblur=sigma=7`
-  - Skin mask threshold (`SKIN_CR_MIN` in mask.py): <139, or the value that fit this person's skin>
-  - Close-up softening (`CLOSE_LO`, `CLOSE_HI` in mask.py): <0.31, 0.40 of the frame height, or the values the user chose>
+  - Skin mask threshold (`skin_cr_min` in each project's retouch.json): <139, or the value that fit this person's skin>
+  - Close-up softening (`close_lo`, `close_hi` in retouch.json): <0.31, 0.40 of the frame height, or the values the user chose>
   - Cover skin: <same as the video (it already has the close-up softening) / one step more>
 
 ## Brands
@@ -77,7 +77,8 @@ Copy this block for each brand or channel the user makes videos for.
 - Captions: <style: e.g. white text with black outline, or white on a colored box; case; position>
 - Title: <style, length on screen; still, or animated with the TitleCard template>
 - Product tag: <none / ProductTag template: side, position, colors if different from the brand's>
-- End card: <layout, call to action, contact details>
+- End card: <layout, contact details>
+- Usual call to action: <what the viewer should do at the end, e.g. "Link in bio"; or "ask every time">
 - Cover: <plain frame / with products (CoverCard)>; products <around the face / in a row>, <may overlap face and hair / kept clear>; title <above the head / below the face / none>; on the cover <nothing else / names / prices / numbers>
 - Product photos: <where to get them, in order: own photos, websites the user named (e.g. cultbeauty.co.uk, sephora.com), video frames; and the date the user was told about shop photo rights>
 - Loudness: <e.g. loudnorm=I=-14:TP=-1:LRA=11>
