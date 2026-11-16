@@ -14,6 +14,10 @@ mask.py (skin and teeth):
   skin_cr_max     redder than this is clothing, not skin (a red top had about 224, skin 157-161)
   lips_cr_min     lips redder than this count as visible (teeth only whiten then)
   neck            also soften the neck under the jaw
+  region_grow     [x, y] how far beyond the tracker's face outline to look for skin, as a multiple
+                  of the outline (default [1.35, 1.1]). On a turned face the outline of the far
+                  cheek lies well inside the real cheek; skin-coloured pixels that touch the face
+                  inside this wider area are softened too. [1, 1] switches it off.
   edge_faces      when the tracker finds no face, look for one cut in half by the frame edge
                   (see facetrack.py). On by default.
   edge_pad        share of the frame width mirrored for that search (0.5)
@@ -47,6 +51,7 @@ DEFAULTS = {
     "skin_cr_max": 185,
     "lips_cr_min": 146,
     "neck": True,
+    "region_grow": [1.35, 1.1],
     "edge_faces": True,
     "edge_pad": 0.5,
     "close_lo": 0.31,

@@ -179,6 +179,7 @@ class SkillTest(unittest.TestCase):
         os.chdir(self.dir)
         try:
             self.assertEqual(settings.load()["skin_cr_min"], 139)
+            self.assertEqual(settings.load()["region_grow"], [1.35, 1.1])
             Path("retouch.json").write_text(json.dumps({"skin_cr_min": 132}), "utf-8")
             loaded = settings.load()
             self.assertEqual((loaded["skin_cr_min"], loaded["skin_cr_max"]), (132, 185))

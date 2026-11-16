@@ -31,6 +31,9 @@ replace the folder, and put it back afterwards. The skill then moves it to
   box and red sweater keys that were built in as examples are now examples in `settings.py`.
 
 ### Fixed
+- Skin softening covers the far cheek when the head is turned: the tracker's outline ran through
+  the middle of that cheek, so its outer strip kept every freckle. `mask.py` now adds the
+  skin-coloured area that touches the face (`region_grow` in `retouch.json`).
 - Skin softening and background blur work on faces cut in half by the frame edge. In a tight
   close-up the face tracker found no face, so the mask was empty and the skin was left
   unsoftened. The scripts now retry with the visible half mirrored across the edge

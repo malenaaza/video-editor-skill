@@ -130,6 +130,19 @@ with FaceLandmarker.create_from_options(options) as tracker:
             tone = np.clip((red - SKIN_CR_MIN) / 8, 0, 1)
             tone *= np.clip((SKIN_CR_MAX - red) / 8, 0, 1)
             region = poly(shape, pts[OVAL])
+            gx, gy = CFG["region_grow"]
+            if gx > 1 or gy > 1:
+                # The outline of a turned face's far cheek lies inside the real cheek. Add the
+                # skin-coloured pixels that touch the face, within a wider area around it.
+                centre = pts[OVAL].mean(axis=0)
+                wide = poly(shape, ((pts[OVAL] - centre) * np.array([gx, gy], np.float32) + centre).astype(np.int32))
+                skin_like = ((tone > 0.5) & (wide > 0)).astype(np.uint8) * 255
+                skin_like = cv2.morphologyEx(skin_like, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
+                joined = cv2.bitwise_or(skin_like, region)
+                _, labels = cv2.connectedComponents(joined)
+                nose = labels[min(max(int(pts[1][1]), 0), shape[0] - 1), min(max(int(pts[1][0]), 0), shape[1] - 1)]
+                if nose > 0:
+                    region = ((labels == nose) * 255).astype(np.uint8)
             face_h = float(points[152][1] - points[10][1])
             if NECK:
                 # From the jaw line down about 0.75 face heights, a little wider than the jaw.
