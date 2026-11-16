@@ -1,6 +1,8 @@
 """Updates the video-editor skill to the latest version, safely. For people who don't use Git.
 
   python -I update_skill.py --check     only say whether a newer version exists
+  python -I update_skill.py --weekly    like --check, but at most once every 7 days, and silent unless an update
+                                        exists (or when offline): for a quiet reminder at the start of a session
   python -I update_skill.py             back up the installed skill, then replace it with the latest version
 
 What it does, in this order:
@@ -113,6 +115,7 @@ def latest_version_only():
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", action="store_true", help="only report whether an update exists")
+    ap.add_argument("--weekly", action="store_true", help="check at most once a week; print only if an update exists")
     ap.add_argument("--force", action="store_true", help="update even if the version is the same")
     ap.add_argument("--source", help="ZIP file, folder or web address of the latest version (default: GitHub)")
     ap.add_argument("--skill-dir", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -121,6 +124,23 @@ def main():
     a = ap.parse_args()
     skill_dir = Path(a.skill_dir)
     installed = read_version(skill_dir)
+
+    if a.weekly:
+        stamp_file = Path(a.settings_dir) / "last-update-check"
+        try:
+            if time.time() - float(stamp_file.read_text(encoding="utf-8").strip()) < 7 * 24 * 3600:
+                return  # checked recently: say nothing
+        except (OSError, ValueError):
+            pass
+        try:
+            latest = read_version(fetch_latest(a.source, tempfile.mkdtemp())[0]) if a.source else latest_version_only()
+        except OSError:
+            return  # offline or GitHub unreachable: say nothing, try again next time
+        stamp_file.parent.mkdir(parents=True, exist_ok=True)
+        stamp_file.write_text(str(time.time()), encoding="utf-8")
+        if latest and (installed is None or is_newer(latest, installed)):
+            print(f"A newer version of the video-editor skill is available ({installed or 'unknown'} -> {latest}).")
+        return
 
     try:
         if a.check:

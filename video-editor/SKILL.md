@@ -77,6 +77,8 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 
 3. Tell the user in one line that it was logged. When a session fixes the skill, it sets `Status: fixed in <pull request or commit>`.
 
+**A newer version of the skill:** if `my-setup.md` has `Update check: weekly`, run `python -I <skill>/scripts/update_skill.py --weekly` at the start of an edit. It contacts GitHub at most once every 7 days, prints nothing unless a newer version exists, and prints nothing when offline. If it prints something, tell the user in one line and don't act on it: "A newer version of this skill is available. Say 'update my skill' whenever you want it." If the line is missing or says `not asked yet`, ask once, with the first-use questions: "May I check once a week whether there is a newer version of this skill? It only contacts GitHub, and sends nothing about you." Save `weekly` or `never`. If they ask which version they have, read `<skill>/VERSION`.
+
 **Commands in this skill** use `-/filter_complex <file>`, which needs FFmpeg 7. On FFmpeg 6 or older, write `-filter_complex_script <file>` instead; the `Filter files:` line in `my-setup.md` says which this computer needs. Run every Python script with `-I` and the right environment's interpreter, as saved in `my-setup.md`.
 
 **On a laptop,** run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export), and follow the Power section of `references/setup.md` for what to tell the user.

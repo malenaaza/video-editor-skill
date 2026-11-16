@@ -43,6 +43,9 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - Raw footage: `<folder, or "wherever the user points">`
 - Finished videos: `<folder, or "next to the original">`
 
+## Updates
+- Update check: <not asked yet / weekly / never>: whether to check once a week for a newer version of the skill (`update_skill.py --weekly`; it only contacts GitHub)
+
 ## Languages
 - Spoken in videos: <e.g. English, Spanish>
 

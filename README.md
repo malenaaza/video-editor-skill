@@ -71,7 +71,7 @@ Ask Claude Code:
 
 > Update my video-editor skill.
 
-It checks whether a newer version exists, makes a backup of the one you have, installs the new one, and tells you what's new. No Git, no copying folders. Do it every few weeks, then start a new Claude Code session so it reads the new version.
+It checks whether a newer version exists, makes a backup of the one you have, installs the new one, and tells you what's new. If you allow it (it asks once), Claude also checks once a week and tells you in one line when there is a new version; it only contacts GitHub and sends nothing about you. No Git, no copying folders. Do it every few weeks, then start a new Claude Code session so it reads the new version.
 
 - **Your settings are safe.** They live in `~/.video-editor/my-setup.md`, outside the skill folder, and an update never touches them. Each video's own settings (`retouch.json`) are in that video's folder, so they are never touched either.
 - **Please don't edit the skill's own files.** Preferences go in your settings, and Claude saves them there when you ask for a change ("less blur", "always put my logo here"). If you do change a skill file, an update replaces it, but your version is kept in the backup (`~/.video-editor/backups/`) and Claude tells you which files it replaced.

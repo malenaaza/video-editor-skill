@@ -541,6 +541,19 @@ class SkillTest(unittest.TestCase):
         self.assertIn("An update is available", self._update(old_skill, old_home, "--check").stdout)
         self.assertEqual((old_skill / "VERSION").read_text("utf-8").strip(), "1.0.0")  # --check changes nothing
 
+    def test_37_weekly_check_is_quiet_unless_there_is_news(self):
+        home, skill = self._installed_copy("upd5", version="1.0.0")
+        first = self._update(skill, home, "--weekly").stdout
+        self.assertIn("newer version", first)
+        self.assertEqual(self._update(skill, home, "--weekly").stdout.strip(), "")        # checked today: silent
+        stamp = home / "settings" / "last-update-check"
+        stamp.write_text("0", "utf-8")                                                      # a long time ago
+        self.assertIn("newer version", self._update(skill, home, "--weekly").stdout)
+        current_home, current = self._installed_copy("upd6", version="2.0.0")
+        self.assertEqual(self._update(current, current_home, "--weekly").stdout.strip(), "")  # up to date: silent
+        self.assertEqual((skill / "VERSION").read_text("utf-8").strip(), "1.0.0")            # a check changes nothing
+        self.assertFalse((home / "backups").exists())
+
     def test_36_update_refuses_to_touch_a_repository(self):
         home = self.dir / "upd4"
         clone = home / "clone"

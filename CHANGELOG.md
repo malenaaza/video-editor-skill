@@ -10,6 +10,9 @@ What each update of the video-editor skill brings. Newest first.
   older version kept inside the skill folder to `~/.video-editor/`, installs the latest version, and
   restores the old one if anything fails. It reports which files had been changed by hand, and never
   touches a skill that is linked to a Git repository. This is version 2.0.0 (`video-editor/VERSION`).
+- An optional weekly reminder: with `Update check: weekly` in `my-setup.md` (asked once), a session
+  starts by checking quietly whether a newer version exists (`update_skill.py --weekly`), at most
+  once every 7 days, and says one line if so.
 - Problems the user notices while editing ("the skin looks bad at 3:32") are logged in
   `~/.video-editor/skill-issues.md` with the saved frame, the step and the settings in force, so
   the skill can be fixed later from the log and not from memory. `CLAUDE.md` tells a fixing session

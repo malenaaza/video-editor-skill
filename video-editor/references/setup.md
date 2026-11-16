@@ -20,6 +20,8 @@ The first only says whether a newer version exists (the `VERSION` file). The sec
 - If it can't reach the internet, say so and that nothing was changed.
 - Tell the user to start a new session so the new instructions are read.
 
+If `my-setup.md` says `Update check: weekly`, the skill also checks quietly once a week at the start of an edit and mentions a newer version in one line (`update_skill.py --weekly`). It asks permission once. Say "update my skill" to get it.
+
 Never edit the skill's own files to apply a user's preference: those go in `my-setup.md` and in each video's `retouch.json`, which an update never touches.
 
 ## Installing
