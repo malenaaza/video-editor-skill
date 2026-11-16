@@ -27,7 +27,7 @@ def main():
     parts = []  # (name, mask file, eq filter)
     if cfg["glow"] > 0:
         g = cfg["glow"]
-        parts.append(("glow", "skin.mkv", f"eq=brightness={g:.4f}:gamma={1 + g * 1.2:.4f}:saturation=1.02"))
+        parts.append(("glow", "skin.mkv", f"eq=brightness={g:.4f}:gamma={1 + g * 1.2:.4f}"))
     if cfg["under_eye"] > 0:
         u = cfg["under_eye"]
         parts.append(("under", "undereye.mkv", f"eq=brightness={u:.4f}:saturation=0.96"))
