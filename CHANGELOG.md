@@ -31,6 +31,9 @@ replace the folder, and put it back afterwards. The skill then moves it to
   box and red sweater keys that were built in as examples are now examples in `settings.py`.
 
 ### Fixed
+- Products held up in the hand stay sharp when they stick out past the fingers: the area kept
+  sharp around a hand is larger (`hand_pad` 120 instead of 60; the top of a lipstick was being
+  blurred).
 - The skin around the eyebrows and on the lid below them is smoothed like the rest of the face.
   The brows are protected by their own dark hairs instead of a 25 px margin around the whole
   brow, and the margin around the eyes is 15 px (`brow_mode`, `brow_contrast`, `protect_eyes` in

@@ -38,7 +38,9 @@ blurmask.py and blurmask_hands.py (background blur):
                   Sample the object on a frame in Lab and HSV first; guessed values fail.
   blur_keys_below colour keys only count below this share of the frame height
                   (null = each script's own default: 0.42, or 0.45 with hands)
-  hand_pad        pixels kept sharp around a tracked hand, for the product it holds
+  hand_pad        pixels kept sharp around a tracked hand, for the product it holds (default 120;
+                  60 blurred the top of a lipstick held up above the fingers). Raise it for products
+                  that stick out far past the fingers (180 kept a whole tube sharp).
   hand_hold       frames to keep a hand after tracking loses it
 
 A colour key is a set of ranges, all of which must match. Each range is [low, high], both
@@ -71,7 +73,7 @@ DEFAULTS = {
     "blur_skin": None,
     "blur_keys": [],
     "blur_keys_below": None,
-    "hand_pad": 60,
+    "hand_pad": 120,
     "hand_hold": 6,
 }
 CHANNELS = ("lum", "a", "b", "hue", "sat", "val")
