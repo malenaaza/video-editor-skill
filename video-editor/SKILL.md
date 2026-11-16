@@ -1,6 +1,6 @@
 ---
 name: video-editor
-description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, noise removal and voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack.
+description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, noise removal and voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack. Also use it when the user asks to update, upgrade or check the version of this skill, in any language (for example "update my video-editor skill", "actualiza mi skill", "¿hay una versión nueva de la skill?").
 ---
 
 # Video Editor
@@ -14,7 +14,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 
 | When | Read |
 |---|---|
-| First setup, installing a tool, a long job on a laptop | `references/setup.md` |
+| First setup, installing a tool, a long job on a laptop, **updating the skill** ("update my skill") | `references/setup.md` |
 | The user wants fillers ("um", hums, repeats) removed, or handling noise fills the pauses | `references/fillers.md` |
 | Log footage (flat, grey picture; Apple Log, S-Log...) | `references/log.md` |
 | Noise removal, voice polish, two voices, joining clips to one loudness, sound effects | `references/sound.md` |
@@ -38,6 +38,8 @@ Each step works on the result of the one before. Skip the steps a video doesn't 
 9. Final export, checks, and the ready-to-post pack (Rules 6, 10, 11).
 
 ## Rule 0: Know the computer and the user
+
+**Answer in the language the user writes in** (Spanish, English, any other), including questions, reports, menus and the update report. Commands, file names and settings keep their names.
 
 Read `~/.video-editor/my-setup.md` before every edit. It holds this user's hardware, encoders, tool paths, folders, brands and style choices, and it overrides the defaults in this file.
 
@@ -76,6 +78,8 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 ```
 
 3. Tell the user in one line that it was logged. When a session fixes the skill, it sets `Status: fixed in <pull request or commit>`.
+
+**A newer version of the skill:** if `my-setup.md` has `Update check: weekly`, run `python -I <skill>/scripts/update_skill.py --weekly` at the start of an edit. It contacts GitHub at most once every 7 days, prints nothing unless a newer version exists, and prints nothing when offline. If it prints something, tell the user in one line and don't act on it: "A newer version of this skill is available. Say 'update my skill' whenever you want it." If the line is missing or says `not asked yet`, ask once, with the first-use questions: "May I check once a week whether there is a newer version of this skill? It only contacts GitHub, and sends nothing about you." Save `weekly` or `never`. If they ask which version they have, read `<skill>/VERSION`.
 
 **Commands in this skill** use `-/filter_complex <file>`, which needs FFmpeg 7. On FFmpeg 6 or older, write `-filter_complex_script <file>` instead; the `Filter files:` line in `my-setup.md` says which this computer needs. Run every Python script with `-I` and the right environment's interpreter, as saved in `my-setup.md`.
 

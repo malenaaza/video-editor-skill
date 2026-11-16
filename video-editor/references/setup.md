@@ -2,6 +2,28 @@
 
 Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rule numbers refer to SKILL.md.
 
+## Updating the skill
+
+Most users don't know Git, so updating is done by this skill. When the user asks to update, upgrade or get the latest version of the skill (or says it's out of date), in any language ("actualiza mi skill", "¿hay una versión nueva?"), run it, and give the report in the language they used:
+
+```
+python -I <skill>/scripts/update_skill.py --check
+python -I <skill>/scripts/update_skill.py
+```
+
+The first only says whether a newer version exists (the `VERSION` file). The second backs up the whole installed skill to `~/.video-editor/backups/`, moves a `my-setup.md` that an older version kept inside the skill folder to `~/.video-editor/`, replaces the skill with the latest version, and restores the old one if anything fails. Then:
+
+- Tell the user, in plain words and their language, the new version and what's new, from the changelog it prints. Don't paste the changelog.
+- If it lists files the user had changed by hand, say that the update replaced them, and that their versions are in the backup folder it names. Offer to put a change back if they want it.
+- If it says it can't tell whether files were changed (the skill wasn't installed by this updater before), say so once.
+- If it says the skill is linked to a repository, nothing was changed: that setup is updated with `git pull`. Tell the user and stop.
+- If it can't reach the internet, say so and that nothing was changed.
+- Tell the user to start a new session so the new instructions are read.
+
+If `my-setup.md` says `Update check: weekly`, the skill also checks quietly once a week at the start of an edit and mentions a newer version in one line (`update_skill.py --weekly`). It asks permission once. Say "update my skill" to get it.
+
+Never edit the skill's own files to apply a user's preference: those go in `my-setup.md` and in each video's `retouch.json`, which an update never touches.
+
 ## Installing
 
 Ask before installing anything. Use the system's package manager.
