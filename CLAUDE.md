@@ -27,4 +27,8 @@ Two kinds of session use this repo. Keep them apart so they never overwrite each
 8. **Releases:** `video-editor/VERSION` is the number users compare with. Raise it when a change should reach
    users (a fix, a new tool), in the same change as the code, so "update my skill" notices it. People install from `main`,
    so only merge what is ready for them.
-9. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code.
+9. **Users' bugs and ideas arrive as GitHub issues** (labels `bug` and `enhancement`, from `scripts/report.py` or the issue
+   templates). When asked what to work on, read the open issues. Reports from users have no frames or personal data; if a
+   problem needs one, ask the user who sent it to share it themselves. A fix goes in a pull request whose description says
+   `Fixes #<issue>`, and raises `VERSION`, so the reporter gets it with "update my skill".
+10. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code.

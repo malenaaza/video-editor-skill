@@ -106,6 +106,7 @@ video-editor/
   references/            details Claude reads only when a video needs them: setup, fillers,
                          Log footage, sound, retouch and blur, graphics, covers, brand sheet
   project-template.md    becomes project.md in each video's folder, so an edit can continue later
+  support.json           where reports go: the GitHub page and, if set, an email address
   setup-template.md      becomes ~/.video-editor/my-setup.md on first use (your hardware, brands, choices)
   scripts/
     detect_setup.py      hardware, tools and encoder tests (standard library only)
@@ -115,6 +116,8 @@ video-editor/
     drops.py             second pass: removes fillers, held sounds and pauses from a finished cut
     heldsounds.py        finds held sounds ("deeee") that a filler pass misses
     asr.py, hear.py      one interface for both Whisper engines; transcribes short pieces alone
+    report.py            turns a problem or idea into a report for the author (GitHub link or email)
+    update_skill.py      updates the skill safely, with a backup
     fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
     hunt_fillers.py      short-window pass for fillers glued onto words
     retouch/             skin and teeth masks, beautify extras, background blur, mouth check;
@@ -132,6 +135,12 @@ video-editor/
 ```
 
 `my-setup.md` holds your personal details. It's saved in `~/.video-editor/`, outside the skill folder, so it isn't in any copy of the skill you share.
+
+## Found a bug, or have an idea?
+
+Tell Claude, in your own words: "the skin looks bad at 3:32", "I wish it could add music". It keeps a note on your computer, and offers to send it to the author. If you say yes, it writes a short report (with no names, personal folders, frames or videos), shows it to you, and gives you a link that opens it on GitHub, already filled in: you just click Submit (you need a free GitHub account). If an email address is set, you can send it by email instead.
+
+Fixes and new ideas reach you when you update: "Update my video-editor skill" (or "Actualiza mi skill").
 
 ## Tests and changes
 

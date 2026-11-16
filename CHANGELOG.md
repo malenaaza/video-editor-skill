@@ -2,7 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
-## 2026-11-17
+## 2026-11-17 · version 2.1.0
+
+### New
+- Users can send bugs and ideas to the author. When a user says something looks wrong, or wishes the
+  skill did something it doesn't, Claude offers to send it: `scripts/report.py` writes a report in the
+  user's language, adds the skill version and system, removes the home path and user name, saves it in
+  `~/.video-editor/reports/`, and prints a link that opens a GitHub issue already filled in (and an email
+  link if `video-editor/support.json` has an address). Nothing is sent without the user, and frames or
+  videos are never included. New GitHub issue templates for bugs and ideas.
+
+## 2026-11-17 · version 2.0.0
 
 ### New
 - Updating without Git: say "update my video-editor skill" and `scripts/update_skill.py` checks the
