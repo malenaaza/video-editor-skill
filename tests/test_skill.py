@@ -560,6 +560,25 @@ class SkillTest(unittest.TestCase):
         for phrase in ("update", "actualiza", "version"):
             self.assertIn(phrase, description)
 
+    def test_39_reports_remove_personal_details_and_build_links(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import report
+        home, user = "C:\\Users\\maria", "maria"
+        details = "Saw: the skin is not soft at 3:32.\nFile: C:\\Users\\maria\\video-work\\clip\\skin.mkv\nAsked by Maria."
+        title, body, links = report.build("bug", "Skin not softened", details,
+                                          {"github_repo": "owner/repo", "email": ""}, home=home, user=user)
+        self.assertNotIn("maria", body.lower())
+        self.assertIn("~\\video-work", body)
+        self.assertIn("Skill version", body)
+        self.assertTrue(title.startswith("[Bug] "))
+        self.assertIn("https://github.com/owner/repo/issues/new?template=bug.md", links["github"])
+        self.assertNotIn("email", links)                        # no address set: no email link
+        _, _, with_email = report.build("idea", "Music", "a long idea " * 1000, {"github_repo": "owner/repo", "email": "a@b.c"},
+                                        home=home, user=user)
+        self.assertTrue(with_email["email"].startswith("mailto:a@b.c?subject="))
+        self.assertIn("template=improvement.md", with_email["github"])
+        self.assertLess(len(with_email["github"]), 30000)       # very long reports are cut in the link
+
     def test_36_update_refuses_to_touch_a_repository(self):
         home = self.dir / "upd4"
         clone = home / "clone"
