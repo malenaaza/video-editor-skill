@@ -151,21 +151,34 @@ with FaceLandmarker.create_from_options(options) as tracker:
                 low[:, 0] = jaw[:, 0].mean() + (low[:, 0] - jaw[:, 0].mean()) * 1.05
                 low[:, 1] += face_h * 0.75
                 cv2.fillPoly(region, [cv2.convexHull(np.vstack([jaw, low]).astype(np.int32))], 255)
-            protect = np.zeros(shape, np.uint8)
-            for group in (EYE_L, EYE_R, LIPS, MOUTH):
-                hull = cv2.convexHull(pts[group])
-                cv2.fillConvexPoly(protect, hull, 255)
-            protect = cv2.dilate(protect, kernel)
-            brows = np.zeros(shape, np.uint8)
-            for group in (BROW_L, BROW_R):
-                cv2.fillConvexPoly(brows, cv2.convexHull(pts[group]), 255)
-            brow_size = int(CFG["protect_brows"])
-            if brow_size > 1:
-                brows = cv2.dilate(brows, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (brow_size, brow_size)))
-            protect = cv2.bitwise_or(protect, brows)
+            def hulls(groups):
+                canvas = np.zeros(shape, np.uint8)
+                for group in groups:
+                    cv2.fillConvexPoly(canvas, cv2.convexHull(pts[group]), 255)
+                return canvas
+
+            def grow(canvas, size):
+                if size <= 1:
+                    return canvas
+                return cv2.dilate(canvas, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size)))
+
+            protect = cv2.dilate(hulls((LIPS, MOUTH)), kernel)
+            protect = cv2.bitwise_or(protect, grow(hulls((EYE_L, EYE_R)), int(CFG["protect_eyes"])))
+            brow_area = hulls((BROW_L, BROW_R))
+            hair_keep = None
+            if CFG["brow_mode"] == "hair":
+                # Protect only the dark brow hairs. The skin between and around them is smoothed.
+                zone = grow(brow_area, 21) > 0
+                darker = cv2.GaussianBlur(luma, (0, 0), 10) - luma > CFG["brow_contrast"]
+                hair = grow(((darker & zone).astype(np.uint8)) * 255, 5)
+                hair_keep = cv2.GaussianBlur(hair.astype(np.float32) / 255, (0, 0), 1.2)
+            else:
+                protect = cv2.bitwise_or(protect, grow(brow_area, int(CFG["protect_brows"])))
             mask = (region.astype(np.float32) / 255) * tone
             mask *= 1 - protect.astype(np.float32) / 255
             mask = cv2.GaussianBlur(mask, (0, 0), 9)
+            if hair_keep is not None:
+                mask *= 1 - hair_keep
             skin = np.clip(mask * SKIN_STRENGTH * 255, 0, 255).astype(np.uint8)
             target = min(max((face_h / height - CLOSE_LO) / (CLOSE_HI - CLOSE_LO), 0.0), 1.0)
             weight = weight * 0.85 + target * 0.15

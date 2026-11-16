@@ -18,8 +18,14 @@ mask.py (skin and teeth):
                   of the outline (default [1.35, 1.1]). On a turned face the outline of the far
                   cheek lies well inside the real cheek; skin-coloured pixels that touch the face
                   inside this wider area are softened too. [1, 1] switches it off.
-  protect_brows   size in pixels of the untouched margin around each eyebrow (default 15; the eyes,
-                  lips and mouth keep 25). Smaller softens the skin closer to the brow.
+  brow_mode       "hair" (default): protect only the dark brow hairs, so the skin between and
+                  around them is smoothed like the rest of the face. "margin": leave a margin of
+                  protect_brows pixels around the whole brow, as the eyes and lips have.
+  brow_contrast   how much darker than its surroundings a pixel must be to count as brow hair
+                  in "hair" mode (luma levels, default 14). Lower it if fine or pale hairs get
+                  smoothed; raise it if skin texture near the brows is being kept.
+  protect_brows   the margin in pixels for brow_mode "margin" (default 15)
+  protect_eyes    the margin in pixels around the eyes (default 15). Lips and mouth keep 25.
   edge_faces      when the tracker finds no face, look for one cut in half by the frame edge
                   (see facetrack.py). On by default.
   edge_pad        share of the frame width mirrored for that search (0.5)
@@ -54,7 +60,10 @@ DEFAULTS = {
     "lips_cr_min": 146,
     "neck": True,
     "region_grow": [1.35, 1.1],
+    "brow_mode": "hair",
+    "brow_contrast": 14,
     "protect_brows": 15,
+    "protect_eyes": 15,
     "edge_faces": True,
     "edge_pad": 0.5,
     "close_lo": 0.31,
