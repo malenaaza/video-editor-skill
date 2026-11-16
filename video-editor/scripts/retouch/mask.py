@@ -152,10 +152,17 @@ with FaceLandmarker.create_from_options(options) as tracker:
                 low[:, 1] += face_h * 0.75
                 cv2.fillPoly(region, [cv2.convexHull(np.vstack([jaw, low]).astype(np.int32))], 255)
             protect = np.zeros(shape, np.uint8)
-            for group in (EYE_L, EYE_R, BROW_L, BROW_R, LIPS, MOUTH):
+            for group in (EYE_L, EYE_R, LIPS, MOUTH):
                 hull = cv2.convexHull(pts[group])
                 cv2.fillConvexPoly(protect, hull, 255)
             protect = cv2.dilate(protect, kernel)
+            brows = np.zeros(shape, np.uint8)
+            for group in (BROW_L, BROW_R):
+                cv2.fillConvexPoly(brows, cv2.convexHull(pts[group]), 255)
+            brow_size = int(CFG["protect_brows"])
+            if brow_size > 1:
+                brows = cv2.dilate(brows, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (brow_size, brow_size)))
+            protect = cv2.bitwise_or(protect, brows)
             mask = (region.astype(np.float32) / 255) * tone
             mask *= 1 - protect.astype(np.float32) / 255
             mask = cv2.GaussianBlur(mask, (0, 0), 9)

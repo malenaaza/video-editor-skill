@@ -29,7 +29,7 @@ ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -i skin_strong.mkv -/filter_complex
 
 Default levels are in `my-setup.md`. If the user asks for more or less, change one step at a time and save it. To change only the skin strength without rebuilding masks, scale the skin mask in the filter: `format=gray,lut=y='min(val*1.13,255)'`.
 
-The mask protects the eyes, brows, lips and mouth, and only whitens teeth while the lips are visible, so objects passing the mouth aren't touched. Compare close-ups before and after, including a frame where teeth show. Say so if braces or shadows limit the result. Report how many frames had no face detected.
+The mask protects the eyes, brows, lips and mouth (the brows with a narrower margin, `protect_brows`, default 15 px: a wide margin left a ring of untouched skin around each brow next to smoothed forehead; lower it for skin smoother right up to the hairs, raise it if brow hairs look softened), and only whitens teeth while the lips are visible, so objects passing the mouth aren't touched. Compare close-ups before and after, including a frame where teeth show. Say so if braces or shadows limit the result. Report how many frames had no face detected.
 
 **Neck and clothing:** the skin area includes the neck under the jaw (`neck`, on by default); a softened face over an untouched neck looks odd. `skin_cr_max` keeps very red pixels out, so a red top or scarf isn't softened. Check one frame of `skin.mkv` that shows the neck and the top.
 
