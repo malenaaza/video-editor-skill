@@ -409,7 +409,79 @@ class SkillTest(unittest.TestCase):
         finally:
             os.chdir(here)
 
-    def test_29_docs_point_to_files_that_exist(self):
+    def test_30_beautify_presets_and_overrides(self):
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import settings
+        here = os.getcwd()
+        os.chdir(self.dir)
+        try:
+            Path("retouch.json").write_text(json.dumps({"beautify": "light", "skin_strength": 0.3}), "utf-8")
+            loaded = settings.load()
+            self.assertEqual((loaded["glow"], loaded["skin_strength"]), (0.012, 0.3))  # the file wins over the preset
+            Path("retouch.json").write_text(json.dumps({"beautify": "heavy"}), "utf-8")
+            with self.assertRaises(SystemExit):
+                settings.load()
+            Path("retouch.json").write_text(json.dumps({"beautify": "off"}), "utf-8")
+            self.assertEqual(settings.load()["glow"], 0.0)
+            Path("retouch.json").unlink()
+        finally:
+            os.chdir(here)
+
+    def test_31_beautify_filter_runs(self):
+        folder = self.dir / "beauty"
+        folder.mkdir(exist_ok=True)
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=s=320x240:r={FPS}:d=0.5", "-c:v", "libx264",
+             "-preset", "ultrafast", "retouched.mp4"], cwd=folder)
+        for name in ("skin", "undereye", "eyewhite"):
+            run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color=gray:s=320x240:r={FPS}:d=0.5", "-pix_fmt", "gray",
+                 "-c:v", "ffv1", f"{name}.mkv"], cwd=folder)
+        (folder / "retouch.json").write_text(json.dumps({"beautify": "off"}), "utf-8")
+        self.assertIn("Nothing to add", script("retouch/beautify.py", cwd=folder))
+        self.assertFalse((folder / "beautify.txt").exists())
+        (folder / "retouch.json").write_text(json.dumps({"beautify": "medium"}), "utf-8")
+        out = script("retouch/beautify.py", cwd=folder)
+        self.assertIn("glow, under, white", out)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "retouched.mp4", "-i", "skin.mkv", "-i", "undereye.mkv", "-i", "eyewhite.mkv",
+             filter_flag(), "beautify.txt", "-map", "[v]", "-frames:v", "5", "-c:v", "libx264", "-preset", "ultrafast",
+             "beautified.mp4"], cwd=folder)
+        (folder / "retouch.json").write_text(json.dumps({"glow": 0.02}), "utf-8")
+        script("retouch/beautify.py", cwd=folder)
+        self.assertNotIn("undereye", (folder / "beautify.txt").read_text("utf-8"))  # only the extras that are on
+
+    def test_32_eye_masks_sit_where_they_should(self):
+        try:
+            import cv2  # noqa: F401
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV not installed")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import beauty
+        pts = np.full((478, 2), 50.0, np.float32)
+        for k, eye in enumerate(beauty.EYES):
+            cx = 60.0 + 100 * k
+            for j, i in enumerate(beauty.EYE_OUTLINE[k]):              # the eye opening: an ellipse
+                angle = 2 * np.pi * j / len(beauty.EYE_OUTLINE[k])
+                pts[i] = (cx + 20 * np.cos(angle), 60 + 5 * np.sin(angle))
+            for j, i in enumerate(eye["lower"]):                        # then the lower lid, left to right
+                pts[i] = (cx - 20 + 5 * j, 64 - 0.15 * (j - 4) ** 2 + 2)
+            pts[eye["corners"][0]], pts[eye["corners"][1]] = (cx - 20, 60), (cx + 20, 60)
+            pts[eye["iris"][0]] = (cx, 60)
+            for j, i in enumerate(eye["iris"][1:]):
+                pts[i] = (cx + 4 * np.cos(j * np.pi / 2), 60 + 4 * np.sin(j * np.pi / 2))
+        shape = (120, 260)
+        under = beauty.under_eye(pts, shape)
+        self.assertGreater(int(under[72, 60]), 100)            # just below the first eye
+        self.assertLess(int(under[60, 60]), 10)                # not inside the eye (a faint soft edge is fine)
+        self.assertEqual(int(under[10, 60]), 0)                # nothing far above
+        self.assertGreater(int(under[72, 160]), 100)           # the second eye too
+        frame = np.full((120, 260, 3), 200, np.uint8)
+        luma = np.full(shape, 200, np.float32)
+        luma[56:64, 50:70] = 40                                # a dark iris
+        white = beauty.eye_whites(frame, luma, pts, shape)
+        self.assertEqual(white.shape, shape)
+        self.assertEqual(int(white[60, 60]), 0)                # the iris is never whitened
+
+    def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
             self.assertTrue((ROOT / ref).exists(), ref)

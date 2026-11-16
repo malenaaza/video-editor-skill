@@ -31,7 +31,7 @@ Each step works on the result of the one before. Skip the steps a video doesn't 
 2. Transcribe (Rule 3). Measure the voice's noise on the original (Rule 7).
 3. Decide the cuts: retakes, pauses, fillers. Build `plan.json` with `cutplan.py` (Rule 3).
 4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, grade, zooms. No text yet. (If the grade changes later, build masks on the render the colour keys were sampled on: `references/retouch.md`.)
-5. Retouch and background blur on `clean.mp4`, giving `retouched.mp4` (Rule 9).
+5. Retouch and background blur on `clean.mp4`, giving `retouched.mp4`; then, if the brand uses beautify, `beautify.py` on it (Rule 9).
 6. Text and graphics, in this layer order: title, product tags, emojis, captions and handle, end card.
 7. Sound: clean the cut voice, level it, mix in sound effects (Rule 7).
 8. Second pass, if fillers or held sounds were found in the joined voice: `drops.py`, which cuts picture and voice together with no mask rebuild (`references/fillers.md`).
@@ -73,7 +73,7 @@ New users don't know what's possible, so tell them. Show this menu at the end of
 
 - **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · speed up delivery slightly · split one long recording into several videos
 - **Text and graphics:** captions in your brand's style · animated title · product name and price tag · animated emojis on words · your handle and logo · end card
-- **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
+- **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
 - **Ready to post:** vertical and wide versions · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
 
@@ -178,10 +178,11 @@ Check in this order:
 5. If the brand's `Look:` lines are empty, ask **once**, after transcription so you have their footage. These are hard to judge from words, so show before/after frames from their own video, side by side, each labeled:
    - **Color:** natural (no grade), or a gentle boost (`eq=contrast=1.06:saturation=1.15:gamma=1.02`) for footage that looks dull indoors. Skip this for Log footage, which gets only its LUT (Rule 6).
    - **Skin softening:** never, only when asked, or on every video. Show it on a face close-up at the default level.
+   - **Beautify:** off, light, medium or strong (a bit more smoothing, a soft glow, brighter under-eyes and eye whites; no makeup, no reshaping). Show a frame at each level. Suggest `off` or `light` if the brand reviews base products or skincare (`references/retouch.md`).
    - **Teeth whitening:** never, or only when asked.
    - **Background blur:** never, only when asked, or on every video. Show the default `gblur=sigma=7`.
 
-   Ask in one message, for example: "Here's how your video looks with each option. For [brand], which should I use by default? (1) Color: natural or boosted. (2) Skin softening: never, on every video, or only when you ask. (3) Teeth whitening: never or only when you ask. (4) Background blur: never, on every video, or only when you ask." Save the answers in the brand's `Look:` lines. Defaults set to "every video" are applied without asking again; "only when asked" waits for the user. If they want more or less of something, adjust one step at a time and save the new level.
+   Ask in one message, for example: "Here's how your video looks with each option. For [brand], which should I use by default? (1) Color: natural or boosted. (2) Skin softening: never, on every video, or only when you ask. (3) Beautify: off, light, medium or strong. (4) Teeth whitening: never or only when you ask. (5) Background blur: never, on every video, or only when you ask." Save the answers in the brand's `Look:` lines. Defaults set to "every video" are applied without asking again; "only when asked" waits for the user. If they want more or less of something, adjust one step at a time and save the new level.
 
    Show frames on a small sample (a few seconds, or single frames) rather than rendering the whole video. Building masks for the full video is slow, so don't run it before they've chosen.
 
@@ -232,7 +233,7 @@ Apply the color choice from the brand's `Look:` lines in the clean render. If th
 
 All of these run when the brand's settings in `my-setup.md` say "every video", or when the user asks. Each has its own reference file with the steps, tested levels and checks. Read it before starting.
 
-- **Skin softening and teeth whitening:** face-tracked masks on `clean.mp4`, underneath the text so text stays sharp. Include the tightest close-up in the before/after frames: a face cut by the frame edge needs the edge fallback described in `references/retouch.md`.
+- **Skin softening, light beautify and teeth whitening:** face-tracked masks on `clean.mp4`, underneath the text so text stays sharp. Include the tightest close-up in the before/after frames: a face cut by the frame edge needs the edge fallback described in `references/retouch.md`.
 - **Background blur:** a mask that keeps the speaker and held products sharp. Offer it before any request to replace a background, which is far slower and fails on moving objects. `references/retouch.md`.
 - **Animated title, product tag, emojis:** `references/graphics.md`. Never guess a price, and don't ask the user for emoji files.
 - **Sound effects:** `references/sound.md`. Don't ask the user for sound files.

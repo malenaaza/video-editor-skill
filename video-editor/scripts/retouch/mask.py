@@ -36,6 +36,7 @@ from mediapipe.tasks.python.vision import (
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import settings  # noqa: E402
 from facetrack import EdgeFace  # noqa: E402
+import beauty  # noqa: E402
 
 CFG = settings.load()
 MODEL = sys.argv[1]
@@ -83,6 +84,8 @@ fps = capture.get(cv2.CAP_PROP_FPS) or 24
 skin_out = writer("skin.mkv", width, height, fps)
 teeth_out = writer("teeth.mkv", width, height, fps)
 strong_out = writer("skin_strong.mkv", width, height, fps)
+under_out = writer("undereye.mkv", width, height, fps) if CFG["under_eye"] > 0 else None
+white_out = writer("eyewhite.mkv", width, height, fps) if CFG["eye_white"] > 0 else None
 weight = 0.0  # smoothed close-up weight
 
 options = FaceLandmarkerOptions(
@@ -109,6 +112,8 @@ with FaceLandmarker.create_from_options(options) as tracker:
         skin = np.zeros(shape, np.uint8)
         teeth = np.zeros(shape, np.uint8)
         strong = np.zeros(shape, np.uint8)
+        under = np.zeros(shape, np.uint8)
+        white = np.zeros(shape, np.uint8)
         points = None
         if result.face_landmarks:
             points = np.array(
@@ -183,6 +188,10 @@ with FaceLandmarker.create_from_options(options) as tracker:
             target = min(max((face_h / height - CLOSE_LO) / (CLOSE_HI - CLOSE_LO), 0.0), 1.0)
             weight = weight * 0.85 + target * 0.15
             strong = np.clip(mask * weight * 255, 0, 255).astype(np.uint8)
+            if under_out is not None:
+                under = beauty.under_eye(pts.astype(np.float32), shape)
+            if white_out is not None:
+                white = beauty.eye_whites(frame, luma, pts.astype(np.float32), shape)
 
             mouth = poly(shape, pts[MOUTH])
             # Lips are red. If they aren't, something is in front of the mouth.
@@ -204,14 +213,24 @@ with FaceLandmarker.create_from_options(options) as tracker:
         skin_out.stdin.write(skin.tobytes())
         teeth_out.stdin.write(teeth.tobytes())
         strong_out.stdin.write(strong.tobytes())
+        if under_out is not None:
+            under_out.stdin.write(under.tobytes())
+        if white_out is not None:
+            white_out.stdin.write(white.tobytes())
         frame_number += 1
 
 capture.release()
 skin_out.stdin.close()
 teeth_out.stdin.close()
 strong_out.stdin.close()
+for extra in (under_out, white_out):
+    if extra is not None:
+        extra.stdin.close()
 skin_out.wait()
 teeth_out.wait()
 strong_out.wait()
+for extra in (under_out, white_out):
+    if extra is not None:
+        extra.wait()
 edge.close()
 print(f"frames {frame_number}, no face {missed}, found at the frame edge {edge.found}, teeth visible {open_frames}")

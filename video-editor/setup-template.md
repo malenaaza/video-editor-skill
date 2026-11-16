@@ -67,6 +67,7 @@ Copy this block for each brand or channel the user makes videos for.
 - Zooms: <none / alternate 1.00 and a punch-in such as 1.08, only where the head has room>
 - Look, color: <natural / gentle boost eq=contrast=1.06:saturation=1.15:gamma=1.02 / not asked yet> (Log footage always gets only its LUT)
 - Look, skin softening: <never / only when asked / every video>, level <default from Style defaults, or this brand's own>
+- Look, beautify: <off / light / medium / strong>: a soft glow, brighter under-eyes and eye whites, with the matching skin softening (retouch.json `beautify`). No makeup, no reshaping. Keep it off or light for base-product and skincare reviews.
 - Look, teeth whitening: <never / only when asked>
 - Look, background blur: <never / only when asked / every video>, level <gblur sigma>
 - Caption area starts at: <y position, e.g. 1320 on 1080x1920>, so zooms keep the chin above it

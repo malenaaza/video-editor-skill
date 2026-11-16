@@ -8,6 +8,12 @@ from (the project's build folder) with only the values that differ from the defa
                   "hue": [9, 24], "sat": [null, 94]}]}
 
 mask.py (skin and teeth):
+  beautify        "off" (default), "light", "medium" or "strong": one setting that sets the skin
+                  softening and the three extras below together (see PRESETS). Anything you also
+                  write in retouch.json wins over the preset. No makeup and no reshaping, ever.
+  glow            a soft lift of the skin's brightness through the skin mask (0 = off, 0.02 is gentle)
+  under_eye       brightens the band under each eye, where dark circles sit (0 = off, 0.045 is gentle)
+  eye_white       brightens and de-reddens the white of each eye (0 = off, 0.09 is gentle)
   skin_strength   0 = no softening, 1 = full
   skin_cr_min     YCrCb red level where skin starts. Lower it if parts of the face are missing
                   from skin.mkv; raise it if hair or background is included.
@@ -59,7 +65,17 @@ import json
 import os
 import sys
 
+PRESETS = {
+    "light": {"skin_strength": 0.55, "close_lo": 0.38, "close_hi": 0.52, "glow": 0.012, "under_eye": 0.025, "eye_white": 0.05},
+    "medium": {"skin_strength": 0.72, "close_lo": 0.34, "close_hi": 0.46, "glow": 0.022, "under_eye": 0.045, "eye_white": 0.09},
+    "strong": {"skin_strength": 0.88, "close_lo": 0.31, "close_hi": 0.40, "glow": 0.035, "under_eye": 0.065, "eye_white": 0.13},
+}
+
 DEFAULTS = {
+    "beautify": "off",
+    "glow": 0.0,
+    "under_eye": 0.0,
+    "eye_white": 0.0,
     "skin_strength": 0.88,
     "skin_cr_min": 139,
     "skin_cr_max": 185,
@@ -102,6 +118,11 @@ def load(path="retouch.json"):
         unknown = sorted(set(data) - set(DEFAULTS))
         if unknown:
             sys.exit(f"{path}: unknown settings {unknown}. Known: {sorted(DEFAULTS)}.")
+        preset = data.get("beautify", "off")
+        if preset != "off":
+            if preset not in PRESETS:
+                sys.exit(f'{path}: beautify must be "off", "light", "medium" or "strong", not {preset!r}.')
+            settings.update(PRESETS[preset])  # explicit settings in the file win over the preset
         settings.update(data)
         for key in settings["blur_keys"] + ([settings["blur_skin"]] if settings["blur_skin"] else []):
             check_key(key)
@@ -109,7 +130,7 @@ def load(path="retouch.json"):
         if crown is not None and not (isinstance(crown, dict) and len(crown.get("grow", [])) == 2 and "raise" in crown):
             sys.exit('retouch.json: crown must be {"grow": [x, y], "raise": number}, for example '
                      '{"grow": [1.45, 1.30], "raise": 0.36}.')
-        changed = {k: v for k, v in data.items() if v != DEFAULTS[k]}
+        changed = {k: v for k, v in settings.items() if v != DEFAULTS[k]}
         print(f"Settings from {path}: {json.dumps(changed, ensure_ascii=False)}", flush=True)
     else:
         print(f"No {path} here: using the default settings.", flush=True)

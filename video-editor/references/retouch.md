@@ -37,6 +37,22 @@ The mask protects the eyes, brows, lips and mouth (the eyes with a margin of `pr
 
 **Close-ups:** the same softening that looks right when the face is a normal size leaves texture visible when the speaker leans in or a punch-in zooms: pores are magnified 3 to 4 times. `skin_strong.mkv` adds a second, stronger softening (`bilateral=sigmaS=12:sigmaR=0.10`) on top of the normal one, ramping from nothing when the face is below `close_lo` of the frame height to full above `close_hi`, smoothed between frames so it doesn't flicker. Show the user before/after frames of the biggest-face moments before the full render. If they want it stronger, weaker, or starting earlier, change `close_lo`/`close_hi` in `retouch.json` or the second bilateral, one step at a time, and save it in `my-setup.md`.
 
+**Beautify (a light, natural touch):** one setting, `"beautify": "light" | "medium" | "strong"` in `retouch.json` (default `"off"`), that sets the skin softening and three small extras together: a soft **glow** (a slight lift of the skin's brightness), brighter **under-eyes** (the band below each lower lid, where dark circles sit) and whiter **eye whites** (brightened and de-reddened, never the iris). **There is no makeup and no reshaping, and none is ever added**: no lip or blush colour, no slimming, no bigger eyes. If the user asks for those, say it isn't something this skill does.
+
+| | skin_strength | close-up softening starts at | glow | under_eye | eye_white |
+|---|---|---|---|---|---|
+| light | 0.55 | 38% of frame height | 0.012 | 0.025 | 0.05 |
+| medium | 0.72 | 34% | 0.022 | 0.045 | 0.09 |
+| strong | 0.88 | 31% | 0.035 | 0.065 | 0.13 |
+
+Anything written in `retouch.json` next to `beautify` wins over the preset (for example `"beautify": "light", "glow": 0.03`). The steps, after `mask.py` has built the masks with this `retouch.json` (it builds `undereye.mkv` and `eyewhite.mkv` too) and the retouch filter has made `retouched.mp4`:
+
+1. `<face python> -I <skill>/scripts/retouch/beautify.py` writes `beautify.txt` and prints the FFmpeg command: it adds the extras to `retouched.mp4` in one more pass (an extra in-between encode).
+2. Use its result as the picture for the title, captions and emojis.
+3. Show a before and after frame from the user's own video before the full render, as for every retouch. Tested on a real close-up: the effects stay inside the skin, under-eye and eye-white areas (everything else moved by about 0.01 levels), with no artifacts at any level. On footage that was already retouched the steps between levels are subtle; on raw footage the smoothing does more.
+
+**Be honest with the user about product videos.** Smoothing and glow can make a foundation, concealer or skincare result look better than it is, and some advertising rules (the UK's, for one) say a filter must not exaggerate what a product does; platforms may also expect heavy filter use to be disclosed. For a video that judges a base product or skincare, suggest `off` or `light`, and offer to say in the caption that a light touch-up was used. Never turn it on for a brand that hasn't chosen it.
+
 **Eyebrows:** the brows are protected by their own dark hairs (`brow_mode`, default `"hair"`), not by a margin around the whole brow. A margin of 25 px, then 15, still left the skin around the brows and on the lid below them textured, with a ring of untouched skin next to the smoothed forehead; protecting only the hairs smooths that skin and keeps the hairs crisp (checked on a real close-up). If fine or pale hairs get smoothed, lower `brow_contrast` (default 14); if texture near the brows is kept, raise it. `"brow_mode": "margin"` gives the old behaviour, with `protect_brows` as the margin.
 
 **Turned faces:** when the speaker turns their head, the tracker's face outline on the far side lies well inside the real cheek (on a real frame it ran through the middle of the cheek, 70 to 90 px short of the silhouette), so that cheek kept every freckle and pore while the rest of the face was smooth. `mask.py` therefore also softens skin-coloured pixels that touch the face inside a wider area around the outline (`region_grow`, default `[1.35, 1.1]`; `[1, 1]` switches it off). Hair, background and the red top are excluded by colour, and the ear stays sharp. Check a frame of `skin.mkv` from a shot with the head turned, and if the cheek's edge is still missing, raise the first number a step.

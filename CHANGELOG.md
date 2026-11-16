@@ -4,6 +4,12 @@ What each update of the video-editor skill brings. Newest first.
 
 ## 2026-11-16
 
+### New
+- `beautify` in `retouch.json` (off, light, medium, strong): one setting for skin softening plus a
+  soft glow, brighter under-eyes and whiter eye whites (`retouch/beautify.py`, `beauty.py`).
+  No makeup and no reshaping, by design. Checked on real frames: the effects stay inside the skin,
+  under-eye and eye-white areas.
+
 ### New (from a five-clip, 4:45 edit on real footage)
 - `drops.py`: a second pass that removes fillers, held sounds and extra pauses from a finished cut
   without rebuilding masks. Every drop is a whole number of frames, picture and voice are cut
