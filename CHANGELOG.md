@@ -5,6 +5,11 @@ What each update of the video-editor skill brings. Newest first.
 ## 2026-11-17
 
 ### New
+- Updating without Git: say "update my video-editor skill" and `scripts/update_skill.py` checks the
+  `VERSION`, backs up the installed skill to `~/.video-editor/backups/`, moves a `my-setup.md` that an
+  older version kept inside the skill folder to `~/.video-editor/`, installs the latest version, and
+  restores the old one if anything fails. It reports which files had been changed by hand, and never
+  touches a skill that is linked to a Git repository. This is version 2.0.0 (`video-editor/VERSION`).
 - Problems the user notices while editing ("the skin looks bad at 3:32") are logged in
   `~/.video-editor/skill-issues.md` with the saved frame, the step and the settings in force, so
   the skill can be fixed later from the log and not from memory. `CLAUDE.md` tells a fixing session

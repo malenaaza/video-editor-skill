@@ -24,4 +24,7 @@ Two kinds of session use this repo. Keep them apart so they never overwrite each
    (open entries, newest first), pick the most useful one, find the cause with the saved frame and the build folder it names,
    fix it, add a test, and set `Status: fixed in <pull request or commit>`. A cloud session can't see that file: the user
    pastes the entry and attaches the frame.
-8. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code.
+8. **Releases:** `video-editor/VERSION` is the number users compare with. Raise it when a change should reach
+   users (a fix, a new tool), in the same change as the code, so "update my skill" notices it. People install from `main`,
+   so only merge what is ready for them.
+9. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code.

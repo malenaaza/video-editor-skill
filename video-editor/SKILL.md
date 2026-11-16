@@ -14,7 +14,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 
 | When | Read |
 |---|---|
-| First setup, installing a tool, a long job on a laptop | `references/setup.md` |
+| First setup, installing a tool, a long job on a laptop, **updating the skill** ("update my skill") | `references/setup.md` |
 | The user wants fillers ("um", hums, repeats) removed, or handling noise fills the pauses | `references/fillers.md` |
 | Log footage (flat, grey picture; Apple Log, S-Log...) | `references/log.md` |
 | Noise removal, voice polish, two voices, joining clips to one loudness, sound effects | `references/sound.md` |

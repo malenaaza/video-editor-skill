@@ -67,9 +67,16 @@ Restart Claude Code, then type `/video-editor` or ask for an edit ("edit this vi
 
 ### Updating
 
-To get a newer version, replace the `video-editor` folder with the new one. Your settings are in `~/.video-editor/my-setup.md`, outside the skill folder, so they survive the update.
+Ask Claude Code:
 
-If you installed an earlier version, your settings are still in `video-editor/my-setup.md`: copy that file out before replacing the folder, and put it back afterwards. The skill moves it to the new place the next time you edit.
+> Update my video-editor skill.
+
+It checks whether a newer version exists, makes a backup of the one you have, installs the new one, and tells you what's new. No Git, no copying folders. Do it every few weeks, then start a new Claude Code session so it reads the new version.
+
+- **Your settings are safe.** They live in `~/.video-editor/my-setup.md`, outside the skill folder, and an update never touches them. Each video's own settings (`retouch.json`) are in that video's folder, so they are never touched either.
+- **Please don't edit the skill's own files.** Preferences go in your settings, and Claude saves them there when you ask for a change ("less blur", "always put my logo here"). If you do change a skill file, an update replaces it, but your version is kept in the backup (`~/.video-editor/backups/`) and Claude tells you which files it replaced.
+- **Want your own version of the skill?** Make a copy of the repository on GitHub (a "fork") and install from that. Then updates come from your copy.
+- **If you installed with Git** (a clone), update with `git pull` in that folder instead. The updater notices this and doesn't touch it.
 
 ### What it installs on first use
 

@@ -481,6 +481,78 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(white.shape, shape)
         self.assertEqual(int(white[60, 60]), 0)                # the iris is never whitened
 
+    # ---- updating the skill for people who don't use Git ------------------------------------
+
+    def _release_zip(self, version="2.0.0"):
+        """A ZIP shaped like GitHub's download of the repository, built from this working tree."""
+        import zipfile
+        archive = self.dir / "release.zip"
+        with zipfile.ZipFile(archive, "w") as z:
+            z.writestr("video-editor-skill-main/CHANGELOG.md", "# Changelog\n\n## newest\n- something new\n")
+            for path in ROOT.rglob("*"):
+                if path.is_file() and "__pycache__" not in path.parts and path.name != "my-setup.md":
+                    rel = path.relative_to(ROOT.parent).as_posix()
+                    data = (version + "\n").encode() if path.name == "VERSION" else path.read_bytes()
+                    z.writestr("video-editor-skill-main/" + rel, data)
+        return archive
+
+    def _installed_copy(self, name, version="1.0.0"):
+        home = self.dir / name
+        skill = home / "video-editor"
+        shutil.copytree(ROOT, skill, ignore=shutil.ignore_patterns("__pycache__", "my-setup.md"))
+        (skill / "VERSION").write_text(version + "\n", "utf-8")
+        return home, skill
+
+    def _update(self, skill, home, *args, check=True):
+        cmd = [sys.executable, "-I", SCRIPTS / "update_skill.py", "--skill-dir", skill, "--source", self._release_zip(),
+               "--backup-dir", home / "backups", "--settings-dir", home / "settings", *args]
+        r = subprocess.run([str(c) for c in cmd], capture_output=True, text=True, encoding="utf-8")
+        if check and r.returncode:
+            raise AssertionError(r.stdout + r.stderr)
+        return r
+
+    def test_34_update_backs_up_replaces_and_keeps_settings(self):
+        home, skill = self._installed_copy("upd1")
+        (skill / "my-setup.md").write_text("# my settings\n", "utf-8")       # where older versions kept it
+        (skill / "references" / "log.md").write_text("changed by hand\n", "utf-8")
+        out = self._update(skill, home).stdout
+        self.assertIn("1.0.0 -> 2.0.0", out)
+        self.assertEqual((skill / "VERSION").read_text("utf-8").strip(), "2.0.0")
+        self.assertNotEqual((skill / "references" / "log.md").read_text("utf-8"), "changed by hand\n")
+        backups = list((home / "backups").iterdir())
+        self.assertEqual(len(backups), 1)
+        self.assertEqual((backups[0] / "references" / "log.md").read_text("utf-8"), "changed by hand\n")  # nothing lost
+        self.assertEqual((home / "settings" / "my-setup.md").read_text("utf-8"), "# my settings\n")   # settings moved out
+        self.assertFalse((skill / "my-setup.md").exists())
+        self.assertIn("can't tell", out)            # first install by this script: no record of what was changed by hand
+        self.assertIn("something new", out)          # the changelog is shown
+        # the next update knows what was changed by hand
+        (skill / "references" / "log.md").write_text("changed again\n", "utf-8")
+        again = self._update(skill, home, "--force").stdout
+        self.assertIn("references/log.md", again)
+        self.assertEqual(len(list((home / "backups").iterdir())), 2)
+
+    def test_35_update_does_nothing_when_current_and_reports_with_check(self):
+        home, skill = self._installed_copy("upd2", version="2.0.0")
+        out = self._update(skill, home).stdout
+        self.assertIn("up to date", out)
+        self.assertFalse((home / "backups").exists())
+        old_home, old_skill = self._installed_copy("upd3", version="1.0.0")
+        self.assertIn("An update is available", self._update(old_skill, old_home, "--check").stdout)
+        self.assertEqual((old_skill / "VERSION").read_text("utf-8").strip(), "1.0.0")  # --check changes nothing
+
+    def test_36_update_refuses_to_touch_a_repository(self):
+        home = self.dir / "upd4"
+        clone = home / "clone"
+        shutil.copytree(ROOT, clone / "video-editor", ignore=shutil.ignore_patterns("__pycache__"))
+        (clone / ".git").mkdir()
+        (clone / "video-editor" / "VERSION").write_text("1.0.0\n", "utf-8")
+        result = self._update(clone / "video-editor", home, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("git pull", result.stdout + result.stderr)
+        self.assertEqual((clone / "video-editor" / "VERSION").read_text("utf-8").strip(), "1.0.0")
+        self.assertFalse((home / "backups").exists())
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
