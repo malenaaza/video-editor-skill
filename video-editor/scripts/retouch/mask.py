@@ -35,6 +35,7 @@ from mediapipe.tasks.python.vision import (
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import settings  # noqa: E402
+from facetrack import EdgeFace  # noqa: E402
 
 CFG = settings.load()
 MODEL = sys.argv[1]
@@ -92,6 +93,7 @@ options = FaceLandmarkerOptions(
 previous = None
 frame_number = 0
 missed = 0
+edge = EdgeFace(MODEL, CFG["edge_faces"], CFG["edge_pad"])
 open_frames = 0
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
 
@@ -107,11 +109,15 @@ with FaceLandmarker.create_from_options(options) as tracker:
         skin = np.zeros(shape, np.uint8)
         teeth = np.zeros(shape, np.uint8)
         strong = np.zeros(shape, np.uint8)
+        points = None
         if result.face_landmarks:
             points = np.array(
                 [[p.x * width, p.y * height] for p in result.face_landmarks[0]],
                 np.float32,
             )
+        else:
+            points = edge.detect(frame)  # a face cut in half by the frame edge
+        if points is not None:
             if previous is not None and np.abs(points - previous).mean() < 12:
                 points = previous * 0.4 + points * 0.6
             previous = points
@@ -174,4 +180,5 @@ strong_out.stdin.close()
 skin_out.wait()
 teeth_out.wait()
 strong_out.wait()
-print(f"frames {frame_number}, no face {missed}, teeth visible {open_frames}")
+edge.close()
+print(f"frames {frame_number}, no face {missed}, found at the frame edge {edge.found}, teeth visible {open_frames}")

@@ -23,6 +23,7 @@ from mediapipe.tasks.python.vision import (
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import settings  # noqa: E402
+from facetrack import EdgeFace  # noqa: E402
 
 CFG = settings.load()
 SOURCE, OUT, FACE_MODEL, HAND_MODEL = sys.argv[1:5]
@@ -94,6 +95,7 @@ hand_options = HandLandmarkerOptions(base_options=BaseOptions(model_asset_path=H
                                      running_mode=RunningMode.VIDEO, num_hands=2,
                                      min_hand_detection_confidence=0.4,
                                      min_tracking_confidence=0.4)
+edge = EdgeFace(FACE_MODEL, CFG["edge_faces"], CFG["edge_pad"])
 face_points, last_hands, hand_age = None, [], 0
 previous, tiles = None, []
 hand_frames = no_face = 0
@@ -112,7 +114,11 @@ with FaceLandmarker.create_from_options(face_options) as face_tracker, \
         if result.face_landmarks:
             face_points = np.array([[p.x * width, p.y * height] for p in result.face_landmarks[0]], np.float32)
         else:
-            no_face += 1
+            cut_off = edge.detect(frame)  # a face cut in half by the frame edge
+            if cut_off is not None:
+                face_points = cut_off
+            else:
+                no_face += 1
         found = hand_tracker.detect_for_video(image, stamp).hand_landmarks
         if found:
             last_hands = [np.array([[p.x * width, p.y * height] for p in h], np.float32) for h in found]
@@ -148,4 +154,5 @@ if tiles:
     rows = [np.hstack(tiles[i:i + 3] + [np.zeros_like(tiles[0])] * (3 - len(tiles[i:i + 3])))
             for i in range(0, len(tiles), 3)]
     cv2.imwrite("blurtest.png", np.vstack(rows))
-print(f"frames {n}, hands seen {hand_frames}, no face {no_face}")
+edge.close()
+print(f"frames {n}, hands seen {hand_frames}, no face {no_face}, faces found at the frame edge {edge.found}")

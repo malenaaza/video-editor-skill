@@ -14,6 +14,9 @@ mask.py (skin and teeth):
   skin_cr_max     redder than this is clothing, not skin (a red top had about 224, skin 157-161)
   lips_cr_min     lips redder than this count as visible (teeth only whiten then)
   neck            also soften the neck under the jaw
+  edge_faces      when the tracker finds no face, look for one cut in half by the frame edge
+                  (see facetrack.py). On by default.
+  edge_pad        share of the frame width mirrored for that search (0.5)
   close_lo, close_hi   face height as a share of the frame height where the extra close-up
                   softening starts and where it reaches full strength
 
@@ -44,6 +47,8 @@ DEFAULTS = {
     "skin_cr_max": 185,
     "lips_cr_min": 146,
     "neck": True,
+    "edge_faces": True,
+    "edge_pad": 0.5,
     "close_lo": 0.31,
     "close_hi": 0.40,
     "blur_skin": None,

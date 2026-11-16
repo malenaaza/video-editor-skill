@@ -24,6 +24,7 @@ from mediapipe.tasks.python.vision import (
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import settings  # noqa: E402
+from facetrack import EdgeFace  # noqa: E402
 
 CFG = settings.load()
 MODEL = sys.argv[1]
@@ -91,6 +92,7 @@ options = FaceLandmarkerOptions(
     num_faces=1,
 )
 last_points = None
+edge = EdgeFace(MODEL, CFG["edge_faces"], CFG["edge_pad"])
 previous = None
 tiles = []
 with FaceLandmarker.create_from_options(options) as tracker:
@@ -107,6 +109,10 @@ with FaceLandmarker.create_from_options(options) as tracker:
                 [[p.x * width, p.y * height] for p in result.face_landmarks[0]],
                 np.float32,
             )
+        else:
+            cut_off = edge.detect(frame)  # a face cut in half by the frame edge
+            if cut_off is not None:
+                last_points = cut_off
         keep = keep_mask(frame, last_points, shape)
         soft = cv2.GaussianBlur(keep.astype(np.float32) / 255, (0, 0), 7)
         if previous is not None and np.abs(soft - previous).mean() < 0.04:
@@ -128,4 +134,5 @@ if writer:
 else:
     os.makedirs("bg", exist_ok=True)
     cv2.imwrite("bg/blurtest.png", np.hstack(tiles))
-print("frames", n)
+edge.close()
+print("frames", n, "faces found at the frame edge", edge.found)

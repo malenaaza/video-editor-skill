@@ -201,7 +201,26 @@ class SkillTest(unittest.TestCase):
         self.assertTrue(mask[:2].all() and not mask[2:].any())
         self.assertFalse(settings.key_mask(frame, []).any())
 
-    def test_11_docs_point_to_files_that_exist(self):
+    def test_11_edge_face_geometry(self):
+        try:
+            import numpy as np
+            sys.path.insert(0, str(SCRIPTS / "retouch"))
+            import facetrack
+        except ImportError:
+            self.skipTest("mediapipe or numpy not installed")
+        frame = np.arange(4 * 10 * 3, dtype=np.uint8).reshape(4, 10, 3)
+        right = facetrack.mirrored(frame, "right", 5)
+        self.assertEqual(right.shape, (4, 15, 3))
+        self.assertTrue((right[:, 10] == frame[:, 9]).all() and (right[:, 14] == frame[:, 5]).all())
+        left = facetrack.mirrored(frame, "left", 5)
+        self.assertTrue((left[:, 4] == frame[:, 0]).all() and (left[:, 5:] == frame).all())
+        nose = lambda x: np.array([[0, 0], [x, 0]], np.float32)  # landmark 1 is the nose tip
+        self.assertTrue(facetrack.plausible(nose(1000), 960, "right", 480))
+        self.assertFalse(facetrack.plausible(nose(200), 960, "right", 480))  # face centre far from that edge
+        self.assertTrue(facetrack.plausible(nose(480 + 20), 960, "left", 480))
+        self.assertFalse(facetrack.plausible(nose(480 + 800), 960, "left", 480))
+
+    def test_12_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
             self.assertTrue((ROOT / ref).exists(), ref)

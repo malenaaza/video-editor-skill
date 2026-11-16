@@ -31,6 +31,10 @@ replace the folder, and put it back afterwards. The skill then moves it to
   box and red sweater keys that were built in as examples are now examples in `settings.py`.
 
 ### Fixed
+- Skin softening and background blur work on faces cut in half by the frame edge. In a tight
+  close-up the face tracker found no face, so the mask was empty and the skin was left
+  unsoftened. The scripts now retry with the visible half mirrored across the edge
+  (`facetrack.py`; `edge_faces` in `retouch.json`).
 - Retouch and background blur can run together: `retouch-blur.txt` does both in one pass (the
   two separate filter files clashed).
 - `blurmask.py` reads `clean.mp4`, as the instructions say.
