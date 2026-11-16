@@ -1,12 +1,15 @@
 """Soft background mask (white = blur) with face and hand tracking, for close-framed hauls.
 
-Keeps sharp: head and hair, neck, the clothing colour set in color_keys(), skin, and a
-generous area around each tracked hand so held products stay sharp whatever their colour.
+Keeps sharp: head and hair, neck, skin, the clothing colour given as a key in retouch.json
+("blur_keys", see settings.py), and a generous area around each tracked hand so held products
+stay sharp whatever their colour. Don't edit this file for a video: put the clothing key in
+retouch.json in the folder you run this from.
 
 Usage: python -I blurmask_hands.py <source.mp4> <out.mkv> <face model> <hand model> write|test [test frames]
 "write" builds the mask (and a test sheet if frames are given); "test" stops after the last test frame.
 Works at half resolution for speed (about 0.17 s per frame on a laptop CPU).
 """
+import os
 import subprocess
 import sys
 
@@ -18,14 +21,19 @@ from mediapipe.tasks.python.vision import (
     FaceLandmarker, FaceLandmarkerOptions, HandLandmarker, HandLandmarkerOptions, RunningMode,
 )
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import settings  # noqa: E402
+from facetrack import EdgeFace  # noqa: E402
+
+CFG = settings.load()
 SOURCE, OUT, FACE_MODEL, HAND_MODEL = sys.argv[1:5]
 TEST = [int(x) for x in sys.argv[6:]]
 WRITE = sys.argv[5] == "write"  # "write" builds the mask; "test" stops after the last test frame
 OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379,
         378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
         162, 21, 54, 103, 67, 109]
-HAND_PAD = 60    # pixels kept around a hand, for the product it holds
-HAND_HOLD = 6    # frames to keep a hand after tracking loses it
+HAND_PAD = CFG["hand_pad"]    # pixels kept around a hand, for the product it holds
+HAND_HOLD = CFG["hand_hold"]  # frames to keep a hand after tracking loses it
 
 
 def ellipse(size):
@@ -33,15 +41,10 @@ def ellipse(size):
 
 
 def color_keys(frame, height):
-    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB).astype(np.int16)
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV).astype(np.int16)
-    lum, a, b = lab[..., 0], lab[..., 1] - 128, lab[..., 2] - 128
-    hue, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
-    # Clothing: set this for each video by sampling the top in HSV/Lab. Example: a red sweater.
-    clothing = ((hue <= 7) | (hue >= 170)) & (sat > 130) & (val > 70) & (a > 35)
-    skin = (a > 12) & (b > 12) & (lum > 90) & (sat > 50)  # tune for the speaker's skin tone
-    mask = (clothing | skin).astype(np.uint8) * 255
-    mask[: int(height * 0.45)] = 0
+    skin = CFG["blur_skin"] or {"a": [13, None], "b": [13, None], "lum": [91, None], "sat": [51, None]}
+    mask = settings.key_mask(frame, [skin] + CFG["blur_keys"]).astype(np.uint8) * 255
+    below = 0.45 if CFG["blur_keys_below"] is None else CFG["blur_keys_below"]
+    mask[: int(height * below)] = 0
     return cv2.morphologyEx(mask, cv2.MORPH_OPEN, ellipse(7))
 
 
@@ -52,6 +55,11 @@ def keep_mask(frame, face, hands, shape):
         head = (face[OVAL] - center) * np.array([1.32, 1.42], np.float32) + center
         head[:, 1] -= 12
         cv2.fillConvexPoly(keep, cv2.convexHull(head.astype(np.int32)), 255)
+        if CFG["crown"]:  # a tall headband or hair above the head
+            oval_h = face[OVAL][:, 1].max() - face[OVAL][:, 1].min()
+            crown = (face[OVAL] - center) * np.array(CFG["crown"]["grow"], np.float32) + center
+            crown[:, 1] -= CFG["crown"]["raise"] * oval_h
+            cv2.fillConvexPoly(keep, cv2.convexHull(crown.astype(np.int32)), 255)
         chin = face[OVAL][:, 1].max()
         left, right = face[OVAL][:, 0].min(), face[OVAL][:, 0].max()
         neck = np.array([[left + 15, chin - 40], [right - 15, chin - 40],
@@ -92,6 +100,7 @@ hand_options = HandLandmarkerOptions(base_options=BaseOptions(model_asset_path=H
                                      running_mode=RunningMode.VIDEO, num_hands=2,
                                      min_hand_detection_confidence=0.4,
                                      min_tracking_confidence=0.4)
+edge = EdgeFace(FACE_MODEL, CFG["edge_faces"], CFG["edge_pad"])
 face_points, last_hands, hand_age = None, [], 0
 previous, tiles = None, []
 hand_frames = no_face = 0
@@ -110,7 +119,11 @@ with FaceLandmarker.create_from_options(face_options) as face_tracker, \
         if result.face_landmarks:
             face_points = np.array([[p.x * width, p.y * height] for p in result.face_landmarks[0]], np.float32)
         else:
-            no_face += 1
+            cut_off = edge.detect(frame)  # a face cut in half by the frame edge
+            if cut_off is not None:
+                face_points = cut_off
+            else:
+                no_face += 1
         found = hand_tracker.detect_for_video(image, stamp).hand_landmarks
         if found:
             last_hands = [np.array([[p.x * width, p.y * height] for p in h], np.float32) for h in found]
@@ -146,4 +159,5 @@ if tiles:
     rows = [np.hstack(tiles[i:i + 3] + [np.zeros_like(tiles[0])] * (3 - len(tiles[i:i + 3])))
             for i in range(0, len(tiles), 3)]
     cv2.imwrite("blurtest.png", np.vstack(rows))
-print(f"frames {n}, hands seen {hand_frames}, no face {no_face}")
+edge.close()
+print(f"frames {n}, hands seen {hand_frames}, no face {no_face}, faces found at the frame edge {edge.found}")

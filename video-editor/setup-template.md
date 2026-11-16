@@ -1,6 +1,7 @@
 # My video setup
 
-Filled in by the video-editor skill on first use and saved as `my-setup.md` next to `SKILL.md`.
+Filled in by the video-editor skill on first use and saved as `~/.video-editor/my-setup.md`,
+outside the skill folder, so updating the skill never deletes it.
 The skill reads this file before every edit. Edit it by hand any time, or ask Claude to change it.
 Leave a field as `unknown` rather than guessing.
 
@@ -26,7 +27,10 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - Face Python (mediapipe, opencv): `<path, or not installed>`
 - Face model: `<path to face_landmarker.task, or not installed>`
 - Hand model: `<path to hand_landmarker.task, or not installed>`
+- Cutout Python (rembg, for covers with products): `<path, or not installed>`
+- Noise removal: `<path to deep-filter, or not installed>`; RNNoise model `<path to cb.rnnn, or not installed>`
 - Remotion project: `<folder, or not installed>`
+- Remotion license: <not asked yet / free (individual or up to 3 employees) / company license held>
 
 ## Camera and footage
 - Cameras / phones: <e.g. iPhone 16 Pro with the Blackmagic Camera app, Sony ZV-E10>
@@ -50,8 +54,8 @@ Checked on: <date>, with `scripts/detect_setup.py`
   - Skin softening: `bilateral=sigmaS=9:sigmaR=0.085`, strength 0.88
   - Teeth whitening: `eq=brightness=0.19:saturation=0.13:contrast=1.08`
   - Background blur: `gblur=sigma=7`
-  - Skin mask threshold (`SKIN_CR_MIN` in mask.py): <139, or the value that fit this person's skin>
-  - Close-up softening (`CLOSE_LO`, `CLOSE_HI` in mask.py): <0.31, 0.40 of the frame height, or the values the user chose>
+  - Skin mask threshold (`skin_cr_min` in each project's retouch.json): <139, or the value that fit this person's skin>
+  - Close-up softening (`close_lo`, `close_hi` in retouch.json): <0.31, 0.40 of the frame height, or the values the user chose>
   - Cover skin: <same as the video (it already has the close-up softening) / one step more>
 
 ## Brands
@@ -63,6 +67,7 @@ Copy this block for each brand or channel the user makes videos for.
 - Zooms: <none / alternate 1.00 and a punch-in such as 1.08, only where the head has room>
 - Look, color: <natural / gentle boost eq=contrast=1.06:saturation=1.15:gamma=1.02 / not asked yet> (Log footage always gets only its LUT)
 - Look, skin softening: <never / only when asked / every video>, level <default from Style defaults, or this brand's own>
+- Look, beautify: <off / light / medium / strong>: a soft glow, brighter under-eyes and eye whites, with the matching skin softening (retouch.json `beautify`). No makeup, no reshaping. Keep it off or light for base-product and skincare reviews.
 - Look, teeth whitening: <never / only when asked>
 - Look, background blur: <never / only when asked / every video>, level <gblur sigma>
 - Caption area starts at: <y position, e.g. 1320 on 1080x1920>, so zooms keep the chin above it
@@ -73,7 +78,8 @@ Copy this block for each brand or channel the user makes videos for.
 - Captions: <style: e.g. white text with black outline, or white on a colored box; case; position>
 - Title: <style, length on screen; still, or animated with the TitleCard template>
 - Product tag: <none / ProductTag template: side, position, colors if different from the brand's>
-- End card: <layout, call to action, contact details>
+- End card: <layout, contact details>
+- Usual call to action: <what the viewer should do at the end, e.g. "Link in bio"; or "ask every time">
 - Cover: <plain frame / with products (CoverCard)>; products <around the face / in a row>, <may overlap face and hair / kept clear>; title <above the head / below the face / none>; on the cover <nothing else / names / prices / numbers>
 - Product photos: <where to get them, in order: own photos, websites the user named (e.g. cultbeauty.co.uk, sephora.com), video frames; and the date the user was told about shop photo rights>
 - Loudness: <e.g. loudnorm=I=-14:TP=-1:LRA=11>
