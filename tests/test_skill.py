@@ -554,6 +554,12 @@ class SkillTest(unittest.TestCase):
         self.assertEqual((skill / "VERSION").read_text("utf-8").strip(), "1.0.0")            # a check changes nothing
         self.assertFalse((home / "backups").exists())
 
+    def test_38_the_skill_loads_when_asked_to_update_it(self):
+        head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
+        description = head.split("description:", 1)[1].lower()
+        for phrase in ("update", "actualiza", "version"):
+            self.assertIn(phrase, description)
+
     def test_36_update_refuses_to_touch_a_repository(self):
         home = self.dir / "upd4"
         clone = home / "clone"

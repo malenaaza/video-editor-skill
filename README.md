@@ -71,6 +71,8 @@ Ask Claude Code:
 
 > Update my video-editor skill.
 
+Or in Spanish: *Actualiza mi skill de video-editor.* Claude understands any language and answers in yours.
+
 It checks whether a newer version exists, makes a backup of the one you have, installs the new one, and tells you what's new. If you allow it (it asks once), Claude also checks once a week and tells you in one line when there is a new version; it only contacts GitHub and sends nothing about you. No Git, no copying folders. Do it every few weeks, then start a new Claude Code session so it reads the new version.
 
 - **Your settings are safe.** They live in `~/.video-editor/my-setup.md`, outside the skill folder, and an update never touches them. Each video's own settings (`retouch.json`) are in that video's folder, so they are never touched either.

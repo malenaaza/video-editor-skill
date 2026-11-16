@@ -1,6 +1,6 @@
 ---
 name: video-editor
-description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, noise removal and voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack.
+description: A personal video editor for short-form and YouTube talking-head videos. Use whenever the user asks to edit, cut, trim, caption, brand, reformat, split, clean up, or export a video, or mentions Reels, TikTok, Shorts, or YouTube footage, retakes, or B-roll. Covers a one-time hardware setup, transcription with Whisper, retake, pause and filler removal, captions and graphics, noise removal and voice leveling, skin retouch, background blur, Log footage, and export with a ready-to-post pack. Also use it when the user asks to update, upgrade or check the version of this skill, in any language (for example "update my video-editor skill", "actualiza mi skill", "¿hay una versión nueva de la skill?").
 ---
 
 # Video Editor
@@ -38,6 +38,8 @@ Each step works on the result of the one before. Skip the steps a video doesn't 
 9. Final export, checks, and the ready-to-post pack (Rules 6, 10, 11).
 
 ## Rule 0: Know the computer and the user
+
+**Answer in the language the user writes in** (Spanish, English, any other), including questions, reports, menus and the update report. Commands, file names and settings keep their names.
 
 Read `~/.video-editor/my-setup.md` before every edit. It holds this user's hardware, encoders, tool paths, folders, brands and style choices, and it overrides the defaults in this file.
 

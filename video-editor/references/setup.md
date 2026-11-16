@@ -4,7 +4,7 @@ Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rul
 
 ## Updating the skill
 
-Most users don't know Git, so updating is done by this skill. When the user asks to update, upgrade or get the latest version of the skill (or says it's out of date), run:
+Most users don't know Git, so updating is done by this skill. When the user asks to update, upgrade or get the latest version of the skill (or says it's out of date), in any language ("actualiza mi skill", "¿hay una versión nueva?"), run it, and give the report in the language they used:
 
 ```
 python -I <skill>/scripts/update_skill.py --check
