@@ -20,4 +20,8 @@ Two kinds of session use this repo. Keep them apart so they never overwrite each
 5. **Tests must pass** before pushing: `python tests/test_skill.py`. Add a test for each new script or setting.
 6. **Personal data stays out of the repository:** no videos, audio, transcripts, photos or frames of the user's face,
    `my-setup.md`, or paths that contain a name. The user's settings live in `~/.video-editor/`.
-7. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code.
+7. **When asked to fix the skill without a specific problem,** read `~/.video-editor/skill-issues.md` on the user's computer
+   (open entries, newest first), pick the most useful one, find the cause with the saved frame and the build folder it names,
+   fix it, add a test, and set `Status: fixed in <pull request or commit>`. A cloud session can't see that file: the user
+   pastes the entry and attaches the frame.
+8. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code.

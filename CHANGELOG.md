@@ -2,6 +2,14 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-17
+
+### New
+- Problems the user notices while editing ("the skin looks bad at 3:32") are logged in
+  `~/.video-editor/skill-issues.md` with the saved frame, the step and the settings in force, so
+  the skill can be fixed later from the log and not from memory. `CLAUDE.md` tells a fixing session
+  to start there.
+
 ## 2026-11-16
 
 ### New

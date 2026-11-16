@@ -61,6 +61,22 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 
 **Whenever the user asks for a change** in how videos are edited ("less blur", "too slow", "always put the logo here"), make it, then add a dated one-line note under "Notes from feedback" in `my-setup.md`, or update the matching setting. Record only what the user said, not a guess at why. Never ask the same thing twice.
 
+**When the user says something looks or sounds wrong in a result** ("the skin looks bad at 3:32", "the product is blurred", "a word got cut"), a problem the skill itself should handle and not a preference, also log it so it can be fixed in the skill later. Keep fixing the video in front of you as usual; don't edit the skill's own files during an edit.
+
+1. Save the frame (or a few seconds of audio) at the moment they name, in `<work folder>/<project>/issues/`: `ffmpeg -ss <time> -i <video> -frames:v 1 <date>-<n>.png`. Add the matching mask or stage if it helps (for example the frame of `skin.mkv` at that time). These show the user's face and voice: keep them on their computer, never in the repository.
+2. Append an entry to `~/.video-editor/skill-issues.md` (create it if it's missing):
+
+```
+## <date> · <video name> · <time in the video>
+- Saw: <the user's own words>
+- Step and settings: <which step of the build order, and the retouch.json and my-setup.md lines in force>
+- Files: <the saved frame, the build folder>
+- Suspect: <a guess, if you have one, labelled as a guess>
+- Status: open
+```
+
+3. Tell the user in one line that it was logged. When a session fixes the skill, it sets `Status: fixed in <pull request or commit>`.
+
 **Commands in this skill** use `-/filter_complex <file>`, which needs FFmpeg 7. On FFmpeg 6 or older, write `-filter_complex_script <file>` instead; the `Filter files:` line in `my-setup.md` says which this computer needs. Run every Python script with `-I` and the right environment's interpreter, as saved in `my-setup.md`.
 
 **On a laptop,** run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export), and follow the Power section of `references/setup.md` for what to tell the user.
