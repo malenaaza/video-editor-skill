@@ -103,6 +103,9 @@ video-editor/
     transcribe.py        faster-whisper with word times, CPU or NVIDIA GPU
     cutplan.py           builds the cut plan: pauses and listed cuts, snapped to whole frames
     captions.py          writes the captions for the cut, in the brand's style
+    drops.py             second pass: removes fillers, held sounds and pauses from a finished cut
+    heldsounds.py        finds held sounds ("deeee") that a filler pass misses
+    asr.py, hear.py      one interface for both Whisper engines; transcribes short pieces alone
     fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
     hunt_fillers.py      short-window pass for fillers glued onto words
     retouch/             skin and teeth masks, background blur, mouth check; settings.py reads
@@ -116,6 +119,7 @@ video-editor/
     cover/cutout.py      cuts products out of shop photos or video frames
     cover/face_box.py    finds the face so the products go around it
     voice/clean_voice.py measures background noise, removes it and polishes the voice
+    voice/leveljoin.py   joins clips and levels them to a loudness target, for quiet voices with clicks
 ```
 
 `my-setup.md` holds your personal details. It's saved in `~/.video-editor/`, outside the skill folder, so it isn't in any copy of the skill you share.

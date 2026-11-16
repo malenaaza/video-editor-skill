@@ -55,6 +55,11 @@ def keep_mask(frame, face, hands, shape):
         head = (face[OVAL] - center) * np.array([1.32, 1.42], np.float32) + center
         head[:, 1] -= 12
         cv2.fillConvexPoly(keep, cv2.convexHull(head.astype(np.int32)), 255)
+        if CFG["crown"]:  # a tall headband or hair above the head
+            oval_h = face[OVAL][:, 1].max() - face[OVAL][:, 1].min()
+            crown = (face[OVAL] - center) * np.array(CFG["crown"]["grow"], np.float32) + center
+            crown[:, 1] -= CFG["crown"]["raise"] * oval_h
+            cv2.fillConvexPoly(keep, cv2.convexHull(crown.astype(np.int32)), 255)
         chin = face[OVAL][:, 1].max()
         left, right = face[OVAL][:, 0].min(), face[OVAL][:, 0].max()
         neck = np.array([[left + 15, chin - 40], [right - 15, chin - 40],

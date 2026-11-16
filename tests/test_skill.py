@@ -221,7 +221,195 @@ class SkillTest(unittest.TestCase):
         self.assertTrue(facetrack.plausible(nose(480 + 20), 960, "left", 480))
         self.assertFalse(facetrack.plausible(nose(480 + 800), 960, "left", 480))
 
-    def test_12_docs_point_to_files_that_exist(self):
+    # ---- ported from a five-clip edit -------------------------------------------------------
+
+    def _wav(self, name, x, rate):
+        import wave
+
+        import numpy as np
+        w = wave.open(str(self.dir / name), "wb")
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
+        w.close()
+
+    def _numpy(self):
+        try:
+            import numpy
+        except ImportError:
+            self.skipTest("numpy not installed")
+        return numpy
+
+    def test_20_long_cut_filter_uses_several_selects(self):
+        pieces = [[i * 3, i * 3 + 2] for i in range(100)]  # 100 pieces: more than one select of 40 terms
+        (self.dir / "big.json").write_text(json.dumps({
+            "source": "src.mp4", "fps": "30", "speed": 1.0, "audio_offset": 0.0, "sample_rate": 48000,
+            "frames": pieces, "offsets": [i * 2 for i in range(100)], "total_frames": 200, "removed": []}), "utf-8")
+        script("cutplan.py", "filter", "--plan", "big.json", "--out", "big-filter.txt", cwd=self.dir)
+        text = (self.dir / "big-filter.txt").read_text("utf-8")
+        self.assertIn("split=3", text)
+        self.assertLessEqual(max(len(line.split("+")) for line in text.splitlines() if "select=" in line), 40)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "src.mp4", filter_flag(), "big-filter.txt", "-map", "[v]", "-map", "[a]",
+             "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "pcm_s16le", "big.mov"], cwd=self.dir)
+        frames, video, audio = probe("big.mov", self.dir)
+        self.assertEqual(frames, 200)
+        self.assertAlmostEqual(video, audio, delta=2 / FPS)
+
+    def test_21_quiet_words_are_not_cut_as_pauses(self):
+        np = self._numpy()
+        sr = 48000
+        t = np.arange(int(7 * sr)) / sr
+        gate = lambda a, b: ((t >= a) & (t < b)).astype(float)
+        x = (0.3 * np.sin(2 * np.pi * 220 * t) * (gate(0.5, 1.5) + gate(4.0, 5.0))
+             + 0.004 * np.sin(2 * np.pi * 200 * t) * gate(2.5, 3.1) + 0.0003 * np.random.RandomState(0).rand(len(t)))
+        self._wav("whisper.wav", x, sr)
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=s=320x240:r={FPS}:d=7", "-i", "whisper.wav",
+             "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-shortest", "whisper.mp4"], cwd=self.dir)
+        words = [(" uno", 0.5, 1.5), (" y", 2.5, 2.7), (" ya", 2.7, 2.9), (" est\u00e1", 2.9, 3.1), (" fin", 4.0, 5.0)]
+        (self.dir / "tr-whisper.json").write_text(json.dumps({"segments": [{"words": [
+            {"word": w, "start": s, "end": e} for w, s, e in words]}]}), "utf-8")
+        script("cutplan.py", "build", "whisper.mp4", "tr-whisper.json", "--out", "plan-whisper.json", cwd=self.dir)
+        plan = json.loads((self.dir / "plan-whisper.json").read_text("utf-8"))
+        self.assertTrue(any(f0 / FPS <= 2.51 and 3.09 <= f1 / FPS for f0, f1 in plan["frames"]),
+                        "the whispered words were cut as a pause")
+        self.assertLess(plan["total_frames"] / FPS, 4.5, "the pauses around them were not removed")
+
+    def test_22_drops_keep_picture_and_voice_in_sync(self):
+        np = self._numpy()
+        sr = 48000
+        t = np.arange(int(9 * sr)) / sr
+        gate = lambda a, b: ((t >= a) & (t < b)).astype(float)
+        x = 0.2 * np.sin(2 * np.pi * 220 * t) * gate(0.5, 1.5) + 0.2 * np.sin(2 * np.pi * 330 * t) * gate(2.5, 3.5)
+        x += 0.15 * np.sin(2 * np.pi * 150 * t) * gate(3.9, 4.4) + 0.2 * np.sin(2 * np.pi * 200 * t) * gate(5.0, 6.2)
+        x += 0.2 * np.sin(2 * np.pi * 260 * t) * gate(7.4, 8.4) + 0.0005 * np.random.RandomState(1).randn(len(t))
+        self._wav("drops-voice.wav", x, sr)
+        (self.dir / "drops.txt").write_text("F 3.9 4.4 hum\nV 5.0 6.2 held\nN 1.5 2.5 pause to keep\n", "utf-8")
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=s=320x240:r={FPS}:d=9", "-c:v", "libx264",
+             "-preset", "ultrafast", "drops-src.mp4"], cwd=self.dir)
+        out = script("drops.py", "drops-voice.wav", "--fps", str(FPS), cwd=self.dir)
+        self.assertIn("held sounds: 1 drops", out)
+        info = json.loads((self.dir / "drops.json").read_text("utf-8"))
+        kinds = [d["kind"] for d in info["drops"]]
+        self.assertEqual(kinds.count("F"), 1)
+        self.assertEqual(kinds.count("V"), 1)
+        self.assertFalse(any(d["kind"] == "P" and 1.5 <= d["start"] <= 2.5 for d in info["drops"]), "the N range was trimmed")
+        run(["ffmpeg", "-v", "error", "-y", "-i", "drops-src.mp4", filter_flag(), "drops-video.txt", "-map", "[v]",
+             "-c:v", "libx264", "-preset", "ultrafast", "dropped.mp4"], cwd=self.dir)
+        counted = run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v", "-show_entries",
+                       "stream=nb_read_frames", "-of", "csv=p=0", "dropped.mp4"], cwd=self.dir)
+        frames = int(counted.strip())
+        self.assertEqual(frames, info["new_frames"])
+        import wave
+        w = wave.open(str(self.dir / "voice-dropped.wav"))
+        self.assertAlmostEqual(w.getnframes() / w.getframerate(), frames / FPS, delta=0.002)
+        listing = script("drops.py", "drops-voice.wav", "--fps", str(FPS), "--list-pauses", cwd=self.dir)
+        self.assertIn("quiet stretches", listing)
+
+    def test_23_captions_from_the_cut_voice_and_after_drops(self):
+        words = [(" muy", 0.0, 0.3), (" buenos", 0.3, 0.7), (" d\u00edas", 0.7, 1.1), (" a", 1.1, 1.2), (" todos", 1.2, 1.6),
+                 (" um", 2.0, 2.4), (" los", 2.4, 2.7), (" amigos.", 2.7, 3.2)]
+        (self.dir / "cut-voice.json").write_text(json.dumps({"segments": [{"words": [
+            {"word": w, "start": s, "end": e} for w, s, e in words]}]}), "utf-8")
+        (self.dir / "drops-info.json").write_text(json.dumps({"frame": 1 / 30, "old_frames": 120, "new_frames": 105, "drops": [
+            {"kind": "F", "start": 2.0, "len": 0.4, "frames": [60, 71], "note": "um"},
+            {"kind": "P", "start": 3.4, "len": 0.1, "frames": [102, 104], "note": "pause"}]}), "utf-8")
+        common = ["--on-cut", "--font", "DejaVu Sans", "--width", "540", "--height", "960", "--max-words", "4",
+                  "--dangling", "es", "--length", "4"]
+        script("captions.py", "cut-voice.json", *common, "--drops", "drops-info.json", "--two-lines", "10", cwd=self.dir)
+        caps = json.loads((self.dir / "captions.json").read_text("utf-8"))
+        text = [c["text"] for c in caps]
+        self.assertNotIn("um", " ".join(text).split(), "the removed filler is in the captions")
+        self.assertFalse(any(t.endswith(" a") for t in text), "a caption ends on a small word")
+        los = next(w for c in caps for w in c["words"] if w[2] == "los")
+        self.assertAlmostEqual(los[0], 2.4 - 0.4, delta=0.01)  # moved up by the filler that was cut before it
+        self.assertAlmostEqual(caps[-1]["words"][-1][1], 3.2 - 0.4, delta=0.01)
+        self.assertIn("\\N", (self.dir / "captions.ass").read_text("utf-8-sig"))
+        # two clips: the second clip's times are shifted by the first one's length
+        script("captions.py", "cut-voice.json", "cut-voice.json", "--on-cut", "--durations", "4", "3", "--font", "DejaVu Sans",
+               "--out", "two.ass", "--width", "540", "--height", "960", cwd=self.dir)
+        two = json.loads((self.dir / "two.json").read_text("utf-8"))
+        self.assertAlmostEqual(two[-1]["words"][-1][1], 4 + 3.2, delta=0.01)
+
+    def test_24_held_sounds_found_and_speech_left_alone(self):
+        np = self._numpy()
+        sr = 16000
+        t = np.arange(int(6 * sr)) / sr
+        x = np.zeros_like(t)
+        held = 0.2 * np.sin(2 * np.pi * 200 * t) + 0.12 * np.sin(2 * np.pi * 400 * t) + 0.08 * np.sin(2 * np.pi * 1200 * t)
+        x += held * ((t >= 1.0) & (t < 1.7))
+        for k, f in enumerate([300, 900, 500, 1800, 700, 2400, 400, 1500, 600, 2000, 350]):  # a new sound every 80 ms
+            m = (t >= 3.0 + k * 0.08) & (t < 3.08 + k * 0.08)
+            x[m] = 0.2 * np.sin(2 * np.pi * f * t[m]) + 0.1 * np.sin(2 * np.pi * 2.5 * f * t[m])
+        x += 0.0003 * np.random.RandomState(0).randn(len(t))
+        self._wav("held.wav", x, sr)
+        out = script("heldsounds.py", "held.wav", cwd=self.dir)
+        starts = [float(m) for m in re.findall(r"^V ([\d.]+) ", out, re.M)]
+        self.assertEqual(len(starts), 1, out)
+        self.assertAlmostEqual(starts[0], 1.0, delta=0.1)
+
+    def test_25_level_and_join_reaches_the_target(self):
+        np = self._numpy()
+        sr = 48000
+        for name, secs, amp, clicks in (("lv-a.wav", 6, 0.02, [1.0, 3.3, 4.1]), ("lv-b.wav", 4, 0.05, [2.2])):
+            t = np.arange(int(secs * sr)) / sr
+            x = amp * np.sin(2 * np.pi * 180 * t) * (0.6 + 0.4 * np.sin(2 * np.pi * 3 * t))
+            x += amp * 0.1 * np.random.RandomState(len(name)).randn(len(t))
+            for c in clicks:
+                x[int(c * sr):int(c * sr) + 20] = 0.9  # clicks near full scale, which stops loudnorm
+            self._wav(name, x, sr)
+        out = script("voice/leveljoin.py", "leveled.wav", "lv-a.wav", "lv-b.wav", "--target", "-14", "--durations", "6", "4", cwd=self.dir)
+        reached = float(re.search(r"Wrote leveled.wav: (-?[\d.]+) LUFS", out).group(1))
+        self.assertAlmostEqual(reached, -14, delta=0.5)
+        import wave
+        w = wave.open(str(self.dir / "leveled.wav"))
+        self.assertAlmostEqual(w.getnframes() / w.getframerate(), 10.0, delta=0.01)
+
+    def test_26_transcription_engines_share_one_interface(self):
+        self._numpy()
+        sys.path.insert(0, str(SCRIPTS))
+        import asr
+
+        class Word:
+            def __init__(self, word, start, end):
+                self.word, self.start, self.end = word, start, end
+
+        class Segment:
+            text = " eh vale"
+            words = [Word(" eh", 0.1, 0.4), Word(" vale", 0.5, 0.9)]
+
+        class Faster:  # the shape of faster_whisper.WhisperModel.transcribe
+            def transcribe(self, audio, **kwargs):
+                assert kwargs["word_timestamps"] and kwargs["condition_on_previous_text"] is False
+                return iter([Segment()]), None
+
+        class Openai:  # the shape of whisper's model.transcribe
+            def transcribe(self, audio, **kwargs):
+                return {"text": " eh vale", "segments": [{"words": [
+                    {"word": " eh", "start": 0.1, "end": 0.4}, {"word": " vale", "start": 0.5, "end": 0.9}]}]}
+
+        silence = [0.0] * 16000
+        for engine, model in (("faster", Faster()), ("openai", Openai())):
+            text, found = asr.transcribe(model, engine, silence, "es", "Eh, mmm.", words=True)
+            self.assertEqual(text, "eh vale")
+            self.assertEqual(found, [(0.1, 0.4, "eh"), (0.5, 0.9, "vale")])
+
+    def test_27_crown_setting_is_checked(self):
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import settings
+        here = os.getcwd()
+        os.chdir(self.dir)
+        try:
+            Path("retouch.json").write_text(json.dumps({"crown": {"grow": [1.45, 1.30], "raise": 0.36}}), "utf-8")
+            self.assertEqual(settings.load()["crown"]["raise"], 0.36)
+            Path("retouch.json").write_text(json.dumps({"crown": {"grow": [1.45]}}), "utf-8")
+            with self.assertRaises(SystemExit):
+                settings.load()
+            Path("retouch.json").unlink()
+        finally:
+            os.chdir(here)
+
+    def test_29_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
             self.assertTrue((ROOT / ref).exists(), ref)

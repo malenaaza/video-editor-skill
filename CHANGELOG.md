@@ -2,6 +2,34 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-16
+
+### New (from a five-clip, 4:45 edit on real footage)
+- `drops.py`: a second pass that removes fillers, held sounds and extra pauses from a finished cut
+  without rebuilding masks. Every drop is a whole number of frames, picture and voice are cut
+  together, and a time map moves the captions. `--list-pauses` audits a joined voice.
+- `heldsounds.py`: finds held sounds ("deeee") with a strict spectrum test that clipped no word
+  (an earlier detector clipped 12 of 27 cuts).
+- `voice/leveljoin.py`: joins clips and levels them to a target that `loudnorm` can't reach on a
+  quiet voice with clicks (it stopped at -13 LUFS when -11 was asked).
+- `hear.py` transcribes short pieces alone; `asr.py` gives `hear.py`, `checkcuts.py` and
+  `hunt_fillers.py` one `--engine` (openai or faster) and `--model` option. `hunt_fillers.py` also
+  takes `--step`.
+- `captions.py --on-cut` builds captions from a transcript of the cut voice (word times on a long
+  source were up to 1 s off around pauses), `--drops` follows `drops.py`, `--two-lines` and
+  `--dangling` break captions better.
+- `crown` in `retouch.json` keeps a tall headband or hair above the head sharp in the background blur.
+
+### Fixed (from the same edit)
+- `cutplan.py` finds pauses by loudness against the voice's peaks instead of a fixed level, so
+  pauses with a breath or click in them are removed (48 were left in a 4:45 cut), and it never
+  cuts a whispered word as a pause.
+- `cutplan.py filter` splits a long cut into several selects of 40 terms: FFmpeg stopped with
+  "Cannot allocate memory" on one select with 128 terms.
+- The instructions now say to run the filler hunt last, on the final joined voice (it found 8
+  real fillers only there), to check cuts with the `medium` model, and to build blur masks on the
+  render the colour keys were sampled on when the grade changes.
+
 ## 2026-11-15
 
 **If you're updating from an earlier version:** copy `video-editor/my-setup.md` out before you

@@ -17,7 +17,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 | First setup, installing a tool, a long job on a laptop | `references/setup.md` |
 | The user wants fillers ("um", hums, repeats) removed, or handling noise fills the pauses | `references/fillers.md` |
 | Log footage (flat, grey picture; Apple Log, S-Log...) | `references/log.md` |
-| Noise removal, voice polish, two voices, sound effects | `references/sound.md` |
+| Noise removal, voice polish, two voices, joining clips to one loudness, sound effects | `references/sound.md` |
 | Skin softening, teeth whitening, background blur | `references/retouch.md` |
 | Animated title, product tag, emojis, any Remotion or HyperFrames graphic | `references/graphics.md` |
 | A cover with pictures of the products | `references/cover.md` |
@@ -30,11 +30,12 @@ Each step works on the result of the one before. Skip the steps a video doesn't 
 1. Find or start the project folder and its `project.md` (Rule 2). Copy the original into it. Log footage: convert to a light copy first (`references/log.md`).
 2. Transcribe (Rule 3). Measure the voice's noise on the original (Rule 7).
 3. Decide the cuts: retakes, pauses, fillers. Build `plan.json` with `cutplan.py` (Rule 3).
-4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, grade, zooms. No text yet.
+4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, grade, zooms. No text yet. (If the grade changes later, build masks on the render the colour keys were sampled on: `references/retouch.md`.)
 5. Retouch and background blur on `clean.mp4`, giving `retouched.mp4` (Rule 9).
 6. Text and graphics, in this layer order: title, product tags, emojis, captions and handle, end card.
 7. Sound: clean the cut voice, level it, mix in sound effects (Rule 7).
-8. Final export, checks, and the ready-to-post pack (Rules 6, 10, 11).
+8. Second pass, if fillers or held sounds were found in the joined voice: `drops.py`, which cuts picture and voice together with no mask rebuild (`references/fillers.md`).
+9. Final export, checks, and the ready-to-post pack (Rules 6, 10, 11).
 
 ## Rule 0: Know the computer and the user
 
@@ -139,9 +140,9 @@ Don't work out cut times by hand. `<skill>/scripts/cutplan.py` (Python and FFmpe
 Its defaults are the values below, found in testing. Change them with its options only when a check fails.
 
 - **Retakes:** find anywhere a sentence is started over, or a spoken cue like "let's redo that" (or the same in the video's language). Keep only the best take. It's usually the last complete one, but pick the cleanest delivery. Remove the failed takes and the spoken cue.
-- **Pauses:** if the user wants no pauses, sentences should run straight into each other. `cutplan.py` finds gaps with `highpass=f=70,silencedetect=noise=-38dB:d=0.14`. It ends a clip about 0.05 s after a silence starts, and starts the next about 0.1 s before the silence ends: starting only 0.03 s before clipped the first sound of the next word in testing. A tighter threshold like -35 dB can catch soft word endings such as a final "s", so don't trim closer without checking. Then confirm no gaps of 0.2 s or more remain. If the user prefers a natural pace, shorten long pauses to about 0.3 s instead (`--keep-pause 0.3`).
+- **Pauses:** if the user wants no pauses, sentences should run straight into each other. `cutplan.py` finds quiet stretches by their 10 ms loudness against the voice's own peaks (quiet means 22 dB under them), which sees pauses with a breath or click in them; fixed-level `silencedetect` left 48 pauses of 0.2 to 0.6 s in a 4:45 cut (`--detector silencedetect` is still there). Words lying entirely inside a quiet stretch (whispers, "y ya está") are never cut as pauses. It ends a clip about 0.05 s after a silence starts, and starts the next about 0.1 s before the silence ends: starting only 0.03 s before clipped the first sound of the next word in testing. A tighter threshold can catch soft word endings such as a final "s", so don't trim closer without checking. Then confirm no gaps of 0.2 s or more remain. If the user prefers a natural pace, shorten long pauses to about 0.3 s instead (`--keep-pause 0.3`).
 - **Last word:** never cut the pause after the final word. Keep about 0.5 s after it ends, and start any audio fade or fade to the end card only after it. Measure where the word really ends on the waveform: a trailing word fades out slowly, Whisper ends it too early, and the pause cutter can treat the fading word as silence. Check the ending with a transcription of the last few seconds.
-- **Quiet recordings:** if the voice is quiet (around -30 LUFS or lower), -38 dB treats soft short words as silence. `cutplan.py` measures loudness and uses -48 dB for quiet audio on its own; `--noise` sets another level.
+- **Quiet recordings:** if the voice is quiet (around -30 LUFS or lower), -38 dB treats soft short words as silence. The loudness-based detector adapts to quiet recordings on its own; `--rms-below` changes how far under the peaks counts as quiet.
 - **Fillers:** if the user wants fillers removed, remove every one: "um", "uh", hums, drawn-out "and...", and repeats like "and how... and how". Whisper `medium` leaves most of them out of the transcript, so they need their own passes (a `small`-model pass, a short-window pass, a check of over-long words). Read `references/fillers.md` and run those passes on the whole cut **before the first export**, not after the user complains. It also covers the speech detector for noisy pauses and the mouth check.
 - **Pace:** apply the speed-up from `my-setup.md` after removing pauses and fillers. Use `setpts=PTS/<speed>,fps=<source fps>` on the picture and `atempo=<speed>` on the voice, which keeps the pitch. `cutplan.py --speed` adds this to the cut filter, and `captions.py` and `to-output` already give times after the speed-up. Divide any other time by the speed, and render titles, emojis and end cards at normal speed.
 - **Silent stretches:** pause detection alone isn't enough: product handling, swatching and room noise sit above the silence threshold. `cutplan.py build` lists every stretch of 0.4 s or more with no words; check each against the filler transcript too, and add it to `remove` even if it isn't silent. Check the finished video the same way.
@@ -157,6 +158,8 @@ python -I <skill>/scripts/captions.py transcript/<name>.json --font "<brand font
 ```
 
 Take the look from the brand's `Captions:` line (`--style box` for text on a box, `--upper`, `--max-chars`, `--max-words`; `--help` lists the rest). Put Whisper's misspellings of product and brand names in `fixes.json` (`{"glo serum": "Glow Serum"}`), and words that stay out of the captions in `--skip`. It also writes `captions.json`, the list of captions with times: use it to time emojis, product tags and sound effects, and to compare with the transcript of the finished video. Look at the frame with the longest caption, which it names. Burning them in is in Rule 6.
+
+**Timings:** Whisper's word times on a long source recording were up to 1 s off around pauses, so captions drifted. Once the cut voice is transcribed (the check after cutting needs that anyway), build the captions from it instead: `captions.py cut-voice.json --on-cut --length <seconds>` (several clips: list the transcripts and `--durations`). Its times are already times in the cut. After a second pass (`references/fillers.md`), add `--drops drops.json`. `--two-lines 30` splits long captions in two, and `--dangling es` (or `en`) keeps a forced break from ending a caption on "de" or "the".
 
 ## Rule 4: Split multi-video recordings
 
@@ -250,7 +253,7 @@ Show before/after frames from the user's own video before a full render of any o
 - **Titles and captions:** keep the title off the speaker's face. When the face fills the top of the frame, put the title on the clothing below the captions, and emojis in the background beside the head.
 - **Reordering and removing lines:** a judgment call, so show it in the storyboard for approval first.
 - **Reels over 3 minutes:** Reels allow up to 3:00 including the end card; TikTok allows longer. Offer two versions: the full one for TikTok and a trimmed one for Reels, with the trims listed in the storyboard. Do the slow work (clean render, retouch, blur) once on the full cut, then cut the other versions from that footage by output frame ranges, so masks never need rebuilding. Captions, emojis, sound and the end card are built per version.
-- **Changes after export that only remove lines:** don't rebuild masks or retouch. Add the cuts to the plan, map each kept source frame to its index in the finished retouched footage, trim that footage, then rebuild the voice, captions, emoji times and sound effects. Drop captions whose words fell inside a removed stretch, put back any kept word dropped by mistake, and remove an emoji and its sound if its line was cut. To fix a clipped word after masks are built, splice the missing frames in instead of rebuilding everything.
+- **Changes after export that only remove lines:** don't rebuild masks or retouch. For fillers, held sounds and pauses, `drops.py` does it (`references/fillers.md`): whole frames, voice and picture together, with a time map for the captions. For whole lines, add the cuts to the plan, map each kept source frame to its index in the finished retouched footage, trim that footage, then rebuild the voice, captions, emoji times and sound effects. Drop captions whose words fell inside a removed stretch, put back any kept word dropped by mistake, and remove an emoji and its sound if its line was cut. To fix a clipped word after masks are built, splice the missing frames in instead of rebuilding everything.
 
 ## Rule 11: Finish like this
 

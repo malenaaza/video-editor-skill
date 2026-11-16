@@ -16,6 +16,16 @@ Background noise (fans, air conditioning, fridge hum, street noise) and mains hu
 
 If a video mixes voices (an AI voice and the user, an off-camera interviewer), level each one on its own. Use the transcript to mark which time ranges belong to which voice, and run `loudnorm` on each separately (two passes for accuracy), with the brand's loudness target from `my-setup.md` (default `loudnorm=I=-14:TP=-1:LRA=11` for social video). Join them, then verify with `ebur128` that the voices match within about 1 LU. Never cut an off-camera voice's pauses as silence.
 
+### A quiet voice with clicks
+
+`loudnorm` won't reach a loud target when the voice is quiet and has clicks or breaths: in one edit the raw voice was about -32 LUFS with peaks near 0 dB, and `loudnorm` stopped at -13 LUFS when the brand wanted -11. `<skill>/scripts/voice/leveljoin.py` does what worked: a gain per clip so the clips match, one big gain for the whole voice, and a fast limiter (`alimiter=limit=0.84:attack=3:release=40:level=disabled`) that takes the clicks down instead:
+
+```
+python -I <skill>/scripts/voice/leveljoin.py voice-leveled.wav clip1.wav clip2.wav --target -11 --durations <each clip's picture length in seconds>
+```
+
+It measures each clip, adjusts the whole-voice gain up to four times until the result is within 0.3 LU of the target, and prints the loudness and true peak. `--durations` pads or trims each clip's voice to exactly its picture, so sync holds at every join. If it says the target wasn't reached, the limiter is holding the peaks: say so and take the target down a little, or clean the voice first. A true peak above -1 dBFS gets a warning (lower `--limit`). Use plain `loudnorm` when it reaches the target; use this when it doesn't, or when several clips must be joined and matched.
+
 ## Sound effects
 
 Add these when the user asks; don't ask them to supply sounds.

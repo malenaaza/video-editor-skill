@@ -16,6 +16,13 @@ cuts.json holds the judgment calls, in source seconds (the same clock as the tra
    "protect": [[44.10, 44.90, "dip inside 'absolutamente'"]]}
 "remove" ranges are always cut. "protect" ranges are never cut by the pause remover.
 
+Pauses are found by loudness, not by a fixed level: the voice's own peaks set the reference and a
+stretch counts as quiet when its 10 ms loudness stays more than 22 dB under them (--rms-below).
+FFmpeg's silencedetect works per sample, so a breath or click inside a pause ended it, and a pause
+with room noise was never seen (48 pauses of 0.2 to 0.6 s were left in a 4:45 cut). It is still
+there as --detector silencedetect. Quiet words are never cut as pauses: a word that lies entirely
+inside a quiet stretch (a whisper, a trailing "y ya está") is kept with a margin of 0.03 s.
+
 All times in plan.json are true source times: the transcript's clock plus the audio
 stream's start time (some phones start the audio a little after the picture). Every kept
 piece starts and ends on a whole video frame, and the audio is cut at the same instants,
@@ -23,9 +30,11 @@ so picture and sound can't drift apart over many cuts.
 """
 import argparse
 import json
+import math
 import re
 import subprocess
 import sys
+from array import array
 from fractions import Fraction
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -81,6 +90,34 @@ def silences(video, noise_db, min_len, duration):
     return out
 
 
+def quiet_stretches(video, below_db, min_len, duration):
+    """Stretches whose 10 ms loudness stays `below_db` under the voice's peaks (the 95th percentile)."""
+    pcm = subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", video, "-vn", "-af", "highpass=f=70", "-f", "s16le",
+                          "-ac", "1", "-ar", "16000", "-"], capture_output=True, check=True).stdout
+    samples = array("h")
+    samples.frombytes(pcm[:len(pcm) // 2 * 2])
+    hop = 160
+    count = len(samples) // hop
+    db = [10 * math.log10(sum(v * v for v in samples[i * hop:(i + 1) * hop]) / hop / 32768 ** 2 + 1e-12)
+          for i in range(count)]
+    if count < 10:
+        return [], None
+    reference = sorted(db)[int(0.95 * (count - 1))]
+    threshold = reference - below_db
+    out, i = [], 0
+    while i < count:
+        if db[i] < threshold:
+            j = i
+            while j < count and db[j] < threshold:
+                j += 1
+            if (j - i) * 0.01 >= min_len:
+                out.append([i * 0.01, min(j * 0.01, duration)])
+            i = j
+        else:
+            i += 1
+    return out, threshold
+
+
 def load_words(path, offset):
     data = json.load(open(path, encoding="utf-8"))
     words = []
@@ -123,10 +160,15 @@ def build(a):
 
     noise = a.noise
     lufs = None
-    if noise is None:
-        lufs = loudness(a.source)
-        noise = -48 if lufs is not None and lufs <= -30 else -38
-    sil = silences(a.source, noise, a.min_silence, info["duration"])
+    if a.detector == "rms":
+        sil, noise = quiet_stretches(a.source, a.rms_below, a.min_silence, info["duration"])
+        if noise is None:
+            sys.exit("The recording is too short to measure.")
+    else:
+        if noise is None:
+            lufs = loudness(a.source)
+            noise = -48 if lufs is not None and lufs <= -30 else -38
+        sil = silences(a.source, noise, a.min_silence, info["duration"])
 
     # Where the video ends: a tail after the last kept word. A trailing word fades out slowly
     # and Whisper ends it early, so take the later of Whisper's end and where the sound stops.
@@ -156,6 +198,13 @@ def build(a):
             continue
         pause_cuts.append([cs, ce])
 
+    # Never cut a quiet word as if it were a pause: a word that lies entirely inside a quiet
+    # stretch (a whisper) stays, with a small margin.
+    quiet_words = [[w0 - 0.03, w1 + 0.03] for w0, w1, _ in kept_words
+                   if w1 - w0 <= 0.9 and any(s - 0.05 <= w0 and w1 <= e + 0.05 for s, e in sil)]
+    if quiet_words:
+        pause_cuts = [c for c in subtract(pause_cuts, quiet_words) if c[1] - c[0] >= a.min_cut]
+
     keep = subtract([[0.0, end]], pause_cuts)
     keep = subtract(keep, [r[:2] for r in remove])
 
@@ -183,8 +232,12 @@ def build(a):
 
     fpsf = float(fps)
     print(f"Source: {info['duration']:.2f} s at {fpsf:.3f} fps. Audio starts {offset:+.3f} s against the picture.")
-    if lufs is not None:
+    if a.detector == "rms":
+        print(f"Quiet means under {noise:.1f} dB ({a.rms_below:g} dB below the voice's peaks): {len(sil)} stretches.")
+    elif lufs is not None:
         print(f"Voice loudness {lufs:.1f} LUFS, so silence threshold {noise} dB.")
+    if quiet_words:
+        print(f"{len(quiet_words)} quiet words kept out of the pause cuts (whispers or soft endings).")
     print(f"Kept {len(frames)} pieces, {total} frames = {total / fpsf:.2f} s"
           + (f" ({total / fpsf / a.speed:.2f} s at {a.speed}x)" if a.speed != 1 else "")
           + f". Removed {len(pause_cuts)} pauses and {len(remove)} listed ranges.")
@@ -233,16 +286,27 @@ def to_source(plan, t):
     return None
 
 
+CHUNK = 40  # select terms per filter: 40 worked where one select with 128 terms failed
+
+
 def write_filter(a):
     plan = load_plan(a.plan)
     fps = Fraction(plan["fps"])
     speed = plan.get("speed", 1) or 1
     frames = plan["frames"]
-    select = "+".join(f"between(n\\,{f0}\\,{f1 - 1})" for f0, f1 in frames)
-    v = f"[0:v]select='{select}',setpts=N/({fps})/TB"
-    if speed != 1:
-        v += f",setpts=PTS/{speed},fps={fps}"
-    lines = [v + "[v];"]
+    terms = [f"between(n\\,{f0}\\,{f1 - 1})" for f0, f1 in frames]
+    rest = f",setpts=PTS/{speed},fps={fps}" if speed != 1 else ""
+    chunks = [terms[i:i + CHUNK] for i in range(0, len(terms), CHUNK)]
+    if len(chunks) == 1:
+        lines = [f"[0:v]select='{'+'.join(terms)}',setpts=N/({fps})/TB{rest}[v];"]
+    else:
+        # FFmpeg can't parse one select with about 128 terms ("Cannot allocate memory"), so the
+        # pieces go through several selects of CHUNK terms each, which are joined in order.
+        lines = ["[0:v]split=%d%s;" % (len(chunks), "".join(f"[x{i}]" for i in range(len(chunks))))]
+        for i, chunk in enumerate(chunks):
+            lines.append(f"[x{i}]select='{'+'.join(chunk)}',setpts=N/({fps})/TB[p{i}];")
+        lines.append("".join(f"[p{i}]" for i in range(len(chunks)))
+                     + f"concat=n={len(chunks)}:v=1:a=0,setpts=N/({fps})/TB{rest}[v];")
     fade = 0.008
     n = len(frames)
     lines.append(f"[0:a]asplit={n}" + "".join(f"[s{i}]" for i in range(n)) + ";" if n > 1 else "[0:a]anull[s0];")
@@ -288,7 +352,10 @@ def main():
     b.add_argument("transcript")
     b.add_argument("--cuts", help="cuts.json with remove and protect ranges")
     b.add_argument("--out", default="plan.json")
-    b.add_argument("--noise", type=float, help="silence threshold in dB (default: -38, or -48 for quiet voices)")
+    b.add_argument("--detector", choices=["rms", "silencedetect"], default="rms",
+                   help="rms (default): quiet = this far under the voice's peaks; silencedetect: a fixed level")
+    b.add_argument("--rms-below", type=float, default=22.0, help="rms detector: dB under the voice's peaks")
+    b.add_argument("--noise", type=float, help="silencedetect only: level in dB (default -38, or -48 for quiet voices)")
     b.add_argument("--min-silence", type=float, default=0.14)
     b.add_argument("--pad-after", type=float, default=0.05, help="kept after a silence starts")
     b.add_argument("--pad-before", type=float, default=0.10, help="kept before a silence ends")

@@ -26,6 +26,10 @@ mask.py (skin and teeth):
                   smoothed; raise it if skin texture near the brows is being kept.
   protect_brows   the margin in pixels for brow_mode "margin" (default 15)
   protect_eyes    the margin in pixels around the eyes (default 15). Lips and mouth keep 25.
+  crown           null, or {"grow": [1.45, 1.30], "raise": 0.36}: also keep sharp an area above the head
+                  (hair, a tall headband, a hat): the face outline scaled by grow around its centre and
+                  raised by raise times the face height. A braided headband above the hairline was
+                  being blurred with the default head area.
   edge_faces      when the tracker finds no face, look for one cut in half by the frame edge
                   (see facetrack.py). On by default.
   edge_pad        share of the frame width mirrored for that search (0.5)
@@ -66,6 +70,7 @@ DEFAULTS = {
     "brow_contrast": 14,
     "protect_brows": 15,
     "protect_eyes": 15,
+    "crown": None,
     "edge_faces": True,
     "edge_pad": 0.5,
     "close_lo": 0.31,
@@ -92,13 +97,18 @@ def check_key(key):
 def load(path="retouch.json"):
     settings = dict(DEFAULTS)
     if os.path.exists(path):
-        data = json.load(open(path, encoding="utf-8"))
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
         unknown = sorted(set(data) - set(DEFAULTS))
         if unknown:
             sys.exit(f"{path}: unknown settings {unknown}. Known: {sorted(DEFAULTS)}.")
         settings.update(data)
         for key in settings["blur_keys"] + ([settings["blur_skin"]] if settings["blur_skin"] else []):
             check_key(key)
+        crown = settings["crown"]
+        if crown is not None and not (isinstance(crown, dict) and len(crown.get("grow", [])) == 2 and "raise" in crown):
+            sys.exit('retouch.json: crown must be {"grow": [x, y], "raise": number}, for example '
+                     '{"grow": [1.45, 1.30], "raise": 0.36}.')
         changed = {k: v for k, v in data.items() if v != DEFAULTS[k]}
         print(f"Settings from {path}: {json.dumps(changed, ensure_ascii=False)}", flush=True)
     else:
