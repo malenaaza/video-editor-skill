@@ -118,6 +118,7 @@ video-editor/
     asr.py, hear.py      one interface for both Whisper engines; transcribes short pieces alone
     report.py            turns a problem or idea into a report for the author (GitHub link or email)
     broll.py             indexes your B-roll and finds the right photo or clip for each product you name
+    popplace.py          places the product pop-in beside your temple, never over what you hold
     update_skill.py      updates the skill safely, with a backup
     fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
     hunt_fillers.py      short-window pass for fillers glued onto words

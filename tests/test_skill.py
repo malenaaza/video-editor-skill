@@ -639,6 +639,39 @@ class SkillTest(unittest.TestCase):
         self.assertIsNone(found["Vitamin C"]["first_mention"])
         self.assertEqual(found["Vitamin C"]["candidates"], [])                    # no look-alike suggested
 
+    def test_41_pop_in_goes_beside_the_temple_and_never_over_the_hand(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import popplace
+        W, H = 1080, 1920
+        face = {"left": 300, "right": 900, "top": 500, "temple_y": 700}   # more room on the left (300) than right (180)
+
+        def box(props, aspect=1.2, label=0):
+            x = props["margin"] if props["side"] == "left" else W - props["margin"] - props["size"]
+            return (x, props["top"], x + props["size"], props["top"] + props["size"] * aspect + label)
+
+        props, notes = popplace.place(face, [], W, H, 1.2)
+        self.assertEqual(props["side"], "left")
+        b = box(props)
+        self.assertLessEqual(b[2], face["left"])                          # beside the face, not on it
+        self.assertAlmostEqual((b[1] + b[3]) / 2, face["temple_y"], delta=2)  # centred at the temples
+        # a hand holding a product up on the left, at temple height: lifted above it, or moved, never over it
+        hand = popplace.hand_zone([(80, 1100), (260, 1100), (80, 1300), (260, 1300)], W, H)
+        props, notes = popplace.place(face, [hand], W, H, 1.2)
+        self.assertIsNotNone(props)
+        self.assertFalse(popplace.overlaps(box(props), hand))
+        self.assertTrue(notes)                                            # it says what it did
+        # hands on both sides, all the way up: no room, so it says to skip
+        walls = [(0, 0, 300, H), (900, 0, W, H)]
+        props, notes = popplace.place(face, walls, W, H, 1.2)
+        self.assertIsNone(props)
+        self.assertIn("skip", notes[-1])
+        # the name under the picture is dropped when only the picture fits
+        tight = [(0, 420, 300, H)]                                        # room for a small picture, not for its name
+        props, notes = popplace.place(face, tight, W, H, 1.2, label=True)
+        self.assertIsNotNone(props)
+        self.assertIsNone(props.get("name", "kept"))
+        self.assertFalse(popplace.overlaps(box(props), tight[0]))
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

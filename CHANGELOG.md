@@ -10,6 +10,8 @@ What each update of the video-editor skill brings. Newest first.
   indexes the B-roll folder (photos and clips, with a numbered contact sheet) and finds when each product is said
   and which file matches it (accents and plurals ignored); Claude checks the choice against the video and asks you
   before rendering. New Remotion template `ProductPop.tsx`, and a tested FFmpeg fallback without Remotion.
+  `scripts/popplace.py` puts it beside the temple and never over the product in your hand: it finds the face
+  and the hands, and goes smaller, lifts above them, uses the other side or drops the name when they're in the way.
   New lines in the setup: `B-roll folder:` and `Product pop-in:`.
 
 ## 2026-11-17 · version 2.1.0
