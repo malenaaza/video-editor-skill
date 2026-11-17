@@ -10,12 +10,17 @@ those pixels back to neutral without changing the brightness (a `colorchannelmix
 
 If the neutral areas in the shot aren't really neutral (a beige wall, a cream sofa), the measure follows them: point
 it at something you know is white or grey with --region (fractions of the frame: x,y,width,height, for example
-0.05,0.1,0.2,0.2 for a white shelf at the top left). --check writes the middle frame before and after, side by side.
-Use it on the source of the clean render (after the LUT for Log footage), and put the filter before the brand's colour
-boost. Needs numpy and FFmpeg.
+0.05,0.1,0.2,0.2 for a white shelf at the top left). --check writes the middle frame as it is now, with half and
+with the full correction, side by side.
+
+With the brand's colour boost: correcting a cool cast warms the picture, and the boost's extra saturation then pushes
+skin towards orange. On a real frame that already had the boost, the full correction made the skin clearly warmer and
+half was gentle. So with the boost, offer half (--strength 0.5) first. Use it on the source of the clean render (after
+the LUT for Log footage), and put the filter before the brand's colour boost. Needs numpy and FFmpeg.
 """
 import argparse
 import json
+import re
 import subprocess
 import sys
 
@@ -106,7 +111,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("source")
     ap.add_argument("--region", help="x,y,width,height as fractions of the frame: something known to be white or grey")
-    ap.add_argument("--check", help="write the middle frame before and after, side by side")
+    ap.add_argument("--check", help="write the middle frame as now, with half and with the full correction, side by side")
+    ap.add_argument("--strength", type=float, default=1.0,
+                    help="how much of the correction to apply, 0 to 1 (0.5 = half: use it with the brand's colour boost)")
     a = ap.parse_args()
     region = [float(v) for v in a.region.split(",")] if a.region else None
     if region and (len(region) != 4 or not all(0 <= v <= 1 for v in region)):
@@ -116,21 +123,34 @@ def main():
         print(f"Can't measure: only {result['share']}% of the picture is neutral (white or grey). Point it at something "
               "white or grey with --region, or leave the colour as it is.")
         return
-    filt = "colorchannelmixer=rr={:.4f}:gg={:.4f}:bb={:.4f}".format(*result["gains"])
+    def mixer(strength):
+        gains = [1 + strength * (g - 1) for g in result["gains"]]
+        return "colorchannelmixer=rr={:.4f}:gg={:.4f}:bb={:.4f}".format(*gains)
+
+    filt = mixer(a.strength)
     print(f"Measured on {result['frames']} frame(s), {result['share']}% of the picture neutral: {describe(result)} "
           f"({result['size']}%).")
     if result["size"] < 1.5:
         print("No correction needed.")
     else:
-        print(f"Filter, before the brand's colour boost: {filt}")
+        part = "" if a.strength == 1 else f" ({a.strength:g} of the correction)"
+        print(f"Filter{part}, before the brand's colour boost: {filt}")
         if a.check:
             mid = duration(a.source) / 2
-            subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{mid:.3f}", "-i", a.source, "-frames:v", "1",
-                            "-filter_complex", f"[0:v]scale=640:-2,split[a][b];[b]{filt}[c];[a][c]hstack",
-                            a.check], check=True)
-            print(f"Before and after: {a.check}")
-    print(json.dumps({"cast": describe(result), "size_percent": result["size"],
-                      "filter": filt if result["size"] >= 1.5 else None}))
+            label = "drawtext=text='{}':x=10:y=10:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5"
+            graph = (f"[0:v]scale=480:-2,split=3[a][b][c];[b]{mixer(0.5)}[h];[c]{mixer(1.0)}[w];"
+                     f"[a]{label.format('As now')}[a2];[h]{label.format('Half correction')}[h2];"
+                     f"[w]{label.format('Full correction')}[w2];[a2][h2][w2]hstack=3")
+            done = subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{mid:.3f}", "-i", a.source, "-frames:v", "1",
+                                   "-filter_complex", graph, a.check], capture_output=True)
+            if done.returncode:  # an FFmpeg without drawtext: the same three panels, unlabelled
+                graph = re.sub(r"\[([ahw])\]drawtext=[^\[]*\[\1(2)\]", r"[\1]null[\1\2]", graph)
+                subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{mid:.3f}", "-i", a.source, "-frames:v", "1",
+                                "-filter_complex", graph, a.check], check=True)
+            print(f"As now, half and full correction side by side: {a.check}")
+    print(json.dumps({"cast": describe(result), "size_percent": result["size"], "strength": a.strength,
+                      "filter": filt if result["size"] >= 1.5 else None,
+                      "half": mixer(0.5) if result["size"] >= 1.5 else None}))
 
 
 if __name__ == "__main__":

@@ -691,6 +691,11 @@ class SkillTest(unittest.TestCase):
              "-pix_fmt", "yuv420p", "wb-fixed.mp4"], cwd=self.dir)
         fixed = last(script("balance.py", "wb-fixed.mp4", cwd=self.dir))
         self.assertLess(fixed["size_percent"], 1.0)                       # the filter brings it back to neutral
+        half = last(script("balance.py", "wb-blue.mp4", "--strength", "0.5", cwd=self.dir))
+        gains = lambda f: [float(v) for v in re.findall(r"=([\d.]+)", f)]
+        for g_half, g_full in zip(gains(half["filter"]), gains(blue["filter"])):
+            self.assertAlmostEqual(g_half - 1, (g_full - 1) / 2, delta=0.0002)  # half the change, on every channel
+        self.assertEqual(half["half"], half["filter"])
         region = last(script("balance.py", "wb-blue.mp4", "--region", "0.07,0.12,0.30,0.30", cwd=self.dir))  # the white box
         self.assertIn("cool (blue)", region["cast"])
 

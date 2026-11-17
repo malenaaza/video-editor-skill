@@ -15,7 +15,8 @@ What each update of the video-editor skill brings. Newest first.
   New lines in the setup: `B-roll folder:` and `Product pop-in:`.
 - White balance measured, not judged by eye: `scripts/balance.py` finds the white and grey parts of the picture (or a
   region you point at), names the cast ("noticeable cool (blue) cast, 4.9%") and gives the filter that removes it. The
-  user sees a before/after first and decides.
+  user sees the frame as it is, with half and with the full correction, and decides. With the brand's colour boost
+  it offers half first (`--strength 0.5`): the full correction plus the boost made skin clearly warmer on a real frame.
 - The edit in numbers: `scripts/editreport.py` reports the length before and after, pieces kept, retakes and fillers
   removed, pauses left, loudness and true peak, and the picture details, and saves it next to the export.
 - The cut plan offers 2 or 3 openings and endings to choose from, the brand's usual one first.
