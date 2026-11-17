@@ -80,7 +80,7 @@ Copy this block for each brand or channel the user makes videos for.
 - Font: <name, and where the font files are>
 - Logos: `<paths; copy into the work folder before use>`
 - Captions: <style: e.g. white text with black outline, or white on a colored box; case; position>
-- Title: <style, length on screen; still, or animated with the TitleCard template>
+- Title: <style, length on screen; still, or animated with the TitleCard template: pop-in or typewriter (with or without key clicks)>
 - Product tag: <none / ProductTag template: side, position, colors if different from the brand's>
 - Product pop-in: <off / on>: the product's B-roll photo (cut out) or clip pops in beside the speaker when named (ProductPop template); with name and price <yes / no>; sound <pop / none>
 - End card: <layout, contact details>

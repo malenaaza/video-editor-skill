@@ -13,6 +13,9 @@ What each update of the video-editor skill brings. Newest first.
   at the old place so copies installed the old way still learn about new versions.
 
 ### New
+- A typewriter animation for the hook title (`"animation": "typewriter"` in `TitleCard`): letters typed one by
+  one with a blinking cursor in the accent colour and a small bounce at the end, and `scripts/sfx/typing.py` for
+  matching soft key clicks. Also fixed: the template's sample highlight word no longer leaks into real titles.
 - Moving from the old install: "update my video-editor skill" brings an old copy up to date, then offers the move to
   the plugin; `update_skill.py --remove-old-copy` backs the old folder up and removes it (never a developer's clone).
   The updater never replaces a plugin install, and the skill warns once if it finds itself installed twice.

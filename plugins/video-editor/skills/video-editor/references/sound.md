@@ -31,7 +31,7 @@ It measures each clip, adjusts the whole-voice gain up to four times until the r
 Add these when the user asks; don't ask them to supply sounds.
 
 - **Source:** `<skill>/scripts/sfx/`: `pop.wav`, `whoosh.wav`, `sparkle.wav`, `cash.wav`. They were generated with FFmpeg and are free to use. Don't download music or effects unless the user asks and the license allows it.
-- **Where:** `pop` on each emoji, handle pop and product pop-in, `whoosh` just before a zoom or end card (start about 0.15 s early so it peaks on the cut), `sparkle` on the title and handle, `cash` on money moments.
+- **Where:** `pop` on each emoji, handle pop and product pop-in, soft key clicks under a typewriter title (`sfx/typing.py`, see `references/graphics.md`), `whoosh` just before a zoom or end card (start about 0.15 s early so it peaks on the cut), `sparkle` on the title and handle, `cash` on money moments.
 - **Mix:** copy `sfx-mix-example.txt` and change the `adelay` times (milliseconds), the number of `asplit` outputs, the `amix` input count, and `whole_dur`. Volumes of about 0.36 to 0.54 sit under the voice; 0.20 to 0.30 was too quiet in testing. Finish with `alimiter=limit=0.89:level=false`.
 
 ```

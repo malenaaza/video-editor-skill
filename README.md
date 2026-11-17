@@ -97,7 +97,8 @@ plugins/video-editor/
       hunt_fillers.py      short-window pass for fillers glued onto words
       retouch/             skin and teeth masks, beautify extras, background blur, mouth check;
                            settings.py reads each video's retouch.json
-      sfx/                 four small sound effects, generated with FFmpeg
+      sfx/                 four small sound effects, generated with FFmpeg, and typing.py (key clicks
+                           for a typewriter title)
       remotion/EmojiPop.tsx  animated emoji pop for Remotion
       remotion/TitleCard.tsx  animated hook title for Remotion
       remotion/ProductTag.tsx product name and price lower third for Remotion

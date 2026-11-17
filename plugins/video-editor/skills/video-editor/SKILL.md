@@ -99,7 +99,7 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 New users don't know what's possible, so tell them. Show this menu at the end of first setup (Rule 0), and whenever the user asks what you can do, what the options are, or which effects exist. Show it in the user's language, as a short list like this, not a wall of text:
 
 - **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · 2 or 3 openings and endings to choose from · speed up delivery slightly · split one long recording into several videos
-- **Text and graphics:** captions in your brand's style · animated title · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
+- **Text and graphics:** captions in your brand's style · animated title (pop-in or typewriter) · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · white balance measured and corrected · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
 - **Ready to post:** vertical and wide versions · a report of the edit in numbers · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors

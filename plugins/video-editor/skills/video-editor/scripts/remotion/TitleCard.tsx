@@ -1,5 +1,10 @@
-// Animated hook title for the first seconds of a video: each line's box wipes in,
-// the words rise in one after another, and everything slides up and out at the end.
+// Animated hook title for the first seconds of a video. Two animations:
+//   "pop" (default): each line's box wipes in, the words rise in one after another;
+//   "typewriter": the box wipes in, then the letters are typed one by one with a blinking cursor in the accent
+//                 colour, and the title gives a small bounce when it's complete. The layout never moves while typing:
+//                 letters not typed yet are already in place, invisible. For key clicks, scripts/sfx/typing.py makes
+//                 the matching sound from the same text and speed.
+// Both slide up and out at the end.
 // Renders as a short transparent clip; place it on the video with FFmpeg (see SKILL.md).
 //
 // Copy this file and brandFont.ts into the Remotion project's src folder, then register it
@@ -26,6 +31,10 @@ export type TitleCardProps = {
   boxColor?: string; // "transparent" for text with no box
   accentColor?: string;
   top?: number; // y of the first line; keep it below the app's top bar and off the face
+  animation?: "pop" | "typewriter";
+  lettersPerSecond?: number; // typewriter speed (default 16: a 20-letter title types in about 1.3 s)
+  typingStart?: number; // seconds before the first letter (default 0.13, while the box wipes in)
+  cursor?: boolean; // typewriter cursor (default true)
   seconds?: number;
   fps?: number;
   width?: number;
@@ -39,6 +48,10 @@ const defaults = {
   boxColor: "#111111",
   accentColor: "#FF4F8B",
   top: 260,
+  animation: "pop" as "pop" | "typewriter",
+  lettersPerSecond: 16,
+  typingStart: 0.13,
+  cursor: true,
   seconds: 2.5,
   fps: 30,
   width: 1080,
@@ -46,6 +59,11 @@ const defaults = {
 };
 
 const clean = (word: string) => word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+
+// Typewriter timing, shared with calculateMetadata: every character (spaces too) takes 1 / lettersPerSecond.
+const typedLength = (lines: string[]) => lines.reduce((n, line) => n + Array.from(line).length, 0);
+const typingSeconds = (p: { lines: string[]; lettersPerSecond: number; typingStart: number }) =>
+  p.typingStart + typedLength(p.lines) / p.lettersPerSecond;
 
 export const TitleCard: React.FC<TitleCardProps> = (input) => {
   const p = { ...defaults, ...input };
@@ -58,6 +76,15 @@ export const TitleCard: React.FC<TitleCardProps> = (input) => {
     extrapolateRight: "clamp",
   });
   let wordIndex = 0;
+  const typewriter = p.animation === "typewriter";
+  const typed = typewriter ? Math.floor(Math.max(0, frame / fps - p.typingStart) * p.lettersPerSecond) : 0;
+  const total = typedLength(p.lines);
+  const doneAt = Math.round(typingSeconds(p) * fps);
+  const bounce = typewriter
+    ? interpolate(frame, [doneAt, doneAt + 4, doneAt + 9], [1, 1.06, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+    : 1;
+  const blinkOn = typed < total || Math.floor(frame / (fps * 0.27)) % 2 === 0; // steady while typing, blinks after
+  let charIndex = 0;
 
   return (
     <AbsoluteFill
@@ -66,11 +93,14 @@ export const TitleCard: React.FC<TitleCardProps> = (input) => {
         paddingTop: p.top,
         gap: p.fontSize * 0.12,
         opacity: 1 - exit,
-        transform: `translateY(${-exit * 40}px)`,
+        transform: `translateY(${-exit * 40}px) scale(${bounce})`,
       }}
     >
       {p.lines.map((line, li) => {
-        const wipe = spring({ frame: frame - li * 4, fps, config: { damping: 200 }, durationInFrames: 10 });
+        // typewriter: each line's box wipes in just before its first letter, so no empty box waits on screen
+        const lineStart = typedLength(p.lines.slice(0, li));
+        const boxAt = typewriter ? Math.max(0, Math.round((p.typingStart + lineStart / p.lettersPerSecond) * fps) - 3) : li * 4;
+        const wipe = spring({ frame: frame - boxAt, fps, config: { damping: 200 }, durationInFrames: 10 });
         return (
           <div
             key={li}
@@ -94,6 +124,27 @@ export const TitleCard: React.FC<TitleCardProps> = (input) => {
             {line.split(" ").map((word, wi, words) => {
               const rise = spring({ frame: frame - 3 - wordIndex++ * 3, fps, config: { damping: 12, mass: 0.6 } });
               const isHighlight = p.highlight !== undefined && clean(word) === clean(p.highlight);
+              if (typewriter) {
+                const chars = Array.from(word + (wi < words.length - 1 ? " " : ""));
+                return (
+                  <span key={wi} style={{ position: "relative", fontFamily: p.font, fontSize: p.fontSize, fontWeight: 800, lineHeight: 1.1,
+                    color: isHighlight ? p.accentColor : p.textColor, whiteSpace: "pre" }}>
+                    {chars.map((ch, ci) => {
+                      const index = charIndex++;
+                      const showCursor = p.cursor && blinkOn && index === Math.min(typed, total) - 1;
+                      return (
+                        <span key={ci} style={{ opacity: index < typed ? 1 : 0 }}>
+                          {ch}
+                          {showCursor ? (
+                            <span style={{ display: "inline-block", width: p.fontSize * 0.08, height: p.fontSize * 0.95,
+                              marginLeft: p.fontSize * 0.04, background: p.accentColor, verticalAlign: "-0.12em", opacity: 1 }} />
+                          ) : null}
+                        </span>
+                      );
+                    })}
+                  </span>
+                );
+              }
               return (
                 <span
                   key={wi}
@@ -129,10 +180,13 @@ export const TitleCardComposition: React.FC = () => (
     fps={30}
     width={1080}
     height={1920}
-    defaultProps={{ lines: ["3 serums", "I'd buy again"], highlight: "again" } as TitleCardProps}
+    // Only the required lines here: Remotion merges these into every render, so a sample highlight would leak.
+    defaultProps={{ lines: ["Your title"] } as TitleCardProps}
     calculateMetadata={({ props }) => {
       const p = { ...defaults, ...props };
-      return { durationInFrames: Math.round(p.seconds * p.fps), fps: p.fps, width: p.width, height: p.height };
+      // a typewriter title lasts long enough to finish typing and still be read for about a second
+      const seconds = p.animation === "typewriter" ? Math.max(p.seconds, typingSeconds(p) + 1.1) : p.seconds;
+      return { durationInFrames: Math.round(seconds * p.fps), fps: p.fps, width: p.width, height: p.height };
     }}
   />
 );

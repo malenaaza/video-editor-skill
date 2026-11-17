@@ -766,6 +766,19 @@ class SkillTest(unittest.TestCase):
         self.assertNotEqual(refused.returncode, 0)
         self.assertTrue((clone / "video-editor" / "SKILL.md").exists())                 # a developer's clone is never removed
 
+    def test_47_typewriter_clicks_follow_the_letters(self):
+        out = script("sfx/typing.py", "--line", "Mi rutina de", "--line", "5 minutos", "--lps", "16", "--start", "0.13",
+                     "--out", "typing.wav", cwd=self.dir)
+        self.assertIn("9 clicks", out)                     # every other letter, never a space: 17 letters -> 9 clicks
+        self.assertIn("typing ends at 1.44 s", out)        # 0.13 + 21 characters / 16
+        import wave
+        w = wave.open(str(self.dir / "typing.wav"))
+        self.assertAlmostEqual(w.getnframes() / w.getframerate(), 1.44 + 0.3, delta=0.01)
+        title = (SCRIPTS / "remotion" / "TitleCard.tsx").read_text("utf-8")
+        default_props = next(l for l in title.splitlines() if "defaultProps=" in l)
+        self.assertNotIn("highlight", default_props)       # a sample highlight would leak into real titles
+        self.assertIn('"typewriter"', title)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
