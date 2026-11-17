@@ -117,6 +117,7 @@ video-editor/
     heldsounds.py        finds held sounds ("deeee") that a filler pass misses
     asr.py, hear.py      one interface for both Whisper engines; transcribes short pieces alone
     report.py            turns a problem or idea into a report for the author (GitHub link or email)
+    broll.py             indexes your B-roll and finds the right photo or clip for each product you name
     update_skill.py      updates the skill safely, with a backup
     fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
     hunt_fillers.py      short-window pass for fillers glued onto words
@@ -126,6 +127,7 @@ video-editor/
     remotion/EmojiPop.tsx  animated emoji pop for Remotion
     remotion/TitleCard.tsx  animated hook title for Remotion
     remotion/ProductTag.tsx product name and price lower third for Remotion
+    remotion/ProductPop.tsx the product's photo or clip popping in beside you when you name it
     remotion/CoverCard.tsx  cover image with products around the speaker's face
     remotion/brandFont.ts   loads the brand font for the templates
     cover/cutout.py      cuts products out of shop photos or video frames

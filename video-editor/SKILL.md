@@ -97,7 +97,7 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 New users don't know what's possible, so tell them. Show this menu at the end of first setup (Rule 0), and whenever the user asks what you can do, what the options are, or which effects exist. Show it in the user's language, as a short list like this, not a wall of text:
 
 - **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · speed up delivery slightly · split one long recording into several videos
-- **Text and graphics:** captions in your brand's style · animated title · product name and price tag · animated emojis on words · your handle and logo · end card
+- **Text and graphics:** captions in your brand's style · animated title · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
 - **Ready to post:** vertical and wide versions · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
@@ -119,7 +119,7 @@ The answer to question 1 decides the branding in Rule 5.
 
 **Returning users get one line, not four questions.** When `my-setup.md` already answers questions 1 to 3 (the brand, its `Default platforms:` and its `Usual call to action:`), don't ask them again. Confirm in one line and start working without waiting for the reply: "Reels and TikTok for [brand], ending on 'Link in bio', your usual style. Tell me if anything's different this time." If only one brand is saved, the video is for that brand. If several are saved and the request doesn't say which, ask only that. Ask a question only where its saved answer is missing or says "ask every time", and save new answers so the next edit is shorter. Question 4 stays: once the transcript is ready, suggest extras only if something in this video stands out; if nothing does, don't ask, and go ahead with the brand's defaults.
 
-**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), background noise or hum in the measure (voice cleaning), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
+**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag, or the product popping in from the B-roll when the B-roll has it), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), background noise or hum in the measure (voice cleaning), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
 
 ## Rule 2: Never touch the original
 
@@ -213,7 +213,7 @@ Check in this order:
 
 **Brand sheet:** the first time you edit for a brand, check its `Brand sheet:` line in `my-setup.md`. If it's empty or says "not asked yet", ask the user **once**, alongside the Rule 1 questions: "Do you want a brand sheet for this brand? It's one page showing your fonts, colors and caption styles, handy to share with anyone who makes graphics for you." If yes, read `references/brand-sheet.md` and build it. If no, write `Brand sheet: not wanted (<date>)`. Whenever a brand setting changes in `my-setup.md` and the brand has a sheet, update the sheet in the same turn.
 
-If a folder called `B-roll kit` exists, pull the logo, photos and graphics from it.
+If a folder called `B-roll kit` exists, or `my-setup.md` names a `B-roll folder:`, pull the logo, photos and graphics from it. Product photos and clips in it can pop in when the speaker names the product (`references/graphics.md`, Product pop-in from B-roll).
 
 When the user wants to borrow the style of creators they admire, borrow the format, type and pacing only. Never reuse another creator's lines, titles or footage.
 

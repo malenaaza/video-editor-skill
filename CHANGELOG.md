@@ -2,6 +2,16 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-17 · version 2.2.0
+
+### New
+- Product pop-in from B-roll: when you name a product, its photo (cut out) or a short clip from your B-roll pops
+  in beside you for about 2.6 s, with a pop sound and, if you want, its name and price. `scripts/broll.py`
+  indexes the B-roll folder (photos and clips, with a numbered contact sheet) and finds when each product is said
+  and which file matches it (accents and plurals ignored); Claude checks the choice against the video and asks you
+  before rendering. New Remotion template `ProductPop.tsx`, and a tested FFmpeg fallback without Remotion.
+  New lines in the setup: `B-roll folder:` and `Product pop-in:`.
+
 ## 2026-11-17 · version 2.1.0
 
 ### New

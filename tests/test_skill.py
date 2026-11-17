@@ -591,6 +591,54 @@ class SkillTest(unittest.TestCase):
         self.assertEqual((clone / "video-editor" / "VERSION").read_text("utf-8").strip(), "1.0.0")
         self.assertFalse((home / "backups").exists())
 
+    def test_40_broll_finds_the_product_and_the_moment(self):
+        folder = self.dir / "broll" / "kit"
+        (folder / "Haus Labs").mkdir(parents=True, exist_ok=True)
+        try:
+            from PIL import Image
+            have_pillow = True
+            Image.new("RGB", (400, 600), (230, 200, 180)).save(folder / "Glow-Serum_front.jpg")
+            Image.new("RGB", (500, 500), (200, 160, 140)).save(folder / "Haus Labs" / "corrector-líquido.png")
+            Image.new("RGB", (300, 300), (90, 90, 90)).save(folder / "IMG_2041.jpg")
+        except ImportError:
+            have_pillow = False
+            for name in ("Glow-Serum_front.jpg", "Haus Labs/corrector-líquido.png", "IMG_2041.jpg"):
+                (folder / name).write_bytes(b"not decoded without Pillow")
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=360x640:r=30:d=2", "-c:v", "libx264",
+             "-preset", "ultrafast", str(folder / "labial rojo swatch.mp4")])
+        work = self.dir / "broll"
+        out = script("broll.py", "index", "kit", cwd=work)
+        index = json.loads((work / "broll-index.json").read_text("utf-8"))
+        kinds = {e["file"]: e["kind"] for e in index["files"]}
+        self.assertEqual(kinds["labial rojo swatch.mp4"], "clip")
+        self.assertEqual(len(kinds), 4)
+        self.assertIn("haus", next(e["words"] for e in index["files"] if e["file"].startswith("Haus Labs")))
+        self.assertEqual(next(e["words"] for e in index["files"] if e["file"] == "IMG_2041.jpg"), [])  # camera name
+        self.assertAlmostEqual(next(e["seconds"] for e in index["files"] if e["kind"] == "clip"), 2.0, delta=0.1)
+        self.assertIn("camera names", out)
+        if have_pillow:
+            self.assertTrue((work / "broll-sheet.png").exists())
+        captions = [
+            {"start": 0.5, "end": 2.0, "text": "", "words": [[0.5, 0.8, "me"], [0.8, 1.2, "encanta"], [1.2, 1.5, "el"],
+                                                            [1.5, 1.8, "Glow"], [1.8, 2.0, "Sérum."]]},
+            {"start": 3.0, "end": 4.5, "text": "", "words": [[3.0, 3.2, "y"], [3.4, 3.9, "labiales"], [3.9, 4.3, "rojos,"]]},
+            {"start": 5.0, "end": 6.0, "text": "", "words": [[5.2, 5.7, "corrector"], [5.7, 5.8, "de"], [5.8, 6.0, "Haus"]]},
+            {"start": 7.0, "end": 8.0, "text": "", "words": [[7.0, 7.4, "otra"], [7.4, 7.6, "vez"], [7.6, 7.9, "glow"],
+                                                            [7.9, 8.0, "serum"]]}]
+        (work / "captions.json").write_text(json.dumps(captions), "utf-8")
+        script("broll.py", "match", "--product", "Glow Serum", "--product", "labial rojo", "--product", "Haus Labs corrector",
+               "--product", "Vitamin C", cwd=work)
+        found = {m["product"]: m for m in json.loads((work / "broll-matches.json").read_text("utf-8"))}
+        self.assertEqual(found["Glow Serum"]["first_mention"], 1.5)               # accents ignored
+        self.assertEqual(found["Glow Serum"]["mentions"], [1.5, 7.6])             # every time it's said
+        self.assertEqual(found["Glow Serum"]["candidates"][0]["file"], "Glow-Serum_front.jpg")
+        self.assertEqual(found["labial rojo"]["first_mention"], 3.4)              # plurals count
+        self.assertEqual(found["labial rojo"]["candidates"][0]["kind"], "clip")
+        self.assertEqual(found["Haus Labs corrector"]["mention_match"], "partial")  # said in another order
+        self.assertEqual(found["Haus Labs corrector"]["candidates"][0]["file"], "Haus Labs/corrector-líquido.png")
+        self.assertIsNone(found["Vitamin C"]["first_mention"])
+        self.assertEqual(found["Vitamin C"]["candidates"], [])                    # no look-alike suggested
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
