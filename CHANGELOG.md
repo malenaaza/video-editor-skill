@@ -13,6 +13,13 @@ What each update of the video-editor skill brings. Newest first.
   `scripts/popplace.py` puts it beside the temple and never over the product in your hand: it finds the face
   and the hands, and goes smaller, lifts above them, uses the other side or drops the name when they're in the way.
   New lines in the setup: `B-roll folder:` and `Product pop-in:`.
+- White balance measured, not judged by eye: `scripts/balance.py` finds the white and grey parts of the picture (or a
+  region you point at), names the cast ("noticeable cool (blue) cast, 4.9%") and gives the filter that removes it. The
+  user sees a before/after first and decides.
+- The edit in numbers: `scripts/editreport.py` reports the length before and after, pieces kept, retakes and fillers
+  removed, pauses left, loudness and true peak, and the picture details, and saves it next to the export.
+- The cut plan offers 2 or 3 openings and endings to choose from, the brand's usual one first.
+  (These three ideas come from comparing with another reels plugin; the code is our own.)
 
 ## 2026-11-17 · version 2.1.0
 

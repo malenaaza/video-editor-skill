@@ -119,6 +119,8 @@ video-editor/
     report.py            turns a problem or idea into a report for the author (GitHub link or email)
     broll.py             indexes your B-roll and finds the right photo or clip for each product you name
     popplace.py          places the product pop-in beside your temple, never over what you hold
+    balance.py           measures a colour cast (white balance) and gives the filter that removes it
+    editreport.py        the edit in numbers: what was cut, pauses left, loudness, size
     update_skill.py      updates the skill safely, with a backup
     fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
     hunt_fillers.py      short-window pass for fillers glued onto words

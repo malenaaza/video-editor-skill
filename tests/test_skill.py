@@ -672,6 +672,48 @@ class SkillTest(unittest.TestCase):
         self.assertIsNone(props.get("name", "kept"))
         self.assertFalse(popplace.overlaps(box(props), tight[0]))
 
+    def test_42_white_balance_is_measured_and_corrected(self):
+        self._numpy()
+        scene = ("color=0x8a8a8a:s=640x360:d=2,drawbox=x=40:y=40:w=200:h=120:color=0xe8e8e8:t=fill,"
+                 "drawbox=x=400:y=200:w=180:h=120:color=0xc06040:t=fill")
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", scene, "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p",
+             "wb-neutral.mp4"], cwd=self.dir)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "wb-neutral.mp4", "-vf", "colorchannelmixer=rr=0.95:gg=1.0:bb=1.07",
+             "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", "wb-blue.mp4"], cwd=self.dir)
+        last = lambda out: json.loads(out.strip().splitlines()[-1])
+        neutral = last(script("balance.py", "wb-neutral.mp4", cwd=self.dir))
+        self.assertIsNone(neutral["filter"])
+        blue = last(script("balance.py", "wb-blue.mp4", "--check", "wb.png", cwd=self.dir))
+        self.assertIn("cool (blue)", blue["cast"])
+        self.assertGreater(blue["size_percent"], 4)
+        self.assertTrue((self.dir / "wb.png").exists())
+        run(["ffmpeg", "-v", "error", "-y", "-i", "wb-blue.mp4", "-vf", blue["filter"], "-c:v", "libx264", "-crf", "12",
+             "-pix_fmt", "yuv420p", "wb-fixed.mp4"], cwd=self.dir)
+        fixed = last(script("balance.py", "wb-fixed.mp4", cwd=self.dir))
+        self.assertLess(fixed["size_percent"], 1.0)                       # the filter brings it back to neutral
+        region = last(script("balance.py", "wb-blue.mp4", "--region", "0.07,0.12,0.30,0.30", cwd=self.dir))  # the white box
+        self.assertIn("cool (blue)", region["cast"])
+
+    def test_43_edit_report_in_numbers(self):
+        folder = self.dir / "report-edit"
+        folder.mkdir(exist_ok=True)
+        shutil.copy(self.dir / "src.mp4", folder / "src.mp4")
+        shutil.copy(self.dir / "tr.json", folder / "tr.json")
+        (folder / "cuts.json").write_text(json.dumps({"remove": [[0.3, 1.9, "first take of the intro"], [4.5, 4.6, "um"]]}), "utf-8")
+        script("cutplan.py", "build", "src.mp4", "tr.json", "--cuts", "cuts.json", cwd=folder)
+        script("cutplan.py", "filter", cwd=folder)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "src.mp4", filter_flag(), "cut-filter.txt", "-map", "[v]", "-map", "[a]",
+             "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "final.mp4"], cwd=folder)
+        out = script("editreport.py", "src.mp4", "final.mp4", cwd=folder)
+        self.assertRegex(out, r"Length: 12\.0 s -> \d+\.\d s")
+        self.assertIn("1 retakes, 1 fillers", out)
+        self.assertIn("Pieces kept:", out)
+        self.assertRegex(out, r"Loudness: -?\d+\.\d LUFS")
+        self.assertIn("540x960", out)
+        self.assertTrue((folder / "final-report.txt").exists())
+        again = script("editreport.py", "src.mp4", "final.mp4", cwd=folder)  # never overwrites a report
+        self.assertIn("final-report-v2.txt", again)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
