@@ -30,7 +30,7 @@ Each step works on the result of the one before. Skip the steps a video doesn't 
 1. Find or start the project folder and its `project.md` (Rule 2). Copy the original into it. Log footage: convert to a light copy first (`references/log.md`).
 2. Transcribe (Rule 3). Measure the voice's noise on the original (Rule 7).
 3. Decide the cuts: retakes, pauses, fillers. Build `plan.json` with `cutplan.py` (Rule 3).
-4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, grade, zooms. No text yet. (If the grade changes later, build masks on the render the colour keys were sampled on: `references/retouch.md`.)
+4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, white balance if the user wants it (Rule 8), grade, zooms. No text yet. (If the grade changes later, build masks on the render the colour keys were sampled on: `references/retouch.md`.)
 5. Retouch and background blur on `clean.mp4`, giving `retouched.mp4`; then, if the brand uses beautify, `beautify.py` on it (Rule 9).
 6. Text and graphics, in this layer order: title, product tags, emojis, captions and handle, end card.
 7. Sound: clean the cut voice, level it, mix in sound effects (Rule 7).
@@ -96,11 +96,11 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 
 New users don't know what's possible, so tell them. Show this menu at the end of first setup (Rule 0), and whenever the user asks what you can do, what the options are, or which effects exist. Show it in the user's language, as a short list like this, not a wall of text:
 
-- **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · speed up delivery slightly · split one long recording into several videos
-- **Text and graphics:** captions in your brand's style · animated title · product name and price tag · animated emojis on words · your handle and logo · end card
-- **Look:** color boost for dull footage · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
+- **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · 2 or 3 openings and endings to choose from · speed up delivery slightly · split one long recording into several videos
+- **Text and graphics:** captions in your brand's style · animated title · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
+- **Look:** color boost for dull footage · white balance measured and corrected · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
-- **Ready to post:** vertical and wide versions · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
+- **Ready to post:** vertical and wide versions · a report of the edit in numbers · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
 
 End with one line: "Ask for any of these by name, or I'll suggest what fits each video."
 
@@ -119,7 +119,7 @@ The answer to question 1 decides the branding in Rule 5.
 
 **Returning users get one line, not four questions.** When `my-setup.md` already answers questions 1 to 3 (the brand, its `Default platforms:` and its `Usual call to action:`), don't ask them again. Confirm in one line and start working without waiting for the reply: "Reels and TikTok for [brand], ending on 'Link in bio', your usual style. Tell me if anything's different this time." If only one brand is saved, the video is for that brand. If several are saved and the request doesn't say which, ask only that. Ask a question only where its saved answer is missing or says "ask every time", and save new answers so the next edit is shorter. Question 4 stays: once the transcript is ready, suggest extras only if something in this video stands out; if nothing does, don't ask, and go ahead with the brand's defaults.
 
-**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), background noise or hum in the measure (voice cleaning), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
+**Suggesting extras:** base each suggestion on something in this video: a product or price named (product tag, or the product popping in from the B-roll when the B-roll has it), a strong opening line (animated title), a money moment (cash sound), two or more products shown (cover with products), dull or dark footage (color fix), background noise or hum in the measure (voice cleaning), a long video for Reels (a trimmed version). Don't suggest what the brand already gets by default, or what the user turned down for this brand before (check Notes from feedback in `my-setup.md`). If nothing stands out, say so and suggest nothing. When the user picks extras for several videos in a row, offer once to make them that brand's default.
 
 ## Rule 2: Never touch the original
 
@@ -173,6 +173,7 @@ Its defaults are the values below, found in testing. Change them with its option
 - **Silent stretches:** pause detection alone isn't enough: product handling, swatching and room noise sit above the silence threshold. `cutplan.py build` lists every stretch of 0.4 s or more with no words; check each against the filler transcript too, and add it to `remove` even if it isn't silent. Check the finished video the same way.
 - **Check the cuts:** after the edit, transcribe the finished video and compare it with the original transcript. A word that changed at a cut point means the cut clipped it, so widen that cut and render again. A trim pass can also treat the dip inside a word as a pause; protect such words in the plan.
 - Show the user the list of what was cut if any choice was a judgment call.
+- **Openings and endings to choose from:** when you show the cut plan, offer 2 or 3 ways to open and to end, each with its timestamps and one line on why, the brand's usual choice first. To open: straight on the strongest line or the hook, dropping a slow greeting ("hi everyone, today..."), or on a question or a number from later in the video. To end: on the call to action, or on the last strong line, with the call to action in the end card. Keep it to one short message, together with the cut list. If the user picks the same kind of opening or ending for several videos, save it in the brand's notes and offer it first next time.
 
 ### Captions
 
@@ -213,7 +214,7 @@ Check in this order:
 
 **Brand sheet:** the first time you edit for a brand, check its `Brand sheet:` line in `my-setup.md`. If it's empty or says "not asked yet", ask the user **once**, alongside the Rule 1 questions: "Do you want a brand sheet for this brand? It's one page showing your fonts, colors and caption styles, handy to share with anyone who makes graphics for you." If yes, read `references/brand-sheet.md` and build it. If no, write `Brand sheet: not wanted (<date>)`. Whenever a brand setting changes in `my-setup.md` and the brand has a sheet, update the sheet in the same turn.
 
-If a folder called `B-roll kit` exists, pull the logo, photos and graphics from it.
+If a folder called `B-roll kit` exists, or `my-setup.md` names a `B-roll folder:`, pull the logo, photos and graphics from it. Product photos and clips in it can pop in when the speaker names the product (`references/graphics.md`, Product pop-in from B-roll).
 
 When the user wants to borrow the style of creators they admire, borrow the format, type and pacing only. Never reuse another creator's lines, titles or footage.
 
@@ -254,6 +255,8 @@ Measure brightness with `signalstats` (average `YAVG`). If the footage is too da
 
 Apply the color choice from the brand's `Look:` lines in the clean render. If the user finds normal footage dull, the cause is usually ungraded indoor light, not retouch or blur. Offer a gentle grade (`eq=contrast=1.06:saturation=1.15:gamma=1.02`) in the clean render and show a before/after frame. Stronger saturation (x1.25) turned skin orange-red in testing.
 
+**White balance, measured, not judged by eye.** Run `python -I <skill>/scripts/balance.py <source> --check wb.png` on the footage that goes into the clean render (after the LUT for Log). It finds the parts of the picture that should be white or grey, measures their colour cast ("noticeable cool (blue) cast, 4.9%"), and prints a `colorchannelmixer` filter that removes it without changing the brightness; under 1.5% it says no correction is needed. A grey chair or a beige wall that isn't truly neutral can mislead it: when the shot has something known to be white (a shelf, a bag's white stripe, paper), measure that with `--region x,y,w,h` (fractions of the frame). On a real frame, a white stripe and the whole picture agreed (a 5 to 6% cool cast). The correction is a choice, not a fix: `wb.png` shows the frame as it is, with half and with the full correction; show it to the user and apply only what they choose, before the brand's colour boost. **With the colour boost, offer half first** (`--strength 0.5`): correcting a cool cast warms the picture and the boost's extra saturation then pushes skin towards orange; on a real frame that already had the boost, the full correction made the skin clearly warmer and half stayed natural. Save their answer for that camera or room in `my-setup.md` (for example "Kitchen light: half correction"), and don't ask again for the same setup. Never "correct" a look the user made on purpose.
+
 ## Rule 9: Retouch, background blur and extras
 
 All of these run when the brand's settings in `my-setup.md` say "every video", or when the user asks. Each has its own reference file with the steps, tested levels and checks. Read it before starting.
@@ -284,6 +287,8 @@ Show before/after frames from the user's own video before a full render of any o
 ## Rule 11: Finish like this
 
 Before reporting, check the export with `ffprobe` (resolution, duration, audio present) and look at a few extracted frames, including one with captions.
+
+**The edit in numbers:** run `python -I <skill>/scripts/editreport.py <original> <export>` from the build folder (it reads `plan.json`, `cuts.json` and `drops.json` there). It saves `<export name>-report.txt` next to the export and prints the length before and after with how much was removed, the pieces kept, the retakes and fillers removed, the pauses left and the longest, the loudness and true peak, and the picture size, frame rate and frame count. Give the user these numbers in a few lines, in their language: they show what was done better than "it's better now". If a number is off (loudness far from the brand's target, a pause left that should have gone), fix it before reporting.
 
 Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt` next to the export, named `<video-name>-post.txt`, with sections for the caption, hashtags, video file, cover file and before-you-post notes. Never overwrite an existing file. In the chat, give the file's path instead of repeating the text. The pack includes:
 

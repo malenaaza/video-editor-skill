@@ -2,6 +2,26 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-17 · version 2.2.0
+
+### New
+- Product pop-in from B-roll: when you name a product, its photo (cut out) or a short clip from your B-roll pops
+  in beside you for about 2.6 s, with a pop sound and, if you want, its name and price. `scripts/broll.py`
+  indexes the B-roll folder (photos and clips, with a numbered contact sheet) and finds when each product is said
+  and which file matches it (accents and plurals ignored); Claude checks the choice against the video and asks you
+  before rendering. New Remotion template `ProductPop.tsx`, and a tested FFmpeg fallback without Remotion.
+  `scripts/popplace.py` puts it beside the temple and never over the product in your hand: it finds the face
+  and the hands, and goes smaller, lifts above them, uses the other side or drops the name when they're in the way.
+  New lines in the setup: `B-roll folder:` and `Product pop-in:`.
+- White balance measured, not judged by eye: `scripts/balance.py` finds the white and grey parts of the picture (or a
+  region you point at), names the cast ("noticeable cool (blue) cast, 4.9%") and gives the filter that removes it. The
+  user sees the frame as it is, with half and with the full correction, and decides. With the brand's colour boost
+  it offers half first (`--strength 0.5`): the full correction plus the boost made skin clearly warmer on a real frame.
+- The edit in numbers: `scripts/editreport.py` reports the length before and after, pieces kept, retakes and fillers
+  removed, pauses left, loudness and true peak, and the picture details, and saves it next to the export.
+- The cut plan offers 2 or 3 openings and endings to choose from, the brand's usual one first.
+  (These three ideas come from comparing with another reels plugin; the code is our own.)
+
 ## 2026-11-17 · version 2.1.0
 
 ### New

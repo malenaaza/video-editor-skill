@@ -16,6 +16,6 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q ffmpeg fonts-dejavu-core
-          pip install numpy opencv-python-headless
+          pip install numpy opencv-python-headless pillow
       - name: Run the tests
         run: python tests/test_skill.py

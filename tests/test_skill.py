@@ -591,6 +591,134 @@ class SkillTest(unittest.TestCase):
         self.assertEqual((clone / "video-editor" / "VERSION").read_text("utf-8").strip(), "1.0.0")
         self.assertFalse((home / "backups").exists())
 
+    def test_40_broll_finds_the_product_and_the_moment(self):
+        folder = self.dir / "broll" / "kit"
+        (folder / "Haus Labs").mkdir(parents=True, exist_ok=True)
+        try:
+            from PIL import Image
+            have_pillow = True
+            Image.new("RGB", (400, 600), (230, 200, 180)).save(folder / "Glow-Serum_front.jpg")
+            Image.new("RGB", (500, 500), (200, 160, 140)).save(folder / "Haus Labs" / "corrector-líquido.png")
+            Image.new("RGB", (300, 300), (90, 90, 90)).save(folder / "IMG_2041.jpg")
+        except ImportError:
+            have_pillow = False
+            for name in ("Glow-Serum_front.jpg", "Haus Labs/corrector-líquido.png", "IMG_2041.jpg"):
+                (folder / name).write_bytes(b"not decoded without Pillow")
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=360x640:r=30:d=2", "-c:v", "libx264",
+             "-preset", "ultrafast", str(folder / "labial rojo swatch.mp4")])
+        work = self.dir / "broll"
+        out = script("broll.py", "index", "kit", cwd=work)
+        index = json.loads((work / "broll-index.json").read_text("utf-8"))
+        kinds = {e["file"]: e["kind"] for e in index["files"]}
+        self.assertEqual(kinds["labial rojo swatch.mp4"], "clip")
+        self.assertEqual(len(kinds), 4)
+        self.assertIn("haus", next(e["words"] for e in index["files"] if e["file"].startswith("Haus Labs")))
+        self.assertEqual(next(e["words"] for e in index["files"] if e["file"] == "IMG_2041.jpg"), [])  # camera name
+        self.assertAlmostEqual(next(e["seconds"] for e in index["files"] if e["kind"] == "clip"), 2.0, delta=0.1)
+        self.assertIn("camera names", out)
+        if have_pillow:
+            self.assertTrue((work / "broll-sheet.png").exists())
+        captions = [
+            {"start": 0.5, "end": 2.0, "text": "", "words": [[0.5, 0.8, "me"], [0.8, 1.2, "encanta"], [1.2, 1.5, "el"],
+                                                            [1.5, 1.8, "Glow"], [1.8, 2.0, "Sérum."]]},
+            {"start": 3.0, "end": 4.5, "text": "", "words": [[3.0, 3.2, "y"], [3.4, 3.9, "labiales"], [3.9, 4.3, "rojos,"]]},
+            {"start": 5.0, "end": 6.0, "text": "", "words": [[5.2, 5.7, "corrector"], [5.7, 5.8, "de"], [5.8, 6.0, "Haus"]]},
+            {"start": 7.0, "end": 8.0, "text": "", "words": [[7.0, 7.4, "otra"], [7.4, 7.6, "vez"], [7.6, 7.9, "glow"],
+                                                            [7.9, 8.0, "serum"]]}]
+        (work / "captions.json").write_text(json.dumps(captions), "utf-8")
+        script("broll.py", "match", "--product", "Glow Serum", "--product", "labial rojo", "--product", "Haus Labs corrector",
+               "--product", "Vitamin C", cwd=work)
+        found = {m["product"]: m for m in json.loads((work / "broll-matches.json").read_text("utf-8"))}
+        self.assertEqual(found["Glow Serum"]["first_mention"], 1.5)               # accents ignored
+        self.assertEqual(found["Glow Serum"]["mentions"], [1.5, 7.6])             # every time it's said
+        self.assertEqual(found["Glow Serum"]["candidates"][0]["file"], "Glow-Serum_front.jpg")
+        self.assertEqual(found["labial rojo"]["first_mention"], 3.4)              # plurals count
+        self.assertEqual(found["labial rojo"]["candidates"][0]["kind"], "clip")
+        self.assertEqual(found["Haus Labs corrector"]["mention_match"], "partial")  # said in another order
+        self.assertEqual(found["Haus Labs corrector"]["candidates"][0]["file"], "Haus Labs/corrector-líquido.png")
+        self.assertIsNone(found["Vitamin C"]["first_mention"])
+        self.assertEqual(found["Vitamin C"]["candidates"], [])                    # no look-alike suggested
+
+    def test_41_pop_in_goes_beside_the_temple_and_never_over_the_hand(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import popplace
+        W, H = 1080, 1920
+        face = {"left": 300, "right": 900, "top": 500, "temple_y": 700}   # more room on the left (300) than right (180)
+
+        def box(props, aspect=1.2, label=0):
+            x = props["margin"] if props["side"] == "left" else W - props["margin"] - props["size"]
+            return (x, props["top"], x + props["size"], props["top"] + props["size"] * aspect + label)
+
+        props, notes = popplace.place(face, [], W, H, 1.2)
+        self.assertEqual(props["side"], "left")
+        b = box(props)
+        self.assertLessEqual(b[2], face["left"])                          # beside the face, not on it
+        self.assertAlmostEqual((b[1] + b[3]) / 2, face["temple_y"], delta=2)  # centred at the temples
+        # a hand holding a product up on the left, at temple height: lifted above it, or moved, never over it
+        hand = popplace.hand_zone([(80, 1100), (260, 1100), (80, 1300), (260, 1300)], W, H)
+        props, notes = popplace.place(face, [hand], W, H, 1.2)
+        self.assertIsNotNone(props)
+        self.assertFalse(popplace.overlaps(box(props), hand))
+        self.assertTrue(notes)                                            # it says what it did
+        # hands on both sides, all the way up: no room, so it says to skip
+        walls = [(0, 0, 300, H), (900, 0, W, H)]
+        props, notes = popplace.place(face, walls, W, H, 1.2)
+        self.assertIsNone(props)
+        self.assertIn("skip", notes[-1])
+        # the name under the picture is dropped when only the picture fits
+        tight = [(0, 420, 300, H)]                                        # room for a small picture, not for its name
+        props, notes = popplace.place(face, tight, W, H, 1.2, label=True)
+        self.assertIsNotNone(props)
+        self.assertIsNone(props.get("name", "kept"))
+        self.assertFalse(popplace.overlaps(box(props), tight[0]))
+
+    def test_42_white_balance_is_measured_and_corrected(self):
+        self._numpy()
+        scene = ("color=0x8a8a8a:s=640x360:d=2,drawbox=x=40:y=40:w=200:h=120:color=0xe8e8e8:t=fill,"
+                 "drawbox=x=400:y=200:w=180:h=120:color=0xc06040:t=fill")
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", scene, "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p",
+             "wb-neutral.mp4"], cwd=self.dir)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "wb-neutral.mp4", "-vf", "colorchannelmixer=rr=0.95:gg=1.0:bb=1.07",
+             "-c:v", "libx264", "-crf", "12", "-pix_fmt", "yuv420p", "wb-blue.mp4"], cwd=self.dir)
+        last = lambda out: json.loads(out.strip().splitlines()[-1])
+        neutral = last(script("balance.py", "wb-neutral.mp4", cwd=self.dir))
+        self.assertIsNone(neutral["filter"])
+        blue = last(script("balance.py", "wb-blue.mp4", "--check", "wb.png", cwd=self.dir))
+        self.assertIn("cool (blue)", blue["cast"])
+        self.assertGreater(blue["size_percent"], 4)
+        self.assertTrue((self.dir / "wb.png").exists())
+        run(["ffmpeg", "-v", "error", "-y", "-i", "wb-blue.mp4", "-vf", blue["filter"], "-c:v", "libx264", "-crf", "12",
+             "-pix_fmt", "yuv420p", "wb-fixed.mp4"], cwd=self.dir)
+        fixed = last(script("balance.py", "wb-fixed.mp4", cwd=self.dir))
+        self.assertLess(fixed["size_percent"], 1.0)                       # the filter brings it back to neutral
+        half = last(script("balance.py", "wb-blue.mp4", "--strength", "0.5", cwd=self.dir))
+        gains = lambda f: [float(v) for v in re.findall(r"=([\d.]+)", f)]
+        for g_half, g_full in zip(gains(half["filter"]), gains(blue["filter"])):
+            self.assertAlmostEqual(g_half - 1, (g_full - 1) / 2, delta=0.0002)  # half the change, on every channel
+        self.assertEqual(half["half"], half["filter"])
+        region = last(script("balance.py", "wb-blue.mp4", "--region", "0.07,0.12,0.30,0.30", cwd=self.dir))  # the white box
+        self.assertIn("cool (blue)", region["cast"])
+
+    def test_43_edit_report_in_numbers(self):
+        folder = self.dir / "report-edit"
+        folder.mkdir(exist_ok=True)
+        shutil.copy(self.dir / "src.mp4", folder / "src.mp4")
+        shutil.copy(self.dir / "tr.json", folder / "tr.json")
+        (folder / "cuts.json").write_text(json.dumps({"remove": [[0.3, 1.9, "first take of the intro"], [4.5, 4.6, "um"]]}), "utf-8")
+        script("cutplan.py", "build", "src.mp4", "tr.json", "--cuts", "cuts.json", cwd=folder)
+        script("cutplan.py", "filter", cwd=folder)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "src.mp4", filter_flag(), "cut-filter.txt", "-map", "[v]", "-map", "[a]",
+             "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "final.mp4"], cwd=folder)
+        out = script("editreport.py", "src.mp4", "final.mp4", cwd=folder)
+        self.assertRegex(out, r"Length: 12\.0 s -> \d+\.\d s")
+        self.assertIn("1 retakes, 1 fillers", out)
+        self.assertIn("Pieces kept:", out)
+        self.assertRegex(out, r"Loudness: -?\d+\.\d LUFS")
+        self.assertIn("540x960", out)
+        self.assertTrue((folder / "final-report.txt").exists())
+        again = script("editreport.py", "src.mp4", "final.mp4", cwd=folder)  # never overwrites a report
+        self.assertIn("final-report-v2.txt", again)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
