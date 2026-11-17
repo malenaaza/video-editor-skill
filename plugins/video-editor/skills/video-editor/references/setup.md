@@ -4,6 +4,11 @@ Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rul
 
 ## Updating the skill
 
+**Installed as a plugin** (the usual way now): updates come through Claude Code's plugin system, not this updater. If the user asks to update, tell them: `/plugin`, then **Marketplaces**, **malenaaza**, update (or turn on auto-update there once), then start a new session. `update_skill.py` says the same and changes nothing.
+
+**Installed the old way** (a copy in `~/.claude/skills/video-editor`): the updater below brings it up to date and then prints the move to the plugin. With the user's OK: run `claude plugin marketplace add malenaaza/video-editor-skill` and `claude plugin install video-editor@malenaaza`, then `python -I <skill>/scripts/update_skill.py --remove-old-copy` (a backup of the old folder goes to `~/.video-editor/backups/`), then ask them to restart Claude Code. Plugin first, old copy second, so the skill is never missing. Their settings stay where they are.
+
+
 Most users don't know Git, so updating is done by this skill. When the user asks to update, upgrade or get the latest version of the skill (or says it's out of date), in any language ("actualiza mi skill", "¿hay una versión nueva?"), run it, and give the report in the language they used:
 
 ```

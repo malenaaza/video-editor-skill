@@ -2,6 +2,21 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-17 · version 2.3.0
+
+### Changed
+- The skill is now a Claude Code plugin, "Video Editor for Creators". Install it with
+  `/plugin marketplace add malenaaza/video-editor-skill` and `/plugin install video-editor@malenaaza`; updates come
+  through the plugin system (turn on auto-update once). The skill itself works exactly as before, and your settings
+  in `~/.video-editor/` are not touched.
+- The skill moved to `plugins/video-editor/skills/video-editor/` in the repository. A `video-editor/VERSION` stub stays
+  at the old place so copies installed the old way still learn about new versions.
+
+### New
+- Moving from the old install: "update my video-editor skill" brings an old copy up to date, then offers the move to
+  the plugin; `update_skill.py --remove-old-copy` backs the old folder up and removes it (never a developer's clone).
+  The updater never replaces a plugin install, and the skill warns once if it finds itself installed twice.
+
 ## 2026-11-17 · version 2.2.0
 
 ### New

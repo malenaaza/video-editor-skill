@@ -16,7 +16,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent / "video-editor"
+REPO = Path(__file__).resolve().parent.parent
+ROOT = REPO / "plugins" / "video-editor" / "skills" / "video-editor"
 SCRIPTS = ROOT / "scripts"
 FPS = 30
 
@@ -491,7 +492,7 @@ class SkillTest(unittest.TestCase):
             z.writestr("video-editor-skill-main/CHANGELOG.md", "# Changelog\n\n## newest\n- something new\n")
             for path in ROOT.rglob("*"):
                 if path.is_file() and "__pycache__" not in path.parts and path.name != "my-setup.md":
-                    rel = path.relative_to(ROOT.parent).as_posix()
+                    rel = path.relative_to(REPO).as_posix()
                     data = (version + "\n").encode() if path.name == "VERSION" else path.read_bytes()
                     z.writestr("video-editor-skill-main/" + rel, data)
         return archive
@@ -718,6 +719,52 @@ class SkillTest(unittest.TestCase):
         self.assertTrue((folder / "final-report.txt").exists())
         again = script("editreport.py", "src.mp4", "final.mp4", cwd=folder)  # never overwrites a report
         self.assertIn("final-report-v2.txt", again)
+
+    # ---- the plugin ------------------------------------------------------------------------------
+
+    def test_44_plugin_manifests_match_the_version(self):
+        market = json.loads((REPO / ".claude-plugin" / "marketplace.json").read_text("utf-8"))
+        entry = next(p for p in market["plugins"] if p["name"] == "video-editor")
+        plugin_root = (REPO / entry["source"]).resolve()
+        manifest = json.loads((plugin_root / ".claude-plugin" / "plugin.json").read_text("utf-8"))
+        self.assertEqual(manifest["name"], "video-editor")
+        self.assertEqual(plugin_root / "skills" / "video-editor", ROOT)
+        self.assertTrue((ROOT / "SKILL.md").exists())
+        version = (ROOT / "VERSION").read_text("utf-8").strip()
+        self.assertEqual(manifest["version"], version)                                 # the plugin system sees updates
+        self.assertEqual((REPO / "video-editor" / "VERSION").read_text("utf-8").strip(), version)  # old installs too
+
+    def test_45_updater_leaves_a_plugin_install_alone(self):
+        home = self.dir / "upd-plugin"
+        skill = home / ".claude" / "plugins" / "cache" / "malenaaza" / "video-editor" / "2.2.0" / "skills" / "video-editor"
+        shutil.copytree(ROOT, skill, ignore=shutil.ignore_patterns("__pycache__"))
+        (skill / "VERSION").write_text("1.0.0\n", "utf-8")
+        result = self._update(skill, home)
+        self.assertIn("plugin", result.stdout)
+        self.assertEqual((skill / "VERSION").read_text("utf-8").strip(), "1.0.0")     # nothing replaced
+        self.assertFalse((home / "backups").exists())
+        check = self._update(skill, home, "--check").stdout
+        self.assertIn("/plugin", check)
+        self.assertNotIn("--remove-old-copy", check)                                   # no move offered to a plugin
+
+    def test_46_old_copy_is_offered_the_move_and_removed_safely(self):
+        home, skill = self._installed_copy("upd-move", version="1.0.0")
+        self.assertIn("claude plugin install video-editor@malenaaza", self._update(skill, home, "--check").stdout)
+        (skill / "my-setup.md").write_text("# settings\n", "utf-8")
+        out = script("update_skill.py", "--remove-old-copy", "--old-copy", skill, "--backup-dir", home / "backups",
+                     "--settings-dir", home / "settings", cwd=self.dir)
+        self.assertIn("Removed the old copy", out)
+        self.assertFalse(skill.exists())
+        backup = next((home / "backups").iterdir())
+        self.assertEqual((backup / "VERSION").read_text("utf-8").strip(), "1.0.0")        # nothing lost
+        self.assertEqual((home / "settings" / "my-setup.md").read_text("utf-8"), "# settings\n")
+        clone = self.dir / "upd-move-clone"
+        shutil.copytree(ROOT, clone / "video-editor", ignore=shutil.ignore_patterns("__pycache__"))
+        (clone / ".git").mkdir()
+        refused = subprocess.run([sys.executable, "-I", str(SCRIPTS / "update_skill.py"), "--remove-old-copy", "--old-copy",
+                                  str(clone / "video-editor"), "--backup-dir", str(home / "b2")], capture_output=True, text=True)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertTrue((clone / "video-editor" / "SKILL.md").exists())                 # a developer's clone is never removed
 
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
