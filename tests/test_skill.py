@@ -832,6 +832,46 @@ class SkillTest(unittest.TestCase):
         self.assertNotEqual(bad.returncode, 0)
         self.assertIn("past the end", bad.stderr)
 
+    def test_50_push_in_is_smooth_and_keeps_the_head(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import pushin
+        W, H = 320, 240
+        # geometry: room above the head, a close-up, and no room at all
+        face = {"centre_x": 160, "centre_y": 120, "head_top": 40, "forehead": 70, "chin": 190, "mouth": 170}
+        z, x0, y0, notes = pushin.aim(dict(face, head_top=100), W, H, 1.2)
+        self.assertEqual(z, 1.2)
+        self.assertGreaterEqual((100 - y0) * z, pushin.HEAD_ROOM - 0.01)
+        z, x0, y0, notes = pushin.aim(face, W, H, 1.2)                         # head cut already: keep the forehead
+        self.assertTrue(any("close-up" in n for n in notes))
+        self.assertGreaterEqual((70 - y0) * z, pushin.HEAD_ROOM - 0.01)
+        z, x0, y0, notes = pushin.aim(dict(face, head_top=70, forehead=70), W, H, 1.3, caption_top=200)
+        self.assertLess(z, 1.3)                                                # zoom lowered to fit
+        self.assertTrue(any("lowered" in n for n in notes))
+        self.assertLessEqual((190 - y0) * z, 200.01)
+        self.assertGreaterEqual((70 - y0) * z, pushin.HEAD_ROOM - 0.01)
+        z, _, _, notes = pushin.aim(dict(face, forehead=30, head_top=30), W, H, 1.2)
+        self.assertIsNone(z)                                                   # no room even for 1.04
+        # the filter: untouched before, smooth growth, full zoom held, back to the full frame
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+             "color=gray:s=320x240:r=25:d=4,drawbox=x=150:y=110:w=20:h=20:color=white:t=fill", "-pix_fmt", "yuv420p",
+             "-c:v", "libx264", "-crf", "1", "sq.mp4"], cwd=self.dir)
+        line = pushin.filter_line(W, H, 25, 1.0, 3.6, 1.5, 160 / 3, 40, 1.0, 0.4)  # x0, y0 = centre * (1 - 1/1.5)
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", "sq.mp4", "-vf", line, "-f", "rawvideo", "-pix_fmt",
+                              "gray", "-"], cwd=self.dir, capture_output=True).stdout
+        import numpy as np
+        frames = np.frombuffer(raw, np.uint8).reshape(-1, H, W).astype(float)
+        size = np.array([((f - 128).clip(0).sum()) ** 0.5 for f in frames])  # grows with the zoom
+        self.assertEqual(len(frames), 100)
+        self.assertAlmostEqual(size[10] , size[0], delta=0.5)                 # before the push: the full frame
+        self.assertAlmostEqual(size[60] / size[0], 1.5, delta=0.05)           # held at full zoom
+        self.assertAlmostEqual(size[95], size[0], delta=0.5)                  # back out at the end
+        moving = size[24:52]
+        self.assertTrue(np.all(np.diff(moving) > -0.2))                       # never shrinks while moving in
+        self.assertLess(np.abs(np.diff(moving, 2)).max(), 2.5)                # no jumps
+        ys, xs = np.nonzero(frames[60] > 192)
+        self.assertAlmostEqual(xs.mean(), 160, delta=1)                       # moved in on the centre, no drift
+        self.assertAlmostEqual(ys.mean(), 120, delta=1)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

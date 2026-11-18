@@ -68,7 +68,7 @@ Copy this block for each brand or channel the user makes videos for.
 ### <Brand or channel name>
 - Who it's for: <a business, a personal account...>
 - Brand sheet: <not asked yet / path to index.html, and the sources used / not wanted (date)>
-- Zooms: <none / alternate 1.00 and a punch-in such as 1.08, only where the head has room>
+- Zooms: <none / alternate 1.00 and a punch-in such as 1.08, only where the head has room>; slow push-ins on key lines <yes / only when asked>
 - Look, color: <natural / gentle boost eq=contrast=1.06:saturation=1.15:gamma=1.02 / not asked yet> (Log footage always gets only its LUT)
 - Look, skin softening: <never / only when asked / every video>, level <default from Style defaults, or this brand's own>
 - Look, beautify: <off / light / medium / strong>: a soft glow, brighter under-eyes and eye whites, with the matching skin softening (retouch.json `beautify`). No makeup, no reshaping. Keep it off or light for base-product and skincare reviews.

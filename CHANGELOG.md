@@ -24,6 +24,10 @@ What each update of the video-editor skill brings. Newest first.
 - A part in black and white: `scripts/mono.py` turns one or more parts of the video grey (a "before", a
   flashback), with a short fade out of and back into colour and a touch more contrast. Give the times, or a phrase
   you say ("from 'antes' until 'y ahora'"). Captions, titles and graphics stay in colour on top.
+- A slow push in on your face at a key line, like a camera moving closer: `scripts/pushin.py` finds your face,
+  eases in (1.15 by default), holds and eases back out, by times or by a phrase you say. It keeps your head in the
+  frame (in a close-up, the forehead) and your mouth clear of the captions, lowering the zoom when there isn't
+  room. Drawn with sub-pixel precision, so a slow zoom doesn't shake; captions and graphics stay still on top.
 - Moving from the old install: "update my video-editor skill" brings an old copy up to date, then offers the move to
   the plugin; `update_skill.py --remove-old-copy` backs the old folder up and removes it (never a developer's clone).
   The updater never replaces a plugin install, and the skill warns once if it finds itself installed twice.
