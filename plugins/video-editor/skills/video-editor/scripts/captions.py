@@ -141,8 +141,12 @@ def apply_fixes(words, fixes):
                 j += 1
             if joined == key and key:
                 tail = re.search(r"[.,;:!?…]+$", words[j - 1]["text"])
-                out.append({"start": words[i]["start"], "end": words[j - 1]["end"],
-                            "text": value + (tail.group(0) if tail else "")})
+                tail = tail.group(0) if tail else ""
+                if value.endswith("|"):  # keep the forced break last, after the word's own comma
+                    text = value[:-1] + tail + "|"
+                else:
+                    text = value + tail
+                out.append({"start": words[i]["start"], "end": words[j - 1]["end"], "text": text})
                 i = j
                 break
         else:

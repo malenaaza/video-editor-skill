@@ -895,6 +895,17 @@ class SkillTest(unittest.TestCase):
         self.assertGreater(lost.mean(), zone.mean())                            # grows while the hand is lost
         self.assertTrue(np.all(lost[zone > 0] == 255))
 
+    def test_52_forced_break_after_a_word_with_a_comma(self):
+        words = [("Este", 0.0, 0.3), ("es", 0.3, 0.45), ("el", 0.45, 0.6), ("tono", 0.6, 0.9), ("Hypnotize,", 0.9, 1.34),
+                 ("que", 1.44, 1.5), ("es", 1.5, 1.62), ("un", 1.62, 1.76)]
+        (self.dir / "fb-voice.json").write_text(json.dumps({"segments": [{"words": [
+            {"word": " " + w, "start": s, "end": e} for w, s, e in words]}]}), "utf-8")
+        (self.dir / "fb-fix.json").write_text(json.dumps({"hypnotize": "Hypnotize|"}), "utf-8")
+        script("captions.py", "fb-voice.json", "--on-cut", "--length", "2", "--font", "DejaVu Sans", "--max-words", "8",
+               "--max-chars", "60", "--fix", "fb-fix.json", "--out", "fb-caps.ass", cwd=self.dir)
+        caps = [c["text"] for c in json.loads((self.dir / "fb-caps.json").read_text("utf-8"))]
+        self.assertEqual(caps, ["Este es el tono Hypnotize,", "que es un"])   # the break holds despite the comma
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

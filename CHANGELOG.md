@@ -33,6 +33,8 @@ What each update of the video-editor skill brings. Newest first.
   The updater never replaces a plugin install, and the skill warns once if it finds itself installed twice.
 
 ### Fixed
+- A forced caption break (`|` at the end of a fix in `fixes.json`) was ignored when the transcript had a comma
+  after that word ("Hypnotize," stayed in one caption with the next word).
 - The background blur kept blurring the top of a product held in the hand (a serum's cap: 72% blurred with the
   old setting, up to 9% with the current one). The area kept sharp now also stretches past the fingers along the
   direction the hand holds the product (`hand_reach` in `retouch.json`), a hand the tracker misses is looked for
