@@ -9,7 +9,7 @@ A skill for [Claude Code](https://claude.com/claude-code) that edits short-form 
 - Captions (plain, or with each word lit up as you say it), titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
 - Background noise and hum removal, voice polish and leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
-- Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp
+- Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp, a part in black and white
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
 
@@ -91,6 +91,7 @@ plugins/video-editor/
       broll.py             indexes your B-roll and finds the right photo or clip for each product you name
       popplace.py          places the product pop-in beside your temple, never over what you hold
       balance.py           measures a colour cast (white balance) and gives the filter that removes it
+      mono.py              turns a part of the video black and white, fading back to colour
       editreport.py        the edit in numbers: what was cut, pauses left, loudness, size
       update_skill.py      updates the skill safely, with a backup
       fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks

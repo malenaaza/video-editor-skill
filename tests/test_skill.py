@@ -803,6 +803,35 @@ class SkillTest(unittest.TestCase):
         default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
         self.assertIn("captions: []", default_props)        # sample captions would leak into real videos
 
+    def test_49_a_part_in_black_and_white(self):
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=160x120:r=25:d=4", "-pix_fmt", "yuv420p",
+             "colour.mp4"], cwd=self.dir)
+        out = script("mono.py", "--part", "1", "2.5", "--fade", "0.3", "--length", "4", cwd=self.dir)
+        self.assertIn("from 1.00 to 2.50 s", out)
+        chain = (self.dir / "mono.txt").read_text("utf-8").strip()
+        stats = run(["ffmpeg", "-v", "error", "-i", "colour.mp4", "-vf",
+                     chain + ",signalstats,metadata=print:key=lavfi.signalstats.SATAVG:file=-", "-f", "null", "-"],
+                    cwd=self.dir)
+        sat = [float(l.split("=")[1]) for l in stats.splitlines() if "SATAVG" in l]
+        self.assertEqual(len(sat), 100)
+        at = lambda t: sat[round(t * 25)]
+        self.assertGreater(min(at(0.2), at(0.9), at(2.6), at(3.6)), 20)      # colour before and after
+        self.assertLess(at(1.75), 1)                                          # grey in the middle
+        self.assertTrue(1 < at(1.12) < at(0.9))                               # fading, not switched
+        # a phrase from the captions, joined parts, and a part past the end
+        (self.dir / "captions.json").write_text(json.dumps([
+            {"start": 0.0, "end": 1.2, "words": [[0.1, 0.5, "Antes"], [0.5, 1.0, "tenía"]]},
+            {"start": 1.2, "end": 3.0, "words": [[1.3, 1.8, "y"], [1.8, 2.6, "ahora"]]}]), "utf-8")
+        out = script("mono.py", "--say", "antes", "--until", "Y AHORA", cwd=self.dir)
+        self.assertIn("from 0.10 to 2.60 s", out)
+        out = script("mono.py", "--part", "1", "2", "--part", "1.5", "3", "--fade", "0", cwd=self.dir)
+        self.assertIn("from 1.00 to 3.00 s", out)
+        self.assertIn("gte(t,1.000)*lt(t,3.000)", (self.dir / "mono.txt").read_text("utf-8"))  # --fade 0: a hard switch
+        bad = subprocess.run([sys.executable, "-I", str(SCRIPTS / "mono.py"), "--part", "3", "5", "--length", "4"],
+                             cwd=self.dir, capture_output=True, text=True)
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertIn("past the end", bad.stderr)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
