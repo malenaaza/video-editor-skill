@@ -2,6 +2,15 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-18 · version 2.3.1
+
+### Fixed
+- Beautify no longer makes skin look grey. The glow lifted the skin's brightness but not its colour, so at
+  `medium` the cheeks came out lighter and paler, and next to the original the face looked washed out. The glow
+  now gives back, on the skin only, the colour the lift takes away, leaning very slightly to red so rosy cheeks
+  stay rosy instead of turning orange (a whole-picture colour boost did that). The hue stays within about a degree
+  of the original on light to deep skin tones, and a test checks it.
+
 ## 2026-11-17 · version 2.3.0
 
 ### Changed

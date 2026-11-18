@@ -18,6 +18,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import settings  # noqa: E402
 
 
+def glow_filter(g):
+    """The glow on the skin mask: lighter skin that keeps its colour and its hue.
+
+    Lifting brightness alone made skin paler and greyer (medium: 4% lighter, a little less colourful), which viewers
+    saw as a grey look next to the original. A whole-picture colour boost to fix it turned rosy cheeks orange. So the
+    colour comes back here, on the skin only, in step with the lift, leaning very slightly to red (V) rather than
+    yellow (U). On real footage and on light to deep skin tones, the hue stays within about a degree of the original
+    at every level, and the colour rises a little with the lightness. Rounded, because truncation shifts the hue."""
+    def scale(k):
+        return f"'clip(round(128+(val-128)*{1 + k * g:.4f}),0,255)'"
+    return f"eq=brightness={g:.4f}:gamma={1 + g * 1.2:.4f},lutyuv=u={scale(4)}:v={scale(4.5)}"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--video", default="retouched.mp4")
@@ -27,7 +40,7 @@ def main():
     parts = []  # (name, mask file, eq filter)
     if cfg["glow"] > 0:
         g = cfg["glow"]
-        parts.append(("glow", "skin.mkv", f"eq=brightness={g:.4f}:gamma={1 + g * 1.2:.4f}"))
+        parts.append(("glow", "skin.mkv", glow_filter(g)))
     if cfg["under_eye"] > 0:
         u = cfg["under_eye"]
         parts.append(("under", "undereye.mkv", f"eq=brightness={u:.4f}:saturation=0.96"))

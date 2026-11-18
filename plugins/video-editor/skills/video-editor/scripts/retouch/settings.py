@@ -11,7 +11,7 @@ mask.py (skin and teeth):
   beautify        "off" (default), "light", "medium" or "strong": one setting that sets the skin
                   softening and the three extras below together (see PRESETS). Anything you also
                   write in retouch.json wins over the preset. No makeup and no reshaping, ever.
-  glow            a soft lift of the skin's brightness through the skin mask (0 = off, 0.02 is gentle)
+  glow            a soft lift of the skin's brightness through the skin mask, keeping its colour (0 = off, 0.02 is gentle)
   under_eye       brightens the band under each eye, where dark circles sit (0 = off, 0.045 is gentle)
   eye_white       brightens and de-reddens the white of each eye (0 = off, 0.09 is gentle)
   skin_strength   0 = no softening, 1 = full

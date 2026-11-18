@@ -906,6 +906,35 @@ class SkillTest(unittest.TestCase):
         caps = [c["text"] for c in json.loads((self.dir / "fb-caps.json").read_text("utf-8"))]
         self.assertEqual(caps, ["Este es el tono Hypnotize,", "que es un"])   # the break holds despite the comma
 
+    def test_53_glow_keeps_the_skin_colour_and_hue(self):
+        import numpy as np
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import beautify
+
+        def lab(rgb):  # sRGB (0-255) to CIE Lab, D65
+            c = np.asarray(rgb, float) / 255
+            c = np.where(c > 0.04045, ((c + 0.055) / 1.055) ** 2.4, c / 12.92)
+            xyz = c @ np.array([[0.4124, 0.3576, 0.1805], [0.2126, 0.7152, 0.0722], [0.0193, 0.1192, 0.9505]]).T
+            f = np.cbrt(xyz / [0.95047, 1.0, 1.08883])
+            L, a, b = 116 * f[1] - 16, 500 * (f[0] - f[1]), 200 * (f[1] - f[2])
+            return L, np.hypot(a, b), np.degrees(np.arctan2(b, a))
+
+        def through(rgb, vf):
+            # a little noise, like real skin, so the average isn't one rounded value
+            out = subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=0x%02X%02X%02X:s=256x256:d=0.1" % rgb,
+                                  "-vf", f"format=yuv444p,noise=alls=6:all_seed=7,{vf},format=rgb24", "-frames:v", "1",
+                                  "-f", "rawvideo", "-"],
+                                 capture_output=True, check=True).stdout
+            return np.frombuffer(out, np.uint8).reshape(-1, 3).mean(0)
+
+        for skin in [(230, 190, 165), (205, 150, 125), (160, 110, 85), (110, 72, 55)]:   # light to deep, rosy to golden
+            before = lab(through(skin, "null"))
+            for g in (0.012, 0.022, 0.035):                                                # light, medium, strong
+                after = lab(through(skin, beautify.glow_filter(g)))
+                self.assertGreater(after[0], before[0], (skin, g))                         # lighter
+                self.assertGreaterEqual(after[1], before[1] - 0.2, (skin, g))              # not paler or greyer
+                self.assertLess(abs(after[2] - before[2]), 1.5, (skin, g))                 # not more orange, not pinker
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
