@@ -4,6 +4,9 @@
 
 https://github.com/user-attachments/assets/0807e097-5f38-4115-aff4-7b10c7e8928d
 
+<img width="1080" height="960" alt="cover-before-after" src="https://github.com/user-attachments/assets/63d6c838-5fdb-4293-abb4-8a602d206b84" />
+
+
 
 
 A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form and YouTube talking-head videos on your own computer with FFmpeg and Whisper. You stay the director: it asks before it decides anything that's a judgment call.
