@@ -779,6 +779,30 @@ class SkillTest(unittest.TestCase):
         self.assertNotIn("highlight", default_props)       # a sample highlight would leak into real titles
         self.assertIn('"typewriter"', title)
 
+    def test_48_word_highlight_props_match_the_captions(self):
+        words = [("Mi", .2, .35), ("rutina", .35, .75), ("de", .75, .85), ("5", .85, 1.05), ("minutos.", 1.05, 1.5),
+                 ("para", 1.65, 1.85), ("una", 1.85, 2.0), ("piel", 2.0, 2.3), ("luminosa", 2.3, 2.9)]
+        (self.dir / "wv.json").write_text(json.dumps({"segments": [{"words": [
+            {"word": " " + w, "start": s, "end": e} for w, s, e in words]}]}), "utf-8")
+        script("captions.py", "wv.json", "--on-cut", "--length", "3", "--font", "DejaVu Sans", "--upper",
+               "--no-punctuation", "--two-lines", "12", "--out", "wc.ass", "--remotion-props", "wc-props.json",
+               "--accent-color", "#123456", "--fps", "25", "--margin-v", "300", cwd=self.dir)
+        caps = json.loads((self.dir / "wc.json").read_text("utf-8"))
+        props = json.loads((self.dir / "wc-props.json").read_text("utf-8"))
+        self.assertEqual(props["length"], 3)
+        self.assertEqual((props["accentColor"], props["fps"], props["bottom"]), ("#123456", 25, 300))
+        self.assertEqual(len(props["captions"]), len(caps))
+        for c, p in zip(caps, props["captions"]):
+            self.assertEqual((c["start"], c["end"]), (p["start"], p["end"]))
+            self.assertEqual([w[:2] for w in c["words"]], [w[:2] for w in p["words"]])
+            self.assertEqual(" ".join(w[2] for w in p["words"]), c["text"])   # shown as the captions show it
+            if len(c["text"]) > 12:                                           # long captions keep their two lines
+                self.assertGreater(p["breakAfter"], 0)
+        self.assertIn("MINUTOS", [w[2] for p in props["captions"] for w in p["words"]])  # full stop dropped
+        tsx = (SCRIPTS / "remotion" / "WordCaptions.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("captions: []", default_props)        # sample captions would leak into real videos
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

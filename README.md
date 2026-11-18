@@ -6,7 +6,7 @@ A skill for [Claude Code](https://claude.com/claude-code) that edits short-form 
 
 - Removes retakes, pauses, fillers ("um", "uh", hums) and silent stretches, using word-level transcription, a filler-hunting second pass, and a mouth-movement check
 - Speeds up delivery slightly (optional) while keeping your pitch
-- Captions, titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
+- Captions (plain, or with each word lit up as you say it), titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
 - Background noise and hum removal, voice polish and leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
 - Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp
@@ -103,6 +103,7 @@ plugins/video-editor/
       remotion/TitleCard.tsx  animated hook title for Remotion
       remotion/ProductTag.tsx product name and price lower third for Remotion
       remotion/ProductPop.tsx the product's photo or clip popping in beside you when you name it
+      remotion/WordCaptions.tsx captions with each word lit up in your accent colour as you say it
       remotion/CoverCard.tsx  cover image with products around the speaker's face
       remotion/brandFont.ts   loads the brand font for the templates
       cover/cutout.py      cuts products out of shop photos or video frames
