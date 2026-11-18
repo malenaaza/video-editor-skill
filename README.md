@@ -1,6 +1,6 @@
-# video-editor: a Claude skill for talking-head videos
+# Video Editor for Creators: a Claude Code plugin for talking-head videos
 
-A skill for [Claude Code](https://claude.com/claude-code) that edits short-form and YouTube talking-head videos on your own computer with FFmpeg and Whisper. You stay the director: it asks before it decides anything that's a judgment call.
+A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form and YouTube talking-head videos on your own computer with FFmpeg and Whisper. You stay the director: it asks before it decides anything that's a judgment call.
 
 ## What it does
 
