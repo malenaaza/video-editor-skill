@@ -2,7 +2,9 @@
 
 Keeps sharp: head and hair, neck, skin, the clothing colour given as a key in retouch.json
 ("blur_keys", see settings.py), and a generous area around each tracked hand so held products
-stay sharp whatever their colour. Don't edit this file for a video: put the clothing key in
+stay sharp whatever their colour. The area around a hand also stretches past the fingers, along the
+direction the hand holds the product (handzone.py), and a hand the video tracker misses is looked for
+again in the single frame before its last place is used. Don't edit this file for a video: put the clothing key in
 retouch.json in the folder you run this from.
 
 Usage: python -I blurmask_hands.py <source.mp4> <out.mkv> <face model> <hand model> write|test [test frames]
@@ -24,6 +26,7 @@ from mediapipe.tasks.python.vision import (
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import settings  # noqa: E402
 from facetrack import EdgeFace  # noqa: E402
+from handzone import hand_keep  # noqa: E402
 
 CFG = settings.load()
 SOURCE, OUT, FACE_MODEL, HAND_MODEL = sys.argv[1:5]
@@ -48,7 +51,7 @@ def color_keys(frame, height):
     return cv2.morphologyEx(mask, cv2.MORPH_OPEN, ellipse(7))
 
 
-def keep_mask(frame, face, hands, shape):
+def keep_mask(frame, face, hands, shape, missing=0):
     keep = color_keys(frame, shape[0])
     if face is not None:
         center = face[OVAL].mean(axis=0)
@@ -65,12 +68,8 @@ def keep_mask(frame, face, hands, shape):
         neck = np.array([[left + 15, chin - 40], [right - 15, chin - 40],
                          [right + 30, chin + 130], [left - 30, chin + 130]], np.int32)
         cv2.fillConvexPoly(keep, neck, 255)
-    hand_layer = np.zeros(shape, np.uint8)
-    for points in hands:
-        cv2.fillConvexPoly(hand_layer, cv2.convexHull(points.astype(np.int32)), 255)
-    if hands:
-        hand_layer = cv2.dilate(hand_layer, ellipse(HAND_PAD * 2 + 1))
-        keep = cv2.bitwise_or(keep, hand_layer)
+    for points in hands:  # hand_pad counts pixels of this half-size frame, as it always has
+        keep = cv2.bitwise_or(keep, hand_keep(points, shape, HAND_PAD, CFG["hand_reach"], missing, 6))
     keep = cv2.morphologyEx(keep, cv2.MORPH_CLOSE, ellipse(21))
     count, labels, stats, _ = cv2.connectedComponentsWithStats(keep, connectivity=8)
     for label in range(1, count):
@@ -100,12 +99,15 @@ hand_options = HandLandmarkerOptions(base_options=BaseOptions(model_asset_path=H
                                      running_mode=RunningMode.VIDEO, num_hands=2,
                                      min_hand_detection_confidence=0.4,
                                      min_tracking_confidence=0.4)
+still_options = HandLandmarkerOptions(base_options=BaseOptions(model_asset_path=HAND_MODEL), num_hands=2,
+                                      min_hand_detection_confidence=0.3)  # a second look when tracking misses
 edge = EdgeFace(FACE_MODEL, CFG["edge_faces"], CFG["edge_pad"])
 face_points, last_hands, hand_age = None, [], 0
 previous, tiles = None, []
 hand_frames = no_face = 0
 with FaceLandmarker.create_from_options(face_options) as face_tracker, \
-        HandLandmarker.create_from_options(hand_options) as hand_tracker:
+        HandLandmarker.create_from_options(hand_options) as hand_tracker, \
+        HandLandmarker.create_from_options(still_options) as hand_finder:
     n = 0
     while True:
         ok, frame = capture.read()
@@ -125,6 +127,8 @@ with FaceLandmarker.create_from_options(face_options) as face_tracker, \
             else:
                 no_face += 1
         found = hand_tracker.detect_for_video(image, stamp).hand_landmarks
+        if not found:
+            found = hand_finder.detect(image).hand_landmarks
         if found:
             last_hands = [np.array([[p.x * width, p.y * height] for p in h], np.float32) for h in found]
             hand_age = 0
@@ -135,7 +139,7 @@ with FaceLandmarker.create_from_options(face_options) as face_tracker, \
                 last_hands = []
         small = cv2.resize(frame, (width // 2, height // 2), interpolation=cv2.INTER_AREA)
         keep = keep_mask(small, None if face_points is None else face_points / 2,
-                         [h / 2 for h in last_hands], (height // 2, width // 2))
+                         [h / 2 for h in last_hands], (height // 2, width // 2), hand_age)
         keep = cv2.resize(keep, (width, height), interpolation=cv2.INTER_LINEAR)
         soft = cv2.GaussianBlur(keep.astype(np.float32) / 255, (0, 0), 7)
         if previous is not None and np.abs(soft - previous).mean() < 0.04:

@@ -872,6 +872,29 @@ class SkillTest(unittest.TestCase):
         self.assertAlmostEqual(xs.mean(), 160, delta=1)                       # moved in on the centre, no drift
         self.assertAlmostEqual(ys.mean(), 120, delta=1)
 
+    def test_51_held_product_zone_reaches_past_the_fingers(self):
+        try:
+            import cv2  # noqa: F401
+        except ImportError:
+            self.skipTest("needs OpenCV")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        from handzone import hand_keep
+        import numpy as np
+        # a hand at the bottom holding something upwards: wrist low, knuckles above it, fingers higher still
+        hand = [(200, 500)] + [(160 + 10 * i, 440 - 4 * i) for i in range(8)] + [(200, 420)] + \
+               [(170 + 6 * i, 380 + 3 * i) for i in range(11)]
+        shape = (600, 400)
+        ring = hand_keep(hand, shape, pad=30, reach=0)
+        zone = hand_keep(hand, shape, pad=30, reach=0.4)
+        cap = (slice(320, 340), slice(170, 200))                                # above the fingers, where a cap is
+        self.assertEqual(ring[cap].max(), 0)                                    # the ring alone misses it
+        self.assertEqual(zone[cap].min(), 255)                                  # the stretch keeps it sharp
+        self.assertEqual(zone[590:, :].max(), 255 if ring[590:, :].max() else 0)  # no stretch the other way
+        self.assertLess(zone.mean(), ring.mean() * 1.8)                         # stays near the hand
+        lost = hand_keep(hand, shape, pad=30, reach=0.4, missing=5, grow_lost=6)
+        self.assertGreater(lost.mean(), zone.mean())                            # grows while the hand is lost
+        self.assertTrue(np.all(lost[zone > 0] == 255))
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

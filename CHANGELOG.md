@@ -32,6 +32,13 @@ What each update of the video-editor skill brings. Newest first.
   the plugin; `update_skill.py --remove-old-copy` backs the old folder up and removes it (never a developer's clone).
   The updater never replaces a plugin install, and the skill warns once if it finds itself installed twice.
 
+### Fixed
+- The background blur kept blurring the top of a product held in the hand (a serum's cap: 72% blurred with the
+  old setting, up to 9% with the current one). The area kept sharp now also stretches past the fingers along the
+  direction the hand holds the product (`hand_reach` in `retouch.json`), a hand the tracker misses is looked for
+  again before its last place is used, and the area grows while it's lost. On the same frame the cap stayed sharp
+  and most of the background was still blurred.
+
 ## 2026-11-17 · version 2.2.0
 
 ### New
