@@ -68,7 +68,7 @@ Copy this block for each brand or channel the user makes videos for.
 ### <Brand or channel name>
 - Who it's for: <a business, a personal account...>
 - Brand sheet: <not asked yet / path to index.html, and the sources used / not wanted (date)>
-- Zooms: <none / alternate 1.00 and a punch-in such as 1.08, only where the head has room>
+- Zooms: <none / alternate 1.00 and a punch-in such as 1.08, only where the head has room>; slow push-ins on key lines <yes / only when asked>
 - Look, color: <natural / gentle boost eq=contrast=1.06:saturation=1.15:gamma=1.02 / not asked yet> (Log footage always gets only its LUT)
 - Look, skin softening: <never / only when asked / every video>, level <default from Style defaults, or this brand's own>
 - Look, beautify: <off / light / medium / strong>: a soft glow, brighter under-eyes and eye whites, with the matching skin softening (retouch.json `beautify`). No makeup, no reshaping. Keep it off or light for base-product and skincare reviews.
@@ -79,8 +79,8 @@ Copy this block for each brand or channel the user makes videos for.
 - Colors: <hex codes, and which is the accent>
 - Font: <name, and where the font files are>
 - Logos: `<paths; copy into the work folder before use>`
-- Captions: <style: e.g. white text with black outline, or white on a colored box; case; position>
-- Title: <style, length on screen; still, or animated with the TitleCard template>
+- Captions: <style: e.g. white text with black outline, or white on a colored box, or word highlight (a box in the accent colour behind each word as it's said, WordCaptions template); case; position>
+- Title: <style, length on screen; still, or animated with the TitleCard template: pop-in or typewriter (with or without key clicks)>
 - Product tag: <none / ProductTag template: side, position, colors if different from the brand's>
 - Product pop-in: <off / on>: the product's B-roll photo (cut out) or clip pops in beside the speaker when named (ProductPop template); with name and price <yes / no>; sound <pop / none>
 - End card: <layout, contact details>

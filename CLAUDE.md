@@ -2,7 +2,8 @@
 
 Two kinds of session use this repo. Keep them apart so they never overwrite each other.
 
-- **Using the skill** (editing a video): the skill is read from `~/.claude/skills/video-editor`. Do not change skill files
+- **Using the skill** (editing a video): users install it as the `video-editor` plugin (marketplace `malenaaza`); the
+  owner's development computer reads it from `~/.claude/skills/video-editor`, a link to the clone. Do not change skill files
   during an edit. If something is wrong, say what and where, and fix it as a separate task in the repository.
 - **Changing the skill** (this repository): follow the rules below.
 
@@ -13,8 +14,9 @@ Two kinds of session use this repo. Keep them apart so they never overwrite each
 2. **Each session has its own branch.** A cloud session pushes only to its own `claude/...` branch. A session on the user's
    computer pushes to `local/<topic>`. Never push to a branch another session owns. Changes meet in a pull request, not by
    pushing to the same branch.
-3. **The installed skill is the repository, not a copy.** On the user's computer `~/.claude/skills/video-editor` should be a
-   link to the `video-editor` folder of a clone of this repository, so changes show up in `git status` and are never lost
+3. **The installed skill is the repository, not a copy.** On the owner's development computer `~/.claude/skills/video-editor`
+   should be a link to `plugins/video-editor/skills/video-editor` in a clone of this repository (don't also install the
+   plugin there, or Claude finds the skill twice), so changes show up in `git status` and are never lost
    or overwritten. If it is a plain copy, say so and offer to replace it with a link.
 4. **Commit small and push often**, so work is never only on one machine.
 5. **Tests must pass** before pushing: `python tests/test_skill.py`. Add a test for each new script or setting.
@@ -24,8 +26,10 @@ Two kinds of session use this repo. Keep them apart so they never overwrite each
    (open entries, newest first), pick the most useful one, find the cause with the saved frame and the build folder it names,
    fix it, add a test, and set `Status: fixed in <pull request or commit>`. A cloud session can't see that file: the user
    pastes the entry and attaches the frame.
-8. **Releases:** `video-editor/VERSION` is the number users compare with. Raise it when a change should reach
-   users (a fix, a new tool), in the same change as the code, so "update my skill" notices it. People install from `main`,
+8. **Releases:** the version lives in three places that must match (a test checks): the skill's `VERSION`
+   (`plugins/video-editor/skills/video-editor/VERSION`), `plugins/video-editor/.claude-plugin/plugin.json` (the plugin
+   system only updates when it changes) and the stub `video-editor/VERSION` (old copies still read it). Raise them
+   together when a change should reach users (a fix, a new tool), in the same change as the code, so "update my skill" notices it. People install from `main`,
    so only merge what is ready for them.
 9. **Users' bugs and ideas arrive as GitHub issues** (labels `bug` and `enhancement`, from `scripts/report.py` or the issue
    templates). When asked what to work on, read the open issues. Reports from users have no frames or personal data; if a

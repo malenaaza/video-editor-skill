@@ -16,6 +16,11 @@ What it does, in this order:
  6. Prints a report: the versions, which files had been changed by hand (it can tell once the skill was
     installed by this script; before that it can't), where the backup is, and the top of the changelog.
 
+Installed as a plugin, it never replaces files: plugin updates come through Claude's plugin system, and it says so.
+A copy installed the old way (in ~/.claude/skills/video-editor) is offered the move to the plugin after an update or a
+check; --remove-old-copy then backs that copy up and removes it, once the plugin is installed. It refuses on a link
+or a Git clone (a developer's setup).
+
 Only the standard library and an internet connection are needed. `--source` takes a ZIP file, a folder or a
 web address instead of GitHub (used by the tests). `--skill-dir`, `--backup-dir` and `--settings-dir`
 point at other folders. `--force` updates even when the versions match (to repair a modified copy).
@@ -33,7 +38,13 @@ import zipfile
 from pathlib import Path
 
 REPO_ZIP = "https://github.com/malenaaza/video-editor-skill/archive/refs/heads/main.zip"
-REPO_VERSION = "https://raw.githubusercontent.com/malenaaza/video-editor-skill/main/video-editor/VERSION"
+REPO_VERSION = ("https://raw.githubusercontent.com/malenaaza/video-editor-skill/main/plugins/video-editor/skills/"
+                "video-editor/VERSION")
+OLD_COPY = os.path.join(os.path.expanduser("~"), ".claude", "skills", "video-editor")
+PLUGIN_INSTALL = ("claude plugin marketplace add malenaaza/video-editor-skill",
+                  "claude plugin install video-editor@malenaaza")
+PLUGIN_UPDATES = ("Installed as a plugin: updates come through Claude's plugin system. In Claude Code: /plugin, then "
+                  "Marketplaces, malenaaza, Update (or turn on auto-update there). Nothing was changed.")
 MANIFEST = ".installed-manifest.json"
 SKIP_NAMES = {"__pycache__", MANIFEST, "my-setup.md"}
 
@@ -72,6 +83,41 @@ def hash_tree(folder):
     return out
 
 
+def installed_as_plugin(skill_dir):
+    return "/.claude/plugins/" in os.path.abspath(skill_dir).replace("\\", "/").lower()
+
+
+def move_to_plugin_hint():
+    return ("\nThis skill is now a Claude Code plugin, which updates by itself. To switch (your settings stay as they are):\n"
+            f"  1. {PLUGIN_INSTALL[0]}\n  2. {PLUGIN_INSTALL[1]}\n"
+            "  3. python -I <this skill>/scripts/update_skill.py --remove-old-copy   (backs up and removes this old copy)\n"
+            "  4. restart Claude Code")
+
+
+def remove_old_copy(old, backup_dir, settings_dir):
+    old = Path(old)
+    if not old.exists():
+        print(f"There's no old copy at {old}: nothing to remove.")
+        return
+    if linked_to_repository(old):
+        sys.exit(f"{old} is linked to a repository (a developer's setup), so it was not removed.")
+    if installed_as_plugin(old):
+        sys.exit(f"{old} is the plugin itself, so it was not removed.")
+    if not (old / "SKILL.md").exists():
+        sys.exit(f"{old} doesn't look like the video-editor skill, so it was not removed.")
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = Path(backup_dir) / f"video-editor-old-copy-{read_version(old) or 'unknown'}-{stamp}"
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(old, backup, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    legacy, settings = old / "my-setup.md", Path(settings_dir) / "my-setup.md"
+    if legacy.exists() and not settings.exists():
+        settings.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(legacy, settings)
+        print(f"Your settings (my-setup.md) were moved to {settings.parent}.")
+    shutil.rmtree(old)
+    print(f"Removed the old copy at {old}. Backup: {backup}\nRestart Claude Code so it only finds the plugin.")
+
+
 def linked_to_repository(skill_dir):
     """True if the folder is a link, or lives inside a Git clone (developers' setups)."""
     absolute = os.path.abspath(skill_dir)
@@ -102,7 +148,10 @@ def fetch_latest(source, work):
         z.extractall(extracted)
     for skill_md in extracted.rglob("SKILL.md"):
         if skill_md.parent.name == "video-editor":
-            return skill_md.parent, skill_md.parent.parent
+            # the changelog is at the repository's root, several folders above the skill (plugins/.../skills/...)
+            root = next((d for d in skill_md.parents if (d / "CHANGELOG.md").exists() and extracted in d.parents),
+                        skill_md.parent.parent)
+            return skill_md.parent, root
     sys.exit("The download doesn't contain the video-editor skill.")
 
 
@@ -121,7 +170,13 @@ def main():
     ap.add_argument("--skill-dir", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ap.add_argument("--backup-dir", default=os.path.join(os.path.expanduser("~"), ".video-editor", "backups"))
     ap.add_argument("--settings-dir", default=os.path.join(os.path.expanduser("~"), ".video-editor"))
+    ap.add_argument("--remove-old-copy", action="store_true",
+                    help="after installing the plugin: back up and remove the old copy in ~/.claude/skills/video-editor")
+    ap.add_argument("--old-copy", default=OLD_COPY, help="where the old copy is (default ~/.claude/skills/video-editor)")
     a = ap.parse_args()
+    if a.remove_old_copy:
+        remove_old_copy(a.old_copy, a.backup_dir, a.settings_dir)
+        return
     skill_dir = Path(a.skill_dir)
     installed = read_version(skill_dir)
 
@@ -140,17 +195,28 @@ def main():
         stamp_file.write_text(str(time.time()), encoding="utf-8")
         if latest and (installed is None or is_newer(latest, installed)):
             print(f"A newer version of the video-editor skill is available ({installed or 'unknown'} -> {latest}).")
+            if installed_as_plugin(skill_dir):
+                print("It arrives through Claude's plugin system: /plugin, Marketplaces, malenaaza, Update.")
         return
 
     try:
         if a.check:
             latest = read_version(fetch_latest(a.source, tempfile.mkdtemp())[0]) if a.source else latest_version_only()
             print(f"Installed version: {installed or 'unknown (an older version)'}. Latest: {latest}.")
-            print("An update is available." if installed is None or is_newer(latest, installed) else "You are up to date.")
+            newer = installed is None or is_newer(latest, installed)
+            print("An update is available." if newer else "You are up to date.")
+            if installed_as_plugin(skill_dir):
+                if newer:
+                    print(PLUGIN_UPDATES.replace(" Nothing was changed.", ""))
+            elif not linked_to_repository(skill_dir):
+                print(move_to_plugin_hint())
             return
     except OSError as error:
         sys.exit(f"Couldn't reach the latest version ({error}). Check the internet connection and try again.")
 
+    if installed_as_plugin(skill_dir):
+        print(PLUGIN_UPDATES)
+        return
     if linked_to_repository(skill_dir):
         sys.exit("This skill is linked to a repository (a Git clone), so it is updated with `git pull` in that folder, "
                  "not with this script. Nothing was changed.")
@@ -220,6 +286,7 @@ def main():
         if changelog.exists():
             print("\nWhat's new (top of the changelog):\n")
             print("\n".join(changelog.read_text(encoding="utf-8").splitlines()[:60]))
+        print(move_to_plugin_hint())
     finally:
         shutil.rmtree(work, ignore_errors=True)
 

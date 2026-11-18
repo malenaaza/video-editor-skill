@@ -44,6 +44,11 @@ that has to break because it is long won't end on a small word like "de" or "the
 en, or a file with one word per line). A | at the end of a word, written in fixes.json
 ("para cubrir un poco": "para cubrir un poco|"), forces a break after it; a fix whose text ends
 in . adds a sentence end where the transcript has no punctuation.
+
+Word highlight (a box in the accent colour behind each word as it is said): --remotion-props
+word-captions.json also writes the props for the Remotion template WordCaptions.tsx, from the same
+captions, size, position, colours and line breaks. --accent-color sets the box colour. Render it as a
+transparent overlay and place it instead of burning captions.ass (references/graphics.md).
 """
 import argparse
 import json
@@ -136,8 +141,12 @@ def apply_fixes(words, fixes):
                 j += 1
             if joined == key and key:
                 tail = re.search(r"[.,;:!?…]+$", words[j - 1]["text"])
-                out.append({"start": words[i]["start"], "end": words[j - 1]["end"],
-                            "text": value + (tail.group(0) if tail else "")})
+                tail = tail.group(0) if tail else ""
+                if value.endswith("|"):  # keep the forced break last, after the word's own comma
+                    text = value[:-1] + tail + "|"
+                else:
+                    text = value + tail
+                out.append({"start": words[i]["start"], "end": words[j - 1]["end"], "text": text})
                 i = j
                 break
         else:
@@ -177,6 +186,9 @@ def main():
     ap.add_argument("--no-punctuation", action="store_true", help="drop commas and full stops (keeps ? and !)")
     ap.add_argument("--fix", help="json with corrections, see above")
     ap.add_argument("--skip", help="json with source ranges to leave out of the captions")
+    ap.add_argument("--remotion-props", help="also write props for WordCaptions.tsx (word highlight) to this file")
+    ap.add_argument("--accent-color", default="#FF4F8B", help="with --remotion-props: the box behind the word said")
+    ap.add_argument("--fps", type=float, default=30, help="with --remotion-props: the video's frame rate")
     a = ap.parse_args()
 
     skip = json.load(open(a.skip, encoding="utf-8")) if a.skip else []
@@ -297,6 +309,19 @@ def main():
     json.dump(out, open(json_out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print(f"Wrote {a.out} and {json_out}: {len(out)} captions, {len(words)} words"
           + (f" ({dropped} words were in removed parts)." if not a.on_cut else " (times from the cut voice's own transcript)."))
+    if a.remotion_props:
+        props_caps = []
+        for c in out:
+            shown = [show(w[2]) for w in c["words"]]
+            split = two_lines(" ".join(shown).replace("{", "(").replace("}", ")"))
+            first = split.split("\\N")[0].count(" ") + 1 if "\\N" in split else 0
+            props_caps.append({"start": c["start"], "end": c["end"], "breakAfter": first,
+                               "words": [[w[0], w[1], t] for w, t in zip(c["words"], shown)]})
+        props = {"captions": props_caps, "length": round(total, 3), "font": a.font, "fontSize": a.size,
+                 "textColor": a.text_color, "accentColor": a.accent_color, "bottom": a.margin_v,
+                 "fps": a.fps, "width": a.width, "height": a.height}
+        json.dump(props, open(a.remotion_props, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        print(f"Wrote {a.remotion_props}: props for WordCaptions.tsx ({len(props_caps)} captions, {total:.2f} s).")
     longest = max(out, key=lambda c: len(c["text"]))
     print(f"Longest caption ({len(longest['text'])} characters): {longest['text']!r}. "
           "Look at that frame to check it fits the width.")

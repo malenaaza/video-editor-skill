@@ -16,7 +16,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent / "video-editor"
+REPO = Path(__file__).resolve().parent.parent
+ROOT = REPO / "plugins" / "video-editor" / "skills" / "video-editor"
 SCRIPTS = ROOT / "scripts"
 FPS = 30
 
@@ -491,7 +492,7 @@ class SkillTest(unittest.TestCase):
             z.writestr("video-editor-skill-main/CHANGELOG.md", "# Changelog\n\n## newest\n- something new\n")
             for path in ROOT.rglob("*"):
                 if path.is_file() and "__pycache__" not in path.parts and path.name != "my-setup.md":
-                    rel = path.relative_to(ROOT.parent).as_posix()
+                    rel = path.relative_to(REPO).as_posix()
                     data = (version + "\n").encode() if path.name == "VERSION" else path.read_bytes()
                     z.writestr("video-editor-skill-main/" + rel, data)
         return archive
@@ -718,6 +719,192 @@ class SkillTest(unittest.TestCase):
         self.assertTrue((folder / "final-report.txt").exists())
         again = script("editreport.py", "src.mp4", "final.mp4", cwd=folder)  # never overwrites a report
         self.assertIn("final-report-v2.txt", again)
+
+    # ---- the plugin ------------------------------------------------------------------------------
+
+    def test_44_plugin_manifests_match_the_version(self):
+        market = json.loads((REPO / ".claude-plugin" / "marketplace.json").read_text("utf-8"))
+        entry = next(p for p in market["plugins"] if p["name"] == "video-editor")
+        plugin_root = (REPO / entry["source"]).resolve()
+        manifest = json.loads((plugin_root / ".claude-plugin" / "plugin.json").read_text("utf-8"))
+        self.assertEqual(manifest["name"], "video-editor")
+        self.assertEqual(plugin_root / "skills" / "video-editor", ROOT)
+        self.assertTrue((ROOT / "SKILL.md").exists())
+        version = (ROOT / "VERSION").read_text("utf-8").strip()
+        self.assertEqual(manifest["version"], version)                                 # the plugin system sees updates
+        self.assertEqual((REPO / "video-editor" / "VERSION").read_text("utf-8").strip(), version)  # old installs too
+
+    def test_45_updater_leaves_a_plugin_install_alone(self):
+        home = self.dir / "upd-plugin"
+        skill = home / ".claude" / "plugins" / "cache" / "malenaaza" / "video-editor" / "2.2.0" / "skills" / "video-editor"
+        shutil.copytree(ROOT, skill, ignore=shutil.ignore_patterns("__pycache__"))
+        (skill / "VERSION").write_text("1.0.0\n", "utf-8")
+        result = self._update(skill, home)
+        self.assertIn("plugin", result.stdout)
+        self.assertEqual((skill / "VERSION").read_text("utf-8").strip(), "1.0.0")     # nothing replaced
+        self.assertFalse((home / "backups").exists())
+        check = self._update(skill, home, "--check").stdout
+        self.assertIn("/plugin", check)
+        self.assertNotIn("--remove-old-copy", check)                                   # no move offered to a plugin
+
+    def test_46_old_copy_is_offered_the_move_and_removed_safely(self):
+        home, skill = self._installed_copy("upd-move", version="1.0.0")
+        self.assertIn("claude plugin install video-editor@malenaaza", self._update(skill, home, "--check").stdout)
+        (skill / "my-setup.md").write_text("# settings\n", "utf-8")
+        out = script("update_skill.py", "--remove-old-copy", "--old-copy", skill, "--backup-dir", home / "backups",
+                     "--settings-dir", home / "settings", cwd=self.dir)
+        self.assertIn("Removed the old copy", out)
+        self.assertFalse(skill.exists())
+        backup = next((home / "backups").iterdir())
+        self.assertEqual((backup / "VERSION").read_text("utf-8").strip(), "1.0.0")        # nothing lost
+        self.assertEqual((home / "settings" / "my-setup.md").read_text("utf-8"), "# settings\n")
+        clone = self.dir / "upd-move-clone"
+        shutil.copytree(ROOT, clone / "video-editor", ignore=shutil.ignore_patterns("__pycache__"))
+        (clone / ".git").mkdir()
+        refused = subprocess.run([sys.executable, "-I", str(SCRIPTS / "update_skill.py"), "--remove-old-copy", "--old-copy",
+                                  str(clone / "video-editor"), "--backup-dir", str(home / "b2")], capture_output=True, text=True)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertTrue((clone / "video-editor" / "SKILL.md").exists())                 # a developer's clone is never removed
+
+    def test_47_typewriter_clicks_follow_the_letters(self):
+        out = script("sfx/typing.py", "--line", "Mi rutina de", "--line", "5 minutos", "--lps", "16", "--start", "0.13",
+                     "--out", "typing.wav", cwd=self.dir)
+        self.assertIn("9 clicks", out)                     # every other letter, never a space: 17 letters -> 9 clicks
+        self.assertIn("typing ends at 1.44 s", out)        # 0.13 + 21 characters / 16
+        import wave
+        w = wave.open(str(self.dir / "typing.wav"))
+        self.assertAlmostEqual(w.getnframes() / w.getframerate(), 1.44 + 0.3, delta=0.01)
+        title = (SCRIPTS / "remotion" / "TitleCard.tsx").read_text("utf-8")
+        default_props = next(l for l in title.splitlines() if "defaultProps=" in l)
+        self.assertNotIn("highlight", default_props)       # a sample highlight would leak into real titles
+        self.assertIn('"typewriter"', title)
+
+    def test_48_word_highlight_props_match_the_captions(self):
+        words = [("Mi", .2, .35), ("rutina", .35, .75), ("de", .75, .85), ("5", .85, 1.05), ("minutos.", 1.05, 1.5),
+                 ("para", 1.65, 1.85), ("una", 1.85, 2.0), ("piel", 2.0, 2.3), ("luminosa", 2.3, 2.9)]
+        (self.dir / "wv.json").write_text(json.dumps({"segments": [{"words": [
+            {"word": " " + w, "start": s, "end": e} for w, s, e in words]}]}), "utf-8")
+        script("captions.py", "wv.json", "--on-cut", "--length", "3", "--font", "DejaVu Sans", "--upper",
+               "--no-punctuation", "--two-lines", "12", "--out", "wc.ass", "--remotion-props", "wc-props.json",
+               "--accent-color", "#123456", "--fps", "25", "--margin-v", "300", cwd=self.dir)
+        caps = json.loads((self.dir / "wc.json").read_text("utf-8"))
+        props = json.loads((self.dir / "wc-props.json").read_text("utf-8"))
+        self.assertEqual(props["length"], 3)
+        self.assertEqual((props["accentColor"], props["fps"], props["bottom"]), ("#123456", 25, 300))
+        self.assertEqual(len(props["captions"]), len(caps))
+        for c, p in zip(caps, props["captions"]):
+            self.assertEqual((c["start"], c["end"]), (p["start"], p["end"]))
+            self.assertEqual([w[:2] for w in c["words"]], [w[:2] for w in p["words"]])
+            self.assertEqual(" ".join(w[2] for w in p["words"]), c["text"])   # shown as the captions show it
+            if len(c["text"]) > 12:                                           # long captions keep their two lines
+                self.assertGreater(p["breakAfter"], 0)
+        self.assertIn("MINUTOS", [w[2] for p in props["captions"] for w in p["words"]])  # full stop dropped
+        tsx = (SCRIPTS / "remotion" / "WordCaptions.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("captions: []", default_props)        # sample captions would leak into real videos
+
+    def test_49_a_part_in_black_and_white(self):
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=160x120:r=25:d=4", "-pix_fmt", "yuv420p",
+             "colour.mp4"], cwd=self.dir)
+        out = script("mono.py", "--part", "1", "2.5", "--fade", "0.3", "--length", "4", cwd=self.dir)
+        self.assertIn("from 1.00 to 2.50 s", out)
+        chain = (self.dir / "mono.txt").read_text("utf-8").strip()
+        stats = run(["ffmpeg", "-v", "error", "-i", "colour.mp4", "-vf",
+                     chain + ",signalstats,metadata=print:key=lavfi.signalstats.SATAVG:file=-", "-f", "null", "-"],
+                    cwd=self.dir)
+        sat = [float(l.split("=")[1]) for l in stats.splitlines() if "SATAVG" in l]
+        self.assertEqual(len(sat), 100)
+        at = lambda t: sat[round(t * 25)]
+        self.assertGreater(min(at(0.2), at(0.9), at(2.6), at(3.6)), 20)      # colour before and after
+        self.assertLess(at(1.75), 1)                                          # grey in the middle
+        self.assertTrue(1 < at(1.12) < at(0.9))                               # fading, not switched
+        # a phrase from the captions, joined parts, and a part past the end
+        (self.dir / "captions.json").write_text(json.dumps([
+            {"start": 0.0, "end": 1.2, "words": [[0.1, 0.5, "Antes"], [0.5, 1.0, "tenía"]]},
+            {"start": 1.2, "end": 3.0, "words": [[1.3, 1.8, "y"], [1.8, 2.6, "ahora"]]}]), "utf-8")
+        out = script("mono.py", "--say", "antes", "--until", "Y AHORA", cwd=self.dir)
+        self.assertIn("from 0.10 to 2.60 s", out)
+        out = script("mono.py", "--part", "1", "2", "--part", "1.5", "3", "--fade", "0", cwd=self.dir)
+        self.assertIn("from 1.00 to 3.00 s", out)
+        self.assertIn("gte(t,1.000)*lt(t,3.000)", (self.dir / "mono.txt").read_text("utf-8"))  # --fade 0: a hard switch
+        bad = subprocess.run([sys.executable, "-I", str(SCRIPTS / "mono.py"), "--part", "3", "5", "--length", "4"],
+                             cwd=self.dir, capture_output=True, text=True)
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertIn("past the end", bad.stderr)
+
+    def test_50_push_in_is_smooth_and_keeps_the_head(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import pushin
+        W, H = 320, 240
+        # geometry: room above the head, a close-up, and no room at all
+        face = {"centre_x": 160, "centre_y": 120, "head_top": 40, "forehead": 70, "chin": 190, "mouth": 170}
+        z, x0, y0, notes = pushin.aim(dict(face, head_top=100), W, H, 1.2)
+        self.assertEqual(z, 1.2)
+        self.assertGreaterEqual((100 - y0) * z, pushin.HEAD_ROOM - 0.01)
+        z, x0, y0, notes = pushin.aim(face, W, H, 1.2)                         # head cut already: keep the forehead
+        self.assertTrue(any("close-up" in n for n in notes))
+        self.assertGreaterEqual((70 - y0) * z, pushin.HEAD_ROOM - 0.01)
+        z, x0, y0, notes = pushin.aim(dict(face, head_top=70, forehead=70), W, H, 1.3, caption_top=200)
+        self.assertLess(z, 1.3)                                                # zoom lowered to fit
+        self.assertTrue(any("lowered" in n for n in notes))
+        self.assertLessEqual((190 - y0) * z, 200.01)
+        self.assertGreaterEqual((70 - y0) * z, pushin.HEAD_ROOM - 0.01)
+        z, _, _, notes = pushin.aim(dict(face, forehead=30, head_top=30), W, H, 1.2)
+        self.assertIsNone(z)                                                   # no room even for 1.04
+        # the filter: untouched before, smooth growth, full zoom held, back to the full frame
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+             "color=gray:s=320x240:r=25:d=4,drawbox=x=150:y=110:w=20:h=20:color=white:t=fill", "-pix_fmt", "yuv420p",
+             "-c:v", "libx264", "-crf", "1", "sq.mp4"], cwd=self.dir)
+        line = pushin.filter_line(W, H, 25, 1.0, 3.6, 1.5, 160 / 3, 40, 1.0, 0.4)  # x0, y0 = centre * (1 - 1/1.5)
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", "sq.mp4", "-vf", line, "-f", "rawvideo", "-pix_fmt",
+                              "gray", "-"], cwd=self.dir, capture_output=True).stdout
+        import numpy as np
+        frames = np.frombuffer(raw, np.uint8).reshape(-1, H, W).astype(float)
+        size = np.array([((f - 128).clip(0).sum()) ** 0.5 for f in frames])  # grows with the zoom
+        self.assertEqual(len(frames), 100)
+        self.assertAlmostEqual(size[10] , size[0], delta=0.5)                 # before the push: the full frame
+        self.assertAlmostEqual(size[60] / size[0], 1.5, delta=0.05)           # held at full zoom
+        self.assertAlmostEqual(size[95], size[0], delta=0.5)                  # back out at the end
+        moving = size[24:52]
+        self.assertTrue(np.all(np.diff(moving) > -0.2))                       # never shrinks while moving in
+        self.assertLess(np.abs(np.diff(moving, 2)).max(), 2.5)                # no jumps
+        ys, xs = np.nonzero(frames[60] > 192)
+        self.assertAlmostEqual(xs.mean(), 160, delta=1)                       # moved in on the centre, no drift
+        self.assertAlmostEqual(ys.mean(), 120, delta=1)
+
+    def test_51_held_product_zone_reaches_past_the_fingers(self):
+        try:
+            import cv2  # noqa: F401
+        except ImportError:
+            self.skipTest("needs OpenCV")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        from handzone import hand_keep
+        import numpy as np
+        # a hand at the bottom holding something upwards: wrist low, knuckles above it, fingers higher still
+        hand = [(200, 500)] + [(160 + 10 * i, 440 - 4 * i) for i in range(8)] + [(200, 420)] + \
+               [(170 + 6 * i, 380 + 3 * i) for i in range(11)]
+        shape = (600, 400)
+        ring = hand_keep(hand, shape, pad=30, reach=0)
+        zone = hand_keep(hand, shape, pad=30, reach=0.4)
+        cap = (slice(320, 340), slice(170, 200))                                # above the fingers, where a cap is
+        self.assertEqual(ring[cap].max(), 0)                                    # the ring alone misses it
+        self.assertEqual(zone[cap].min(), 255)                                  # the stretch keeps it sharp
+        self.assertEqual(zone[590:, :].max(), 255 if ring[590:, :].max() else 0)  # no stretch the other way
+        self.assertLess(zone.mean(), ring.mean() * 1.8)                         # stays near the hand
+        lost = hand_keep(hand, shape, pad=30, reach=0.4, missing=5, grow_lost=6)
+        self.assertGreater(lost.mean(), zone.mean())                            # grows while the hand is lost
+        self.assertTrue(np.all(lost[zone > 0] == 255))
+
+    def test_52_forced_break_after_a_word_with_a_comma(self):
+        words = [("Este", 0.0, 0.3), ("es", 0.3, 0.45), ("el", 0.45, 0.6), ("tono", 0.6, 0.9), ("Hypnotize,", 0.9, 1.34),
+                 ("que", 1.44, 1.5), ("es", 1.5, 1.62), ("un", 1.62, 1.76)]
+        (self.dir / "fb-voice.json").write_text(json.dumps({"segments": [{"words": [
+            {"word": " " + w, "start": s, "end": e} for w, s, e in words]}]}), "utf-8")
+        (self.dir / "fb-fix.json").write_text(json.dumps({"hypnotize": "Hypnotize|"}), "utf-8")
+        script("captions.py", "fb-voice.json", "--on-cut", "--length", "2", "--font", "DejaVu Sans", "--max-words", "8",
+               "--max-chars", "60", "--fix", "fb-fix.json", "--out", "fb-caps.ass", cwd=self.dir)
+        caps = [c["text"] for c in json.loads((self.dir / "fb-caps.json").read_text("utf-8"))]
+        self.assertEqual(caps, ["Este es el tono Hypnotize,", "que es un"])   # the break holds despite the comma
 
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")

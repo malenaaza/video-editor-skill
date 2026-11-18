@@ -2,6 +2,45 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-17 · version 2.3.0
+
+### Changed
+- The skill is now a Claude Code plugin, "Video Editor for Creators". Install it with
+  `/plugin marketplace add malenaaza/video-editor-skill` and `/plugin install video-editor@malenaaza`; updates come
+  through the plugin system (turn on auto-update once). The skill itself works exactly as before, and your settings
+  in `~/.video-editor/` are not touched.
+- The skill moved to `plugins/video-editor/skills/video-editor/` in the repository. A `video-editor/VERSION` stub stays
+  at the old place so copies installed the old way still learn about new versions.
+
+### New
+- A typewriter animation for the hook title (`"animation": "typewriter"` in `TitleCard`): letters typed one by
+  one with a blinking cursor in the accent colour and a small bounce at the end, and `scripts/sfx/typing.py` for
+  matching soft key clicks. Also fixed: the template's sample highlight word no longer leaks into real titles.
+- Word highlight captions: a rounded box in the brand's accent colour wipes in behind each word while it's said,
+  TikTok-style. Same captions, timing and position as the normal ones: `captions.py --remotion-props` writes the
+  props for the new Remotion template `WordCaptions.tsx`, which renders them as a transparent overlay. Choose it in
+  the `Captions:` line of your setup, or ask for it. (The look was tried first with a HyperFrames registry piece;
+  the template is our own code.)
+- A part in black and white: `scripts/mono.py` turns one or more parts of the video grey (a "before", a
+  flashback), with a short fade out of and back into colour and a touch more contrast. Give the times, or a phrase
+  you say ("from 'antes' until 'y ahora'"). Captions, titles and graphics stay in colour on top.
+- A slow push in on your face at a key line, like a camera moving closer: `scripts/pushin.py` finds your face,
+  eases in (1.15 by default), holds and eases back out, by times or by a phrase you say. It keeps your head in the
+  frame (in a close-up, the forehead) and your mouth clear of the captions, lowering the zoom when there isn't
+  room. Drawn with sub-pixel precision, so a slow zoom doesn't shake; captions and graphics stay still on top.
+- Moving from the old install: "update my video-editor skill" brings an old copy up to date, then offers the move to
+  the plugin; `update_skill.py --remove-old-copy` backs the old folder up and removes it (never a developer's clone).
+  The updater never replaces a plugin install, and the skill warns once if it finds itself installed twice.
+
+### Fixed
+- A forced caption break (`|` at the end of a fix in `fixes.json`) was ignored when the transcript had a comma
+  after that word ("Hypnotize," stayed in one caption with the next word).
+- The background blur kept blurring the top of a product held in the hand (a serum's cap: 72% blurred with the
+  old setting, up to 9% with the current one). The area kept sharp now also stretches past the fingers along the
+  direction the hand holds the product (`hand_reach` in `retouch.json`), a hand the tracker misses is looked for
+  again before its last place is used, and the area grows while it's lost. On the same frame the cap stayed sharp
+  and most of the background was still blurred.
+
 ## 2026-11-17 · version 2.2.0
 
 ### New
