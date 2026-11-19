@@ -20,6 +20,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 | Noise removal, voice polish, two voices, joining clips to one loudness, sound effects | `references/sound.md` |
 | Skin softening, teeth whitening, background blur | `references/retouch.md` |
 | Animated title, product tag, emojis, any Remotion or HyperFrames graphic | `references/graphics.md` |
+| The user asks for a script, or brings one, for a video they'll film; Shorts cut from a long video | `references/script.md` |
 | A cover with pictures of the products | `references/cover.md` |
 | A brand sheet, or a brand setting changed and the brand has a sheet | `references/brand-sheet.md` |
 
@@ -102,6 +103,7 @@ New users don't know what's possible, so tell them. Show this menu at the end of
 - **Text and graphics:** captions in your brand's style, or with each word lit up as you say it · animated title (pop-in or typewriter) · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · white balance measured and corrected · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · a part in black and white (a "before", a flashback), fading back to colour · a slow push in on your face at a key line · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
+- **Script first:** I write the script for your video, with chapters, screen recordings and Shorts marked; after you film it, I keep the right take of each line and cut the chapters and Shorts from it
 - **YouTube:** Shorts cut from your horizontal video, following your face · screen recordings with smooth zooms onto the action, and a screen-above-you layout for Shorts · chapters for the description · thumbnails with your face and a few big words
 - **Ready to post:** vertical and wide versions · a report of the edit in numbers · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
 
@@ -150,6 +152,8 @@ Transcribe every word with its time, using faster-whisper. It writes the same JS
 ```
 <speech python> -I <skill>/scripts/transcribe.py "<audio-or-video>" transcript
 ```
+
+**When the video was filmed from a script** (`script.md`, written as in `references/script.md`), run `python -I <skill>/scripts/scriptcut.py script.md <transcript.json> --cuts cuts.json` after transcribing: it keeps the last good take of every line, removes the other takes and false starts, and writes `script-report.md` (lines not said, talk not in the script) plus `chapters.json` and `shorts.json` from the script's markers. Read the report to the user before building the cut.
 
 If it fails, fall back to `whisper "<audio-or-video>" --model medium --word_timestamps True --output_format json --output_dir transcript` (add `--fp16 False` on CPU). Use `medium` for the main pass, re-checks and the check of the finished video.
 

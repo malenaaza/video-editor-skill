@@ -5,6 +5,12 @@ What each update of the video-editor skill brings. Newest first.
 ## 2026-11-19 · version 2.4.0
 
 ### New: for YouTube
+- **Script first:** ask for a script and Claude writes it with chapters, screen recordings, graphics and Shorts
+  marked, plus a shot list for filming in one sitting (`references/script.md`). After filming,
+  `scripts/scriptcut.py` keeps the last good take of every line, removes the other takes and false starts, tells you
+  which lines you didn't say and which talk isn't in the script, and turns the markers into the chapters and the
+  Shorts. `scripts/shorts.py` then cuts each Short out of the long video with its words for vertical captions and the
+  steps to finish it.
 - **Shorts from your horizontal video:** `scripts/reframe.py` turns a wide video into a vertical one that follows
   you like a camera operator: still while you talk, a smooth move when you shift, keeping up when you walk, and a cut
   when the footage cuts. Film once in 4K, and get the YouTube video and the Shorts from the same recording.

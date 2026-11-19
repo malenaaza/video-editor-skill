@@ -49,6 +49,7 @@ Checked on: <date>, with `scripts/detect_setup.py`
 
 ## Languages
 - Spoken in videos: <e.g. English, Spanish>
+- Variant for scripts and captions: <e.g. Spanish from Spain (vídeo, ordenador, vosotros), British English>
 
 ## Style defaults
 - Remove pauses: <yes / no>

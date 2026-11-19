@@ -1073,6 +1073,103 @@ class SkillTest(unittest.TestCase):
             self.assertIn(f'"{prop}"', face_box)
             self.assertIn(f"{prop}:", tsx)
 
+    def test_58_script_markers_in_both_languages(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import scriptcut
+        text = "\n".join(["# Título", "", "Hola, soy Malena.", "", "## [CAPÍTULO] Qué hace", '[PANTALLA] abrir "Claude"',
+                          '[SHORT "El truco"]', "Le pido a Claude", "que quite las pausas.", "", "Y listo.", "[/SHORT]",
+                          "## [CHAPTER] End", "> smile", "[GRAPHIC] a list", "Thanks for watching!"])
+        lines, chapters, shorts, notes = scriptcut.parse(text)
+        self.assertEqual(lines, ["Hola, soy Malena.", "Le pido a Claude que quite las pausas.", "Y listo.",
+                                 "Thanks for watching!"])                    # a paragraph is one line; > is not said
+        self.assertEqual(chapters, [{"title": "Qué hace", "line": 1}, {"title": "End", "line": 3}])
+        self.assertEqual(shorts, [{"title": "El truco", "first": 1, "last": 2}])
+        self.assertEqual(notes, [{"kind": "screen", "text": 'abrir "Claude"', "line": 1},
+                                 {"kind": "graphic", "text": "a list", "line": 3}])
+
+    def test_59_script_keeps_the_last_good_take(self):
+        folder = self.dir / "script"
+        folder.mkdir(exist_ok=True)
+        (folder / "script.md").write_text("\n".join([
+            "Hola, soy Malena y hoy os enseño cómo edito mis vídeos con IA.", "", "## [CAPÍTULO] Qué hace la skill",
+            '[SHORT "La IA que me ahorra horas"]', "Le pido a Claude que quite las pausas y los errores.", "",
+            "Y en dos minutos tengo el vídeo listo.", "[/SHORT]", "", "Esta línea no la digo nunca en el vídeo.", "",
+            "## [CHAPTER] Resultado", "Este es el resultado final, ¿qué os parece?"]), "utf-8")
+        said = ("hola soy malena y hoy | Hola, soy Malena y hoy os enseno como edito mis videos con IA. | le pido a "
+                "claude que quite las pausas y los errores | bueno esto lo grabo otra vez porque me he liado | le pido "
+                "a cloud que quite las pausas y errores | y en dos minutos tengo el video listo | este es el resultado "
+                "final que os parece")
+        words, t = [], 0.5
+        for w in said.split():
+            if w == "|":
+                t += 1.5
+                continue
+            words.append({"word": " " + w, "start": round(t, 2), "end": round(t + 0.3, 2)})
+            t += 0.35
+        (folder / "tr.json").write_text(json.dumps({"segments": [{"words": words}]}), "utf-8")
+        (folder / "cuts.json").write_text(json.dumps({"remove": [[50, 51, "a cough"], [1, 2, "script: old entry"]]}),
+                                          "utf-8")
+        out = script("scriptcut.py", "script.md", "tr.json", cwd=folder)
+        self.assertIn("5 lines: 4 found, 1 not said", out)
+        report = (folder / "script-report.md").read_text("utf-8")
+        self.assertIn("NOT SAID: Esta línea", report)
+        self.assertIn("bueno esto lo grabo otra vez", report)                  # kept, for the user to decide
+        cuts = json.loads((folder / "cuts.json").read_text("utf-8"))["remove"]
+        self.assertIn([50, 51, "a cough"], cuts)                               # the user's own cuts stay
+        self.assertNotIn([1, 2, "script: old entry"], cuts)                    # its own earlier entries are replaced
+        labels = [c[2] for c in cuts]
+        self.assertIn("script: false start of line 1", labels)
+        self.assertIn("script: other take of line 2", labels)
+        first_take = next(c for c in cuts if c[2] == "script: other take of line 2")
+        self.assertAlmostEqual(first_take[0], 9.75, delta=0.06)               # the first take of line 2 goes
+        self.assertLess(first_take[1], 15.15)                                  # and the aside after it is kept
+        self.assertEqual(json.loads((folder / "chapters.json").read_text("utf-8")),
+                         [{"title": "Intro", "at": 0}, {"title": "Qué hace la skill", "say": "le pido a cloud"},
+                          {"title": "Resultado", "say": "este es el resultado"}])
+        self.assertEqual(json.loads((folder / "shorts.json").read_text("utf-8")),
+                         [{"title": "La IA que me ahorra horas", "say": "le pido a cloud",
+                           "until": "tengo el video listo"}])
+        script("scriptcut.py", "script.md", "tr.json", "--drop-unscripted", cwd=folder)
+        labels = [c[2] for c in json.loads((folder / "cuts.json").read_text("utf-8"))["remove"]]
+        self.assertIn("script: not in the script", labels)
+
+    def test_60_script_cut_builds_with_cutplan(self):
+        (self.dir / "sc-script.md").write_text("Hola amigos.\n\nHoy glow serum es genial.\n", "utf-8")
+        script("scriptcut.py", "sc-script.md", "tr.json", "--cuts", "sc-cuts.json", cwd=self.dir)
+        cuts = json.loads((self.dir / "sc-cuts.json").read_text("utf-8"))["remove"]
+        self.assertEqual(len(cuts), 1)                                         # "Hola amigas" is the earlier take
+        self.assertLess(cuts[0][0], 0.5)
+        self.assertLess(cuts[0][1], 2.5)
+        script("cutplan.py", "build", "src.mp4", "tr.json", "--cuts", "sc-cuts.json", "--out", "sc-plan.json",
+               cwd=self.dir)
+        frames = json.loads((self.dir / "sc-plan.json").read_text("utf-8"))["frames"]
+        self.assertGreaterEqual(frames[0][0] / FPS, 1.5)                       # the first take is cut
+
+    def test_61_shorts_from_the_long_video(self):
+        folder = self.dir / "shorts-test"
+        folder.mkdir(exist_ok=True)
+        caps, t = [], 0.0
+        for w in ("hola a todos " + "palabra " * 40 + "le pido a claude " + "que quite " * 30 + "tengo el vídeo listo "
+                  + "adiós").split():
+            caps.append({"start": t, "end": t + 0.4, "words": [[round(t, 2), round(t + 0.38, 2), w.upper()]]})
+            t += 0.4
+        (folder / "captions.json").write_text(json.dumps(caps), "utf-8")
+        (folder / "shorts.json").write_text(json.dumps([
+            {"title": "El truco", "say": "Le pido a Claude", "until": "tengo el video listo"},
+            {"title": "Corto", "say": "hola a todos", "until": "hola a todos"},
+            {"title": "Falta", "say": "esto no se dice"}]), "utf-8")
+        out = script("shorts.py", "shorts.json", "--video", "long.mp4", cwd=folder)
+        rng = json.loads((folder / "shorts" / "short-1" / "range.json").read_text("utf-8"))
+        self.assertAlmostEqual(rng["start"], 43 * 0.4 - 0.02, delta=0.03)       # never into the word before
+        self.assertAlmostEqual(rng["end"], (43 + 4 + 60 + 4) * 0.4, delta=0.03)  # room, but not into "adiós"
+        words = json.loads((folder / "shorts" / "short-1" / "words.json").read_text("utf-8"))["segments"][0]["words"]
+        self.assertEqual(words[0]["word"], " LE")
+        self.assertAlmostEqual(words[0]["start"], 0.02, delta=0.03)            # moved to start at 0
+        self.assertEqual(words[-1]["word"], " LISTO")
+        self.assertIn("reframe.py", (folder / "shorts" / "short-1" / "steps.txt").read_text("utf-8"))
+        self.assertIn("under 15 s", out)                                       # "Corto"
+        self.assertIn("Short 3 skipped", out)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
