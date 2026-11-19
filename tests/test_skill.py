@@ -980,6 +980,36 @@ class SkillTest(unittest.TestCase):
             red = np.where((frame[..., 0] > 150) & (frame[..., 1] < 100))[1]
             self.assertAlmostEqual(red.mean(), 180, delta=12, msg=t)
 
+    def test_55_youtube_chapters(self):
+        folder = self.dir / "chapters"
+        folder.mkdir(exist_ok=True)
+        caps = [{"start": 0.0, "end": 3.0, "words": [[0.5, 1.0, "Hola"], [1.0, 1.5, "a todos"]]},
+                {"start": 40.0, "end": 44.0, "words": [[41.2, 41.6, "Vale,"], [41.6, 42.0, "empecemos"]]},
+                {"start": 3700.0, "end": 3705.0, "words": [[3701.0, 3701.5, "Resumen"]]}]
+        (folder / "captions.json").write_text(json.dumps(caps), "utf-8")
+
+        def chapters(entries, *extra):
+            (folder / "ch.json").write_text(json.dumps(entries), "utf-8")
+            return script("chapters.py", "ch.json", *extra, cwd=folder)
+
+        out = chapters([{"title": "Intro", "at": 4},                       # moved to 0:00
+                        {"title": "Qué es un prompt", "say": "vale empecemos"},
+                        {"title": "Resumen", "say": "resumen"}], "--length", "3800", "--ffmetadata", "ch.ffmeta")
+        self.assertEqual((folder / "chapters.txt").read_text("utf-8").splitlines(),
+                         ["0:00 Intro", "0:41 Qué es un prompt", "1:01:41 Resumen"])
+        self.assertIn("Wrote ch.ffmeta", out)
+        meta = (folder / "ch.ffmeta").read_text("utf-8")
+        self.assertIn("START=41200", meta)
+        self.assertIn("END=3800000", meta)
+        for bad, reason in [([{"title": "A", "at": 0}, {"title": "B", "at": 50}], "at least 3"),
+                            ([{"title": "A", "at": 30}, {"title": "B", "at": 50}, {"title": "C", "at": 90}], "0:00"),
+                            ([{"title": "A", "at": 0}, {"title": "B", "at": 5}, {"title": "C", "at": 90}], "10 s"),
+                            ([{"title": "A", "at": 0}, {"title": "B", "say": "no se dice"}, {"title": "C", "at": 90}],
+                             "not said")]:
+            with self.assertRaises(AssertionError, msg=reason) as err:
+                chapters(bad)
+            self.assertIn(reason, str(err.exception))
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):
