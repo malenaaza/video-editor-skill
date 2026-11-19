@@ -1010,6 +1010,57 @@ class SkillTest(unittest.TestCase):
                 chapters(bad)
             self.assertIn(reason, str(err.exception))
 
+    def test_56_screen_zoom_and_stack(self):
+        import numpy as np
+        sys.path.insert(0, str(SCRIPTS))
+        import screen
+        folder = self.dir / "screen"
+        folder.mkdir(exist_ok=True)
+        # what changed: a pointer-sized blip is ignored, a typed line is found
+        a = np.zeros((90, 160), np.uint8)
+        b = a.copy()
+        b[10:13, 20:23] = 200
+        self.assertIsNone(screen.change_box(a, b))
+        b[40:48, 30:90] = 200
+        self.assertEqual(screen.change_box(a, b)[1:], (10, 70, 38))
+        # typing along one line is one zoom; a new page zooms back out
+        changes = [(2.0, (100, 120, 70, 40)), (2.5, (175, 120, 70, 40)), (3.0, (250, 120, 70, 40)),
+                   (5.0, (0, 0, 1280, 720)), (6.0, None)]
+        self.assertEqual(screen.plan_zooms(changes, 1280, 720),
+                         [{"at": 0.0, "box": "full"}, {"at": 2.0, "box": [100, 120, 220, 40]}, {"at": 5.0, "box": "full"}])
+        # the visible area keeps the video's shape, stays inside the frame and never zooms past the limit
+        left, top, w = screen.fit_box([600, 340, 40, 20], 1280, 720, max_zoom=2.5)
+        self.assertAlmostEqual(w, 512)
+        self.assertTrue(0 <= left <= 1280 - w and 0 <= top <= 720 - w * 720 / 1280)
+        # FFmpeg draws it: a white line in the middle of the screen fills much more of the frame once zoomed
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=0x303030:s=1280x720:r=10:d=4", "-f", "lavfi",
+             "-i", "color=white:s=200x40:r=10:d=4", "-filter_complex", "[0][1]overlay=x=540:y=340,format=yuv420p",
+             "-c:v", "libx264", "-preset", "ultrafast", "screen.mp4"], cwd=folder)
+        (folder / "zooms.json").write_text(json.dumps([{"at": 0, "box": "full"}, {"at": 1, "box": [540, 340, 200, 40]}]),
+                                           "utf-8")
+        script("screen.py", "zoom", "screen.mp4", "zooms.json", cwd=folder)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "screen.mp4", filter_flag(), "zoom.txt", "-c:v", "libx264",
+             "-preset", "ultrafast", "zoomed.mp4"], cwd=folder)
+
+        def white_share(t):
+            raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", folder / "zoomed.mp4", "-frames:v", "1",
+                                  "-f", "rawvideo", "-pix_fmt", "gray", "-"], capture_output=True, check=True).stdout
+            return (np.frombuffer(raw, np.uint8) > 200).mean()
+        self.assertGreater(white_share(3.0), white_share(0.5) * 4)
+        # the vertical layout: screen on top, speaker below, 1080x1920, sound from the camera
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=red:s=1920x1080:r=10:d=2", "-f", "lavfi",
+             "-i", "sine=d=2", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-shortest", "camera.mp4"],
+            cwd=folder)
+        script("screen.py", "stack", "zoomed.mp4", "camera.mp4", "--face-x", "1500", cwd=folder)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "zoomed.mp4", "-i", "camera.mp4", filter_flag(), "stack.txt",
+             "-map", "[v]", "-map", "[a]", "-t", "2", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
+             "stacked.mp4"], cwd=folder)
+        out = run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "csv=p=0",
+                   "stacked.mp4"], cwd=folder)
+        self.assertIn("1080,1920", out)
+        self.assertIn("audio", out)
+        self.assertEqual(screen.panel_crop(1920, 1080, 1080, 960, 1800), (1216, 1080, 704, 0))   # kept inside
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

@@ -104,6 +104,7 @@ plugins/video-editor/
       pushin.py            a slow, smooth push in on your face at a key line, keeping your head in the frame
       reframe.py           turns a wide video into a vertical one for Shorts, following you like a camera operator
       chapters.py          YouTube chapters for the description, checked against YouTube's rules
+      screen.py            screen recordings: smooth zooms onto the action, and screen-above-speaker Shorts
       editreport.py        the edit in numbers: what was cut, pauses left, loudness, size
       update_skill.py      updates the skill safely, with a backup
       fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
