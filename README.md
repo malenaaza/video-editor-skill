@@ -24,6 +24,8 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp, a part in black and white, a slow push in on your face at a key line
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
+- For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
+- Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked; after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
 
 You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
 
