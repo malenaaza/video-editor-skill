@@ -25,6 +25,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
+- Puppet videos, with no one on camera: one or two cartoon characters (drawn in code, all original) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
 - Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked; after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
 
 You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
@@ -71,6 +72,7 @@ On first use it walks you through installing what's missing:
 - For retouch, blur and the mouth check: `mediapipe` and `opencv-python`, plus Google's MediaPipe face and hand models
 - Optional: Node 20+ for Remotion graphics, rembg for product cutouts on covers, and an RNNoise model (or DeepFilterNet's `deep-filter`) for noise removal
 - If you shoot Log: your camera maker's official LUT, which you download yourself
+- For puppet videos: Piper (`piper-tts`, the voices) and its voice files, and Rhubarb Lip Sync (the mouth shapes)
 
 
 
@@ -132,6 +134,12 @@ plugins/video-editor/
       cover/face_box.py    finds the face so the products go around it
       voice/clean_voice.py measures background noise, removes it and polishes the voice
       voice/leveljoin.py   joins clips and levels them to a loudness target, for quiet voices with clicks
+  skills/puppet-video/     the second skill: animated puppet videos from a script
+    SKILL.md               the steps Claude follows for a puppet video
+    references/puppet.md   the dialogue format, the voices and their licenses, installs, writing tips
+    scripts/dialogue.py    makes the voice of every turn (Piper) and the mouth shapes (Rhubarb), and the timing
+    scripts/captionwords.py  caption words exactly as written in the script, timed to the voice
+    scripts/remotion/Puppet.tsx  the characters and the animation
 ```
 
 `my-setup.md` holds your personal details. It's saved in `~/.video-editor/`, outside the skill folder, so it isn't in any copy of the skill you share.
@@ -152,6 +160,6 @@ python tests/test_skill.py
 
 ## Licenses
 
-The skill, scripts and sound effects are under the MIT License (see `LICENSE`). Tools it uses have their own licenses: FFmpeg (LGPL/GPL), OpenAI Whisper (MIT), faster-whisper (MIT), MediaPipe and its models (Apache 2.0), yt-dlp (Unlicense). Remotion is free for individuals and companies of up to 3 people; larger companies need a paid license. Camera LUTs belong to their makers and aren't included.
+The skill, scripts and sound effects are under the MIT License (see `LICENSE`). Tools it uses have their own licenses: FFmpeg (LGPL/GPL), OpenAI Whisper (MIT), faster-whisper (MIT), MediaPipe and its models (Apache 2.0), yt-dlp (Unlicense), Piper (GPL, run as a separate program; each Piper voice has its own license, listed in the puppet skill's `references/puppet.md`), Rhubarb Lip Sync (MIT). Remotion is free for individuals and companies of up to 3 people; larger companies need a paid license. Camera LUTs belong to their makers and aren't included.
 
 Only edit and download videos you own or have the right to use.

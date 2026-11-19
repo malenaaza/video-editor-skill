@@ -19,6 +19,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ROOT = REPO / "plugins" / "video-editor" / "skills" / "video-editor"
 SCRIPTS = ROOT / "scripts"
+PUPPET = REPO / "plugins" / "video-editor" / "skills" / "puppet-video"
 FPS = 30
 
 WORDS = [(" Hola", 0.5, 1.0), (" amigas,", 1.0, 1.5),      # first take, removed in cuts.json
@@ -42,6 +43,15 @@ def script(name, *args, cwd):
 def filter_flag():
     version = re.search(r"ffmpeg version n?(\d+)", run(["ffmpeg", "-version"]))
     return "-/filter_complex" if version and int(version.group(1)) >= 7 else "-filter_complex_script"
+
+
+def probe_audio(path):
+    """(channels, sample rate, duration) of an audio file."""
+    out = run(["ffprobe", "-v", "error", "-show_entries", "stream=channels,sample_rate:format=duration", "-of", "json",
+               path])
+    info = json.loads(out)
+    s = info["streams"][0]
+    return int(s["channels"]), int(s["sample_rate"]), float(info["format"]["duration"])
 
 
 def probe(path, cwd):
@@ -72,7 +82,7 @@ class SkillTest(unittest.TestCase):
         return json.loads((self.dir / out).read_text("utf-8")), text
 
     def test_01_every_script_compiles(self):
-        for path in SCRIPTS.rglob("*.py"):
+        for path in [*SCRIPTS.rglob("*.py"), *(PUPPET / "scripts").rglob("*.py")]:
             py_compile.compile(str(path), doraise=True)
 
     def test_02_plan_removes_pauses_and_listed_cuts(self):
@@ -1169,6 +1179,103 @@ class SkillTest(unittest.TestCase):
         self.assertIn("reframe.py", (folder / "shorts" / "short-1" / "steps.txt").read_text("utf-8"))
         self.assertIn("under 15 s", out)                                       # "Corto"
         self.assertIn("Short 3 skipped", out)
+
+    def test_62_puppet_dialogue_format(self):
+        sys.path.insert(0, str(PUPPET / "scripts"))
+        import dialogue
+        chars, turns = dialogue.parse("\n".join([
+            "# a comment", "[Lola] voice=en_GB-cori-medium look=lola", "[Pixel] voice=es_ES-sharvard-medium speaker=F",
+            "Lola: Hi! Could I have a flat white? | ¡Hola! ¿Me pones un café?", "> Pixel: sorprendida", "> pausa 0.5",
+            "> a note for Claude, not said", "Pixel: ¿Un café?"]))
+        self.assertEqual(chars["Pixel"], {"voice": "es_ES-sharvard-medium", "speaker": "F", "look": "max", "colour": None})
+        self.assertEqual(turns[0]["translation"], "¡Hola! ¿Me pones un café?")
+        self.assertEqual((turns[1]["expression"], turns[1]["pause_before"]), ("surprised", 0.5))
+        for bad in ("Lola: hello", "[Lola] look=lola\nLola: hi", "[Lola] voice=x look=dragon\nLola: hi",
+                    "[Lola] voice=x\n> Lola: angry\nLola: hi"):
+            with self.assertRaises(ValueError, msg=bad):
+                dialogue.parse(bad)
+
+    def test_63_puppet_mouths_from_loudness(self):
+        sys.path.insert(0, str(PUPPET / "scripts"))
+        import dialogue
+        import math
+        rate = 48000
+        samples = [0] * (rate // 2) + [int(12000 * math.sin(2 * math.pi * 200 * i / rate)) for i in range(rate)] \
+            + [0] * (rate // 2)
+        cues = dialogue.loudness_cues(samples, rate)
+        shape_at = lambda t: next(c["value"] for c in cues if c["start"] <= t < c["end"])
+        self.assertEqual(shape_at(0.2), "X")                                     # closed in silence
+        self.assertIn(shape_at(1.0), ("C", "D"))                                 # open while it sounds
+        self.assertEqual(shape_at(1.8), "X")
+        self.assertTrue(all(c["end"] - c["start"] >= 1 / 30 * 1.5 - 1e-9 for c in cues[1:-1]))   # no flicker
+
+    def test_64_puppet_voice_track_and_props(self):
+        folder = self.dir / "puppet"
+        folder.mkdir(exist_ok=True)
+        (folder / "rec").mkdir(exist_ok=True)
+        for i, (freq, d) in enumerate([(220, 1.0), (330, 1.5), (440, 0.8)], 1):
+            run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+                 f"aevalsrc='0.4*sin(2*PI*{freq}*t)':s=48000:d={d}", "-af", "adelay=200,apad=pad_dur=0.3",
+                 f"rec/{i:02d}.wav"], cwd=folder)
+        (folder / "d.md").write_text("[Lola] voice=en_GB-cori-medium look=lola\n[Max] voice=x look=max\n"
+                                     "Lola: Hello there! | ¡Hola!\nMax: Hi.\n> pause 0.5\nLola: Bye.\n", "utf-8")
+        out = script(PUPPET / "scripts" / "dialogue.py", "d.md", "--audio-dir", "rec", "--no-rhubarb", "--gap", "0.4",
+                     "--out-dir", "out", cwd=folder)
+        self.assertIn("3 turns", out)
+        props = json.loads((folder / "out" / "puppet-props.json").read_text("utf-8"))
+        turns = props["turns"]
+        self.assertEqual([t["speaker"] for t in turns], ["Lola", "Max", "Lola"])
+        self.assertAlmostEqual(turns[0]["start"], 0.4, delta=0.01)
+        for t, d in zip(turns, (1.0, 1.5, 0.8)):                                 # silence trimmed to a short margin
+            self.assertAlmostEqual(t["end"] - t["start"], d + 0.08, delta=0.05)
+        self.assertAlmostEqual(turns[1]["start"] - turns[0]["end"], 0.4, delta=0.01)
+        self.assertAlmostEqual(turns[2]["start"] - turns[1]["end"], 0.9, delta=0.01)   # gap + pause
+        self.assertAlmostEqual(props["length"], turns[2]["end"] + 0.8, delta=0.01)
+        _, _, audio = probe_audio(folder / "out" / "voice.wav")
+        self.assertAlmostEqual(audio, props["length"], delta=0.05)
+        self.assertTrue(all(t["mouth"][0][0] >= t["start"] - 1e-6 for t in turns))
+        self.assertEqual(turns[0]["translation"], "¡Hola!")
+
+    def test_65_puppet_captions_use_the_script_words(self):
+        props = {"turns": [{"text": "Hmm... a croissant, too.", "start": 1.0, "end": 3.0},
+                           {"text": "That's four pounds fifty.", "start": 3.5, "end": 5.5}]}
+        heard = {"segments": [{"words": [{"word": " I'm", "start": 1.0, "end": 1.4},
+                                         {"word": " a", "start": 1.5, "end": 1.6},
+                                         {"word": " croissant", "start": 1.6, "end": 2.2},
+                                         {"word": " too.", "start": 2.3, "end": 2.8},
+                                         {"word": " That's", "start": 3.5, "end": 3.9},
+                                         {"word": " £4.50.", "start": 4.0, "end": 5.4}]}]}
+        (self.dir / "pp.json").write_text(json.dumps(props), "utf-8")
+        (self.dir / "heard.json").write_text(json.dumps(heard), "utf-8")
+        out = script(PUPPET / "scripts" / "captionwords.py", "pp.json", "--transcript", "heard.json", "--out", "pw.json",
+                     cwd=self.dir)
+        self.assertIn("4 of 8 words matched", out)          # a, croissant, too, That's
+        words = json.loads((self.dir / "pw.json").read_text("utf-8"))["segments"][0]["words"]
+        self.assertEqual(" ".join(w["word"].strip() for w in words),
+                         "Hmm... a croissant, too. That's four pounds fifty.")   # as written, never as heard
+        croissant = next(w for w in words if w["word"].strip() == "croissant,")
+        self.assertEqual((croissant["start"], croissant["end"]), (1.6, 2.2))     # timed from the transcript
+        four, fifty = words[5], words[7]
+        self.assertTrue(3.9 <= four["start"] < fifty["start"] <= 5.5)            # the rest spread in between
+        self.assertTrue(all(b["start"] >= a["start"] for a, b in zip(words, words[1:])))
+
+    def test_66_puppet_template(self):
+        tsx = (PUPPET / "scripts" / "remotion" / "Puppet.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("characters: [], turns: []", default_props)               # sample turns would leak
+        for shape in "ABCDEFGH":                                                  # every mouth shape is drawn
+            self.assertIn(f'case "{shape}":', tsx)
+        sys.path.insert(0, str(PUPPET / "scripts"))
+        import dialogue
+        registered = re.search(r"LOOK_COMPONENTS[^=]*=\s*\{([^}]*)\}", tsx).group(1)
+        for look in dialogue.LOOKS:                                               # every look the script accepts exists
+            self.assertIn(f"{look}:", registered)
+        skill = (PUPPET / "SKILL.md").read_text("utf-8")
+        self.assertTrue(skill.startswith("---\nname: puppet-video\n"))
+        for path in set(re.findall(r"<skill>/((?:scripts|references)/[\w/.-]+\.\w+)", skill)):
+            self.assertTrue((PUPPET / path).exists(), path)
+        for path in set(re.findall(r"<editor>/(scripts/[\w/.-]+\.\w+)", skill)):
+            self.assertTrue((ROOT / path).exists(), path)
 
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")

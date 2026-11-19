@@ -2,7 +2,7 @@
   "name": "video-editor",
   "displayName": "Video Editor for Creators",
   "version": "2.4.0",
-  "description": "Edit talking-head Reels, TikToks, Shorts and YouTube videos on your own computer: cuts retakes, pauses, fillers and held sounds, captions and graphics in your brand's style, noise removal and voice leveling, skin softening, light beautify and background blur that keeps products sharp, your products popping in from your B-roll, Log footage, and a ready-to-post pack with cover and hashtags. Runs locally with FFmpeg and Python, in any language.",
+  "description": "Edit talking-head Reels, TikToks, Shorts and YouTube videos on your own computer: cuts retakes, pauses, fillers and held sounds, captions and graphics in your brand's style, noise removal and voice leveling, skin softening, light beautify and background blur that keeps products sharp, your products popping in from your B-roll, Log footage, and a ready-to-post pack with cover and hashtags. Also makes animated puppet videos: cartoon characters that say your script with a free voice made on your computer, with lip-sync and captions, for explainers and language lessons. Runs locally with FFmpeg and Python, in any language.",
   "author": {
     "name": "malenaaza",
     "email": "malena_aza@hotmail.com",
@@ -11,5 +11,21 @@
   "homepage": "https://github.com/malenaaza/video-editor-skill",
   "repository": "https://github.com/malenaaza/video-editor-skill",
   "license": "MIT",
-  "keywords": ["video", "video-editing", "reels", "tiktok", "shorts", "captions", "beauty", "skincare", "makeup", "ffmpeg"]
+  "keywords": [
+    "video",
+    "video-editing",
+    "reels",
+    "tiktok",
+    "shorts",
+    "captions",
+    "beauty",
+    "skincare",
+    "makeup",
+    "ffmpeg",
+    "animation",
+    "puppet",
+    "lip-sync",
+    "text-to-speech",
+    "language-learning"
+  ]
 }

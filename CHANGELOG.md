@@ -4,6 +4,15 @@ What each update of the video-editor skill brings. Newest first.
 
 ## 2026-11-19 · version 2.4.0
 
+### New: puppet videos
+- A second skill in the plugin, **puppet-video**: animated videos with no one on camera. One or two original
+  cartoon characters (Lola, Max and the robot Pixel, drawn in code and recoloured with your brand's palette) say a
+  script with a free voice made on your computer (Piper; Spanish from Spain and British English voices included),
+  with mouth shapes matched to every sound (Rhubarb Lip Sync), blinking, breathing, expressions, and leaning in when
+  they talk. Captions show the script's exact words (Whisper only gives the timing), and an optional translation
+  goes under each line for language students. Use it for a helper character inside your videos or for short
+  dialogues for students. `credits.txt` lists each voice's license and the credit line to add when it asks for one.
+
 ### New: for YouTube
 - **Script first:** ask for a script and Claude writes it with chapters, screen recordings, graphics and Shorts
   marked, plus a shot list for filming in one sitting (`references/script.md`). After filming,
