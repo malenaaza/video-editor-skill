@@ -21,6 +21,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 | Skin softening, teeth whitening, background blur | `references/retouch.md` |
 | Animated title, product tag, emojis, any Remotion or HyperFrames graphic | `references/graphics.md` |
 | The user asks for a script, or brings one, for a video they'll film; Shorts cut from a long video | `references/script.md` |
+| The first video from a camera, phone or app not in `my-setup.md` yet; the user asks what settings to film with | `references/cameras.md` |
 | A cover with pictures of the products | `references/cover.md` |
 | A brand sheet, or a brand setting changed and the brand has a sheet | `references/brand-sheet.md` |
 
@@ -57,6 +58,7 @@ It lives outside the skill folder so that updating the skill never deletes it. I
    - Who are the videos for? List each brand or channel (a business, your personal account...).
    - Where should finished videos go?
    - Remove every pause and filler, or keep a natural pace? Speed up a little after cutting?
+   - Which country do they film in (for 50 or 60 Hz lights)? Then, with the first video from each camera or app, run the footage check in `references/cameras.md` and give the settings advice once.
 5. **Save** the answers: copy `<skill>/setup-template.md` to `~/.video-editor/my-setup.md` and fill it in. Leave brand colors and fonts as `unknown` until the first video for that brand (Rule 5).
 6. **Show what you can do.** End setup by showing the menu from What I can do, so a new user knows the options before their first edit.
 
@@ -105,6 +107,7 @@ New users don't know what's possible, so tell them. Show this menu at the end of
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
 - **Script first:** I write the script for your video, with chapters, screen recordings and Shorts marked; after you film it, I keep the right take of each line and cut the chapters and Shorts from it
 - **YouTube:** Shorts cut from your horizontal video, following your face · screen recordings with smooth zooms onto the action, and a screen-above-you layout for Shorts · chapters for the description · thumbnails with your face and a few big words
+- **Camera check:** reads how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android, Sony, GoPro, DJI...) and tells you, once, what to change for the next recordings: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - **Ready to post:** vertical and wide versions · a report of the edit in numbers · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
 
 End with one line: "Ask for any of these by name, or I'll suggest what fits each video."

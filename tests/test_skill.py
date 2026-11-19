@@ -1203,6 +1203,53 @@ class SkillTest(unittest.TestCase):
         # a close-up with no room beside or above the head has nothing to measure
         self.assertIsNone(blurcheck.ratio(sharp, (5, 5, 635, 475)))
 
+    def test_68_footage_check(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import footcheck
+        # the user's real Blackmagic clip, as ffprobe described it (only the fields the check reads)
+        blackmagic = {"format": {"bit_rate": "42000000", "tags": {
+            "com.apple.quicktime.software": "Blackmagic Cam 3.5.300023",
+            "com.apple.quicktime.model": "Apple iPhone 16 Pro Max Front",
+            "com.blackmagic-design.shutterSpeed": "1/613",
+            "com.blackmagic-design.camera.lensType": "iPhone 16 Pro Max Front"}},
+            "streams": [{"codec_type": "video", "width": 3840, "height": 2160, "r_frame_rate": "24/1",
+                         "color_transfer": "bt709", "side_data_list": [{"rotation": 90}]},
+                        {"codec_type": "audio", "sample_rate": "16000"}]}
+        who, findings = footcheck.check(blackmagic, mains=50, target="wide")
+        self.assertEqual((who["app"], who["lens"], who["confirmed"]), ("blackmagic", "front", True))
+        found = {f["what"]: f for f in findings}
+        self.assertIn("choose 25", found["frame rate"]["fix"])
+        self.assertIn("1/50", found["shutter"]["fix"])
+        self.assertIn("vertical", found["orientation"]["found"])                 # rotated 90: filmed upright
+        self.assertIn("Bluetooth", found["sound"]["fix"])
+        self.assertIn("camera", found)
+        # a good iPhone recording in Spain: nothing to change; in a 60 Hz country the frame rate is flagged
+        iphone = {"format": {"bit_rate": "50000000", "tags": {"com.apple.quicktime.make": "Apple",
+                                                              "com.apple.quicktime.model": "iPhone 15"}},
+                  "streams": [{"codec_type": "video", "width": 3840, "height": 2160, "r_frame_rate": "25/1"},
+                              {"codec_type": "audio", "sample_rate": "48000"}]}
+        who, findings = footcheck.check(iphone, mains=50, shorts=True, target="wide")
+        self.assertEqual((who["app"], findings), ("apple_camera", []))
+        _, findings = footcheck.check(iphone, mains=60)
+        self.assertIn("Show PAL Formats", findings[0]["fix"])  # same menu, the fps differs
+        self.assertIn("30 fps", findings[0]["fix"])
+        # HDR, a 1080p horizontal clip for Shorts, and a squeezed file with no camera details
+        hdr = {"format": {"bit_rate": "2000000", "tags": {}},
+               "streams": [{"codec_type": "video", "width": 1920, "height": 1080, "r_frame_rate": "30/1",
+                            "color_transfer": "arib-std-b67"}, {"codec_type": "audio", "sample_rate": "44100"}]}
+        who, findings = footcheck.check(hdr, mains=60, shorts=True)
+        self.assertIsNone(who["app"])
+        self.assertEqual({f["what"] for f in findings}, {"resolution", "HDR", "quality"})
+        # end to end on a real file with Blackmagic-style tags written into it
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=320x180:r=24:d=1", "-f", "lavfi", "-i",
+             "sine=d=1:sample_rate=16000", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
+             "-movflags", "use_metadata_tags", "-metadata", "com.apple.quicktime.software=Blackmagic Cam 3.5",
+             "-metadata", "com.blackmagic-design.shutterSpeed=1/500", "fc.mov"], cwd=self.dir)
+        out = script("footcheck.py", "fc.mov", "--mains", "50", cwd=self.dir)
+        self.assertIn("Blackmagic Camera app", out)
+        self.assertIn("1/50", out)
+        self.assertIn("16 kHz", out)
+
     def test_62_puppet_dialogue_format(self):
         sys.path.insert(0, str(PUPPET / "scripts"))
         import dialogue

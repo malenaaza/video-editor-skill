@@ -2,6 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-19 · version 2.5.0
+
+### New
+- **Camera check:** the first time a video comes from a new camera, phone or app, `scripts/footcheck.py` reads how it
+  was recorded and the skill tells you once what to change for the next recordings, in that app's own words: the
+  frame rate for your country's lights (25 fps in Spain), the shutter (Blackmagic Camera records it: 1/50 at 25 fps),
+  4K when Shorts will be cut from a horizontal video, Bluetooth sound (16 kHz, call quality), HDR, the front camera,
+  and files squeezed by social or messaging apps. It recognises Blackmagic Camera (confirmed on a real file), the
+  iPhone Camera app, Final Cut Camera, Android phones, Sony, GoPro and DJI; when it can't tell, it asks once. Results
+  are saved per camera in your setup. Guide: `references/cameras.md`.
+
 ## 2026-11-19 · version 2.4.0
 
 ### New: puppet videos
