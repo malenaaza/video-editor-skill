@@ -2,6 +2,42 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-19 · version 2.4.0
+
+### New: puppet videos
+- A second skill in the plugin, **puppet-video**: animated videos with no one on camera. One or two original
+  cartoon characters (Lola, Max and the robot Pixel, drawn in code and recoloured with your brand's palette) say a
+  script with a free voice made on your computer (Piper; Spanish from Spain and British English voices included),
+  with mouth shapes matched to every sound (Rhubarb Lip Sync), blinking, breathing, expressions, and leaning in when
+  they talk. Captions show the script's exact words (Whisper only gives the timing), and an optional translation
+  goes under each line for language students. Use it for a helper character inside your videos or for short
+  dialogues for students. `credits.txt` lists each voice's license and the credit line to add when it asks for one.
+
+### New: background already blurred
+- Before offering background blur, the skill now checks whether your camera already blurred the background (a
+  phone's Cinematic or Portrait mode, or a lens wide open) with `scripts/retouch/blurcheck.py`, and doesn't add more.
+  It also reminds you to check that a product held up wasn't blurred by that mode, which can't be fixed afterwards.
+
+### New: for YouTube
+- **Script first:** ask for a script and Claude writes it with chapters, screen recordings, graphics and Shorts
+  marked, plus a shot list for filming in one sitting (`references/script.md`). After filming,
+  `scripts/scriptcut.py` keeps the last good take of every line, removes the other takes and false starts, tells you
+  which lines you didn't say and which talk isn't in the script, and turns the markers into the chapters and the
+  Shorts. `scripts/shorts.py` then cuts each Short out of the long video with its words for vertical captions and the
+  steps to finish it.
+- **Shorts from your horizontal video:** `scripts/reframe.py` turns a wide video into a vertical one that follows
+  you like a camera operator: still while you talk, a smooth move when you shift, keeping up when you walk, and a cut
+  when the footage cuts. Film once in 4K, and get the YouTube video and the Shorts from the same recording.
+- **Screen recordings for tutorials:** `scripts/screen.py` finds where the action is on the screen (typing, a menu,
+  a result appearing), suggests zooms you can check on a contact sheet, and draws smooth zooms onto them. For Shorts
+  it puts the screen on top and you below, centred on your face.
+- **Chapters:** `scripts/chapters.py` turns the topics Claude marks in the transcript into the chapter lines for the
+  YouTube description, with times that follow the cuts, checked against YouTube's rules (first at 0:00, at least 3,
+  each at least 10 seconds). It can also embed them in the video file.
+- **Thumbnails:** a new Remotion template, `Thumbnail.tsx`: your face big on one side and two to four huge words
+  on the other, in your brand's colours, kept clear of the corner where YouTube shows the length, and checked at
+  phone size. `face_box.py` now also prints the frame's size for it.
+
 ## 2026-11-18 · version 2.3.1
 
 ### Fixed

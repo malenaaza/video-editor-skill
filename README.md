@@ -21,9 +21,12 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Captions (plain, or with each word lit up as you say it), titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
 - Background noise and hum removal, voice polish and leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
-- Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp, a part in black and white, a slow push in on your face at a key line
+- Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp (and isn't added when your camera already blurred the background), a part in black and white, a slow push in on your face at a key line
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
+- For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
+- Puppet videos, with no one on camera: one or two cartoon characters (drawn in code, all original) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
+- Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked; after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
 
 You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
 
@@ -69,6 +72,7 @@ On first use it walks you through installing what's missing:
 - For retouch, blur and the mouth check: `mediapipe` and `opencv-python`, plus Google's MediaPipe face and hand models
 - Optional: Node 20+ for Remotion graphics, rembg for product cutouts on covers, and an RNNoise model (or DeepFilterNet's `deep-filter`) for noise removal
 - If you shoot Log: your camera maker's official LUT, which you download yourself
+- For puppet videos: Piper (`piper-tts`, the voices) and its voice files, and Rhubarb Lip Sync (the mouth shapes)
 
 
 
@@ -105,11 +109,17 @@ plugins/video-editor/
       balance.py           measures a colour cast (white balance) and gives the filter that removes it
       mono.py              turns a part of the video black and white, fading back to colour
       pushin.py            a slow, smooth push in on your face at a key line, keeping your head in the frame
+      reframe.py           turns a wide video into a vertical one for Shorts, following you like a camera operator
+      chapters.py          YouTube chapters for the description, checked against YouTube's rules
+      screen.py            screen recordings: smooth zooms onto the action, and screen-above-speaker Shorts
+      scriptcut.py         follows your script in the edit: keeps the last good take of each line, finds chapters and Shorts
+      shorts.py            cuts the Shorts out of the long video, with their words for vertical captions
       editreport.py        the edit in numbers: what was cut, pauses left, loudness, size
       update_skill.py      updates the skill safely, with a backup
       fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
       hunt_fillers.py      short-window pass for fillers glued onto words
-      retouch/             skin and teeth masks, beautify extras, background blur, mouth check;
+      retouch/             skin and teeth masks, beautify extras, background blur (and blurcheck.py, which notices a
+                           background your camera already blurred), mouth check;
                            settings.py reads each video's retouch.json
       sfx/                 four small sound effects, generated with FFmpeg, and typing.py (key clicks
                            for a typewriter title)
@@ -119,11 +129,18 @@ plugins/video-editor/
       remotion/ProductPop.tsx the product's photo or clip popping in beside you when you name it
       remotion/WordCaptions.tsx captions with each word lit up in your accent colour as you say it
       remotion/CoverCard.tsx  cover image with products around the speaker's face
+      remotion/Thumbnail.tsx  YouTube thumbnail: your face big on one side, a few huge words on the other
       remotion/brandFont.ts   loads the brand font for the templates
       cover/cutout.py      cuts products out of shop photos or video frames
       cover/face_box.py    finds the face so the products go around it
       voice/clean_voice.py measures background noise, removes it and polishes the voice
       voice/leveljoin.py   joins clips and levels them to a loudness target, for quiet voices with clicks
+  skills/puppet-video/     the second skill: animated puppet videos from a script
+    SKILL.md               the steps Claude follows for a puppet video
+    references/puppet.md   the dialogue format, the voices and their licenses, installs, writing tips
+    scripts/dialogue.py    makes the voice of every turn (Piper) and the mouth shapes (Rhubarb), and the timing
+    scripts/captionwords.py  caption words exactly as written in the script, timed to the voice
+    scripts/remotion/Puppet.tsx  the characters and the animation
 ```
 
 `my-setup.md` holds your personal details. It's saved in `~/.video-editor/`, outside the skill folder, so it isn't in any copy of the skill you share.
@@ -144,6 +161,6 @@ python tests/test_skill.py
 
 ## Licenses
 
-The skill, scripts and sound effects are under the MIT License (see `LICENSE`). Tools it uses have their own licenses: FFmpeg (LGPL/GPL), OpenAI Whisper (MIT), faster-whisper (MIT), MediaPipe and its models (Apache 2.0), yt-dlp (Unlicense). Remotion is free for individuals and companies of up to 3 people; larger companies need a paid license. Camera LUTs belong to their makers and aren't included.
+The skill, scripts and sound effects are under the MIT License (see `LICENSE`). Tools it uses have their own licenses: FFmpeg (LGPL/GPL), OpenAI Whisper (MIT), faster-whisper (MIT), MediaPipe and its models (Apache 2.0), yt-dlp (Unlicense), Piper (GPL, run as a separate program; each Piper voice has its own license, listed in the puppet skill's `references/puppet.md`), Rhubarb Lip Sync (MIT). Remotion is free for individuals and companies of up to 3 people; larger companies need a paid license. Camera LUTs belong to their makers and aren't included.
 
 Only edit and download videos you own or have the right to use.

@@ -27,6 +27,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `ProductTag` | Product name and price when a product is shown | `name`, `price` (written as it should appear, e.g. `€24,90`), `note` (e.g. "Link in bio"), `side`, `top` | 3.5 s |
 | `EmojiPop` | Emojis on words (see Animated emojis below) | `emoji`, `left`, `top` | 43 frames |
 | `CoverCard` | Cover image with the products (see `references/cover.md`) | `background`, `products` (one `image` each), `faceX`/`faceY`/`faceSize`, `lines` | a still: `npx remotion still` |
+| `Thumbnail` | YouTube thumbnail, 1280x720: the face big on one side, a few huge words on the other (see `references/cover.md`) | `background`, `bgWidth`/`bgHeight`, `faceX`/`faceY`/`faceSize`, `lines` | a still: `npx remotion still` |
 | `WordCaptions` | Word highlight captions: a box in the accent colour behind each word as it's said (see below) | written by `captions.py --remotion-props` | the whole video |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 

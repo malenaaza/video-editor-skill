@@ -35,4 +35,9 @@ Two kinds of session use this repo. Keep them apart so they never overwrite each
    templates). When asked what to work on, read the open issues. Reports from users have no frames or personal data; if a
    problem needs one, ask the user who sent it to share it themselves. A fix goes in a pull request whose description says
    `Fixes #<issue>`, and raises `VERSION`, so the reporter gets it with "update my skill".
-10. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code.
+10. Update `CHANGELOG.md` and the docs in `video-editor/references/` in the same change as the code. Update
+    `README.md` too: a new feature goes in **What it does** (the list people read first), not only in the file
+    list, and every new script or template goes in **Files**.
+11. **Before opening a pull request,** fetch `main` and merge it into the branch, so the pull request shows only this
+    branch's changes and never seems to undo something the owner changed on `main` (for example a README edit made
+    on GitHub).

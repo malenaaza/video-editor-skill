@@ -20,6 +20,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 | Noise removal, voice polish, two voices, joining clips to one loudness, sound effects | `references/sound.md` |
 | Skin softening, teeth whitening, background blur | `references/retouch.md` |
 | Animated title, product tag, emojis, any Remotion or HyperFrames graphic | `references/graphics.md` |
+| The user asks for a script, or brings one, for a video they'll film; Shorts cut from a long video | `references/script.md` |
 | A cover with pictures of the products | `references/cover.md` |
 | A brand sheet, or a brand setting changed and the brand has a sheet | `references/brand-sheet.md` |
 
@@ -102,6 +103,8 @@ New users don't know what's possible, so tell them. Show this menu at the end of
 - **Text and graphics:** captions in your brand's style, or with each word lit up as you say it · animated title (pop-in or typewriter) · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · white balance measured and corrected · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · a part in black and white (a "before", a flashback), fading back to colour · a slow push in on your face at a key line · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
+- **Script first:** I write the script for your video, with chapters, screen recordings and Shorts marked; after you film it, I keep the right take of each line and cut the chapters and Shorts from it
+- **YouTube:** Shorts cut from your horizontal video, following your face · screen recordings with smooth zooms onto the action, and a screen-above-you layout for Shorts · chapters for the description · thumbnails with your face and a few big words
 - **Ready to post:** vertical and wide versions · a report of the edit in numbers · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
 
 End with one line: "Ask for any of these by name, or I'll suggest what fits each video."
@@ -149,6 +152,8 @@ Transcribe every word with its time, using faster-whisper. It writes the same JS
 ```
 <speech python> -I <skill>/scripts/transcribe.py "<audio-or-video>" transcript
 ```
+
+**When the video was filmed from a script** (`script.md`, written as in `references/script.md`), run `python -I <skill>/scripts/scriptcut.py script.md <transcript.json> --cuts cuts.json` after transcribing: it keeps the last good take of every line, removes the other takes and false starts, and writes `script-report.md` (lines not said, talk not in the script) plus `chapters.json` and `shorts.json` from the script's markers. Read the report to the user before building the cut.
 
 If it fails, fall back to `whisper "<audio-or-video>" --model medium --word_timestamps True --output_format json --output_dir transcript` (add `--fp16 False` on CPU). Use `medium` for the main pass, re-checks and the check of the finished video.
 
@@ -224,6 +229,8 @@ When the user wants to borrow the style of creators they admire, borrow the form
 
 - Reels, TikTok and Shorts: vertical 9:16, 1080x1920. YouTube: wide 16:9, 1920x1080, or the source resolution if higher.
 - Don't upscale. When reframing wide to vertical, keep the speaker's face in frame.
+- **Shorts from a YouTube video** (one horizontal recording, a wide video and vertical clips): `<face python> -I <skill>/scripts/reframe.py <retouched wide clip> <face_landmarker.task> --check reframe.png` writes `reframe.txt`, a crop that follows the speaker like a camera operator: still while they talk, an eased move when they shift, keeping up when they walk, a cut when the footage cuts. Put its line first in the vertical render, then add captions and graphics made for the vertical size. Look at `reframe.png` (the crop drawn on the wide frames). It lists stretches with no face, such as screen recordings: give those their own vertical layout. From 4K the crop is full quality (1216x2160); from 1080p it's enlarged, so suggest filming in 4K when a video will also be cut into Shorts, with the speaker and anything they show near the middle third of the frame.
+- **Screen recordings** (tutorials: the user records their screen, for example with OBS): `python -I <skill>/scripts/screen.py suggest <screen clip>` finds where the action is (typing, a menu, a result appearing) and writes `zooms.json` and `zooms.png`. Look at the sheet, fix or delete boxes that miss the action, then `screen.py zoom <screen clip> zooms.json` writes `zoom.txt`, a smooth zoom onto each box (at most 2.5x, so text stays sharp). Render the zoomed clip, then cut it into the wide edit like any other shot. For Shorts, `<face python> -I <skill>/scripts/screen.py stack <zoomed screen clip> <camera clip> --face-model <face_landmarker.task>` puts the screen on top and the speaker below, centred on their face; the two clips must be cut to the same moment first. Ask the user to make text bigger before recording (browser zoom 125 to 150%), to turn on Do Not Disturb, and to keep private things off screen; if something private shows anyway (an email, a key), blur it before export.
 - **Final export** (what the viewer sees), always:
 
 ```
@@ -268,7 +275,7 @@ Apply the color choice from the brand's `Look:` lines in the clean render. If th
 All of these run when the brand's settings in `my-setup.md` say "every video", or when the user asks. Each has its own reference file with the steps, tested levels and checks. Read it before starting.
 
 - **Skin softening, light beautify and teeth whitening:** face-tracked masks on `clean.mp4`, underneath the text so text stays sharp. Include the tightest close-up in the before/after frames: a face cut by the frame edge needs the edge fallback described in `references/retouch.md`.
-- **Background blur:** a mask that keeps the speaker and held products sharp. Offer it before any request to replace a background, which is far slower and fails on moving objects. `references/retouch.md`.
+- **Background blur:** a mask that keeps the speaker and held products sharp. Offer it before any request to replace a background, which is far slower and fails on moving objects. First run `retouch/blurcheck.py`: when the background is already blurred (Cinematic or Portrait mode, a lens wide open), don't add more, and check held products weren't blurred by that mode. `references/retouch.md`.
 - **Animated title, product tag, emojis:** `references/graphics.md`. Never guess a price, and don't ask the user for emoji files.
 - **Sound effects:** `references/sound.md`. Don't ask the user for sound files.
 
@@ -307,6 +314,8 @@ Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt
   - **Without web access:** use the saved core tags, and write "not checked online this time" next to the hashtags in the pack, and in the chat.
   - Don't state post counts or view numbers unless a source gave them; then add the source and date in the pack's notes.
 - **Cover:** pick a sharp frame with the title readable and the speaker's eyes open, and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop. If the brand's `Cover:` line says with products, or the user asks, build it as in `references/cover.md`.
+- **Chapters (YouTube, wide videos of about 3 minutes or more):** read the transcript of the finished video and mark where each topic starts, 3 to 8 chapters, with short titles (under 40 characters) in the video's language and the brand's voice, the first one at the start. Write them to `chapters.json`, each starting at a phrase the speaker says (`{"title": "Qué es un prompt", "say": "vale, empecemos"}`) so the times come from `captions.json`, then run `python -I <skill>/scripts/chapters.py chapters.json --length <seconds> --ffmetadata chapters.ffmeta`. It checks YouTube's rules (first at 0:00, at least 3, each at least 10 s) and writes the lines for the description; put them in the pack's YouTube description section. Embed `chapters.ffmeta` in the final export too (`-i chapters.ffmeta -map_metadata <its input number>`).
+- **Thumbnail (YouTube, wide videos):** the face big on one side, 2 to 4 huge words on the other, made with the `Thumbnail` template as in `references/cover.md`, YouTube thumbnail. Offer two or three word options first.
 - **Reminder:** the user can add a trending sound in the app, and should keep it quiet under the voice. Point out anything the video promises, like a follow-up video.
 
 ### Cover with products

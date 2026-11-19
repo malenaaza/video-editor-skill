@@ -19,6 +19,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ROOT = REPO / "plugins" / "video-editor" / "skills" / "video-editor"
 SCRIPTS = ROOT / "scripts"
+PUPPET = REPO / "plugins" / "video-editor" / "skills" / "puppet-video"
 FPS = 30
 
 WORDS = [(" Hola", 0.5, 1.0), (" amigas,", 1.0, 1.5),      # first take, removed in cuts.json
@@ -42,6 +43,15 @@ def script(name, *args, cwd):
 def filter_flag():
     version = re.search(r"ffmpeg version n?(\d+)", run(["ffmpeg", "-version"]))
     return "-/filter_complex" if version and int(version.group(1)) >= 7 else "-filter_complex_script"
+
+
+def probe_audio(path):
+    """(channels, sample rate, duration) of an audio file."""
+    out = run(["ffprobe", "-v", "error", "-show_entries", "stream=channels,sample_rate:format=duration", "-of", "json",
+               path])
+    info = json.loads(out)
+    s = info["streams"][0]
+    return int(s["channels"]), int(s["sample_rate"]), float(info["format"]["duration"])
 
 
 def probe(path, cwd):
@@ -72,7 +82,7 @@ class SkillTest(unittest.TestCase):
         return json.loads((self.dir / out).read_text("utf-8")), text
 
     def test_01_every_script_compiles(self):
-        for path in SCRIPTS.rglob("*.py"):
+        for path in [*SCRIPTS.rglob("*.py"), *(PUPPET / "scripts").rglob("*.py")]:
             py_compile.compile(str(path), doraise=True)
 
     def test_02_plan_removes_pauses_and_listed_cuts(self):
@@ -934,6 +944,361 @@ class SkillTest(unittest.TestCase):
                 self.assertGreater(after[0], before[0], (skin, g))                         # lighter
                 self.assertGreaterEqual(after[1], before[1] - 0.2, (skin, g))              # not paler or greyer
                 self.assertLess(abs(after[2] - before[2]), 1.5, (skin, g))                 # not more orange, not pinker
+
+    def test_54_reframe_holds_still_and_follows(self):
+        import numpy as np
+        sys.path.insert(0, str(SCRIPTS))
+        import reframe
+        width, height = 1280, 720
+        crop_w = reframe.crop_width(height)
+        self.assertEqual(crop_w, 404)
+        rng = np.random.default_rng(1)
+        times = [i * 0.2 for i in range(60)]                                   # 12 s
+        # talking in place: small head movements never move the picture
+        still = [(t, 640 + rng.normal(0, 12)) for t in times]
+        start, moves, gaps = reframe.plan_path(still, width, crop_w)
+        self.assertEqual((moves, gaps), ([], []))
+        # a quick lean out and back (0.2 s) is ignored; a real step to the side is followed, eased, once
+        lean = [(t, 640 + (90 if 2.0 <= t < 2.2 else 0) + 200 * min(max(t - 6, 0), 1)) for t in times]   # step over 1 s
+        start, moves, _ = reframe.plan_path(lean, width, crop_w)
+        self.assertEqual(len(moves), 1)
+        self.assertGreater(moves[0][1] - moves[0][0], 0.3)                    # eased, not a jump
+        self.assertAlmostEqual(reframe.centre_at(11.9, start, moves), 840, delta=1)
+        # walking across the room: the face never leaves the picture
+        walk = [(t, 300 + max(0.0, min(t - 2, 6)) * 110) for t in times]
+        start, moves, _ = reframe.plan_path(walk, width, crop_w)
+        for t, x in walk:
+            self.assertLess(abs(x - reframe.centre_at(t, start, moves)), crop_w * 0.4, t)
+        # a cut to another framing is a cut; the crop stays inside the frame; no face holds still and is listed
+        cut = [(t, 300 if t < 4 else (None if t < 6 else 1100)) for t in times]
+        start, moves, gaps = reframe.plan_path(cut, width, crop_w)
+        self.assertEqual(gaps, [(4.0, 6.0)])
+        self.assertEqual(moves[-1][0], moves[-1][1])                           # instant
+        self.assertLessEqual(reframe.centre_at(11.9, start, moves), width - crop_w / 2)
+        # FFmpeg draws the same path: a box that steps right at 6 s stays in the middle of the vertical video
+        box = "overlay=x='if(lt(t,6),600,800)':y=300"   # (drawbox reads t only once, so overlay a red square)
+        start, moves, _ = reframe.plan_path([(t, 640 if t < 6 else 840) for t in times], width, crop_w)
+        line = reframe.filter_line(height, crop_w, start, moves, 360, 640)
+        out = self.dir / "reframed.mp4"
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color=gray:s={width}x{height}:r=10:d=12",
+             "-f", "lavfi", "-i", "color=red:s=80x80:r=10:d=12", "-filter_complex", f"[0][1]{box},{line}",
+             "-c:v", "libx264", "-preset", "ultrafast", out])
+        for t in (3, 11):
+            raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", out, "-frames:v", "1", "-f", "rawvideo",
+                                  "-pix_fmt", "rgb24", "-"], capture_output=True, check=True).stdout
+            frame = np.frombuffer(raw, np.uint8).reshape(640, 360, 3).astype(int)
+            red = np.where((frame[..., 0] > 150) & (frame[..., 1] < 100))[1]
+            self.assertAlmostEqual(red.mean(), 180, delta=12, msg=t)
+
+    def test_55_youtube_chapters(self):
+        folder = self.dir / "chapters"
+        folder.mkdir(exist_ok=True)
+        caps = [{"start": 0.0, "end": 3.0, "words": [[0.5, 1.0, "Hola"], [1.0, 1.5, "a todos"]]},
+                {"start": 40.0, "end": 44.0, "words": [[41.2, 41.6, "Vale,"], [41.6, 42.0, "empecemos"]]},
+                {"start": 3700.0, "end": 3705.0, "words": [[3701.0, 3701.5, "Resumen"]]}]
+        (folder / "captions.json").write_text(json.dumps(caps), "utf-8")
+
+        def chapters(entries, *extra):
+            (folder / "ch.json").write_text(json.dumps(entries), "utf-8")
+            return script("chapters.py", "ch.json", *extra, cwd=folder)
+
+        out = chapters([{"title": "Intro", "at": 4},                       # moved to 0:00
+                        {"title": "Qué es un prompt", "say": "vale empecemos"},
+                        {"title": "Resumen", "say": "resumen"}], "--length", "3800", "--ffmetadata", "ch.ffmeta")
+        self.assertEqual((folder / "chapters.txt").read_text("utf-8").splitlines(),
+                         ["0:00 Intro", "0:41 Qué es un prompt", "1:01:41 Resumen"])
+        self.assertIn("Wrote ch.ffmeta", out)
+        meta = (folder / "ch.ffmeta").read_text("utf-8")
+        self.assertIn("START=41200", meta)
+        self.assertIn("END=3800000", meta)
+        for bad, reason in [([{"title": "A", "at": 0}, {"title": "B", "at": 50}], "at least 3"),
+                            ([{"title": "A", "at": 30}, {"title": "B", "at": 50}, {"title": "C", "at": 90}], "0:00"),
+                            ([{"title": "A", "at": 0}, {"title": "B", "at": 5}, {"title": "C", "at": 90}], "10 s"),
+                            ([{"title": "A", "at": 0}, {"title": "B", "say": "no se dice"}, {"title": "C", "at": 90}],
+                             "not said")]:
+            with self.assertRaises(AssertionError, msg=reason) as err:
+                chapters(bad)
+            self.assertIn(reason, str(err.exception))
+
+    def test_56_screen_zoom_and_stack(self):
+        import numpy as np
+        sys.path.insert(0, str(SCRIPTS))
+        import screen
+        folder = self.dir / "screen"
+        folder.mkdir(exist_ok=True)
+        # what changed: a pointer-sized blip is ignored, a typed line is found
+        a = np.zeros((90, 160), np.uint8)
+        b = a.copy()
+        b[10:13, 20:23] = 200
+        self.assertIsNone(screen.change_box(a, b))
+        b[40:48, 30:90] = 200
+        self.assertEqual(screen.change_box(a, b)[1:], (10, 70, 38))
+        # typing along one line is one zoom; a new page zooms back out
+        changes = [(2.0, (100, 120, 70, 40)), (2.5, (175, 120, 70, 40)), (3.0, (250, 120, 70, 40)),
+                   (5.0, (0, 0, 1280, 720)), (6.0, None)]
+        self.assertEqual(screen.plan_zooms(changes, 1280, 720),
+                         [{"at": 0.0, "box": "full"}, {"at": 2.0, "box": [100, 120, 220, 40]}, {"at": 5.0, "box": "full"}])
+        # the visible area keeps the video's shape, stays inside the frame and never zooms past the limit
+        left, top, w = screen.fit_box([600, 340, 40, 20], 1280, 720, max_zoom=2.5)
+        self.assertAlmostEqual(w, 512)
+        self.assertTrue(0 <= left <= 1280 - w and 0 <= top <= 720 - w * 720 / 1280)
+        # FFmpeg draws it: a white line in the middle of the screen fills much more of the frame once zoomed
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=0x303030:s=1280x720:r=10:d=4", "-f", "lavfi",
+             "-i", "color=white:s=200x40:r=10:d=4", "-filter_complex", "[0][1]overlay=x=540:y=340,format=yuv420p",
+             "-c:v", "libx264", "-preset", "ultrafast", "screen.mp4"], cwd=folder)
+        (folder / "zooms.json").write_text(json.dumps([{"at": 0, "box": "full"}, {"at": 1, "box": [540, 340, 200, 40]}]),
+                                           "utf-8")
+        script("screen.py", "zoom", "screen.mp4", "zooms.json", cwd=folder)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "screen.mp4", filter_flag(), "zoom.txt", "-c:v", "libx264",
+             "-preset", "ultrafast", "zoomed.mp4"], cwd=folder)
+
+        def white_share(t):
+            raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", folder / "zoomed.mp4", "-frames:v", "1",
+                                  "-f", "rawvideo", "-pix_fmt", "gray", "-"], capture_output=True, check=True).stdout
+            return (np.frombuffer(raw, np.uint8) > 200).mean()
+        self.assertGreater(white_share(3.0), white_share(0.5) * 4)
+        # the vertical layout: screen on top, speaker below, 1080x1920, sound from the camera
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=red:s=1920x1080:r=10:d=2", "-f", "lavfi",
+             "-i", "sine=d=2", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-shortest", "camera.mp4"],
+            cwd=folder)
+        script("screen.py", "stack", "zoomed.mp4", "camera.mp4", "--face-x", "1500", cwd=folder)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "zoomed.mp4", "-i", "camera.mp4", filter_flag(), "stack.txt",
+             "-map", "[v]", "-map", "[a]", "-t", "2", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
+             "stacked.mp4"], cwd=folder)
+        out = run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "csv=p=0",
+                   "stacked.mp4"], cwd=folder)
+        self.assertIn("1080,1920", out)
+        self.assertIn("audio", out)
+        self.assertEqual(screen.panel_crop(1920, 1080, 1080, 960, 1800), (1216, 1080, 704, 0))   # kept inside
+
+    def test_57_youtube_thumbnail_template(self):
+        tsx = (SCRIPTS / "remotion" / "Thumbnail.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("lines: []", default_props)          # sample words would leak into real thumbnails
+        self.assertNotIn("highlight", default_props)
+        self.assertIn("width={1280}", tsx)
+        self.assertIn("height={720}", tsx)
+        face_box = (SCRIPTS / "cover" / "face_box.py").read_text("utf-8")
+        for prop in ("bgWidth", "bgHeight", "faceX", "faceY", "faceSize"):   # what the template needs
+            self.assertIn(f'"{prop}"', face_box)
+            self.assertIn(f"{prop}:", tsx)
+
+    def test_58_script_markers_in_both_languages(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import scriptcut
+        text = "\n".join(["# Título", "", "Hola, soy Malena.", "", "## [CAPÍTULO] Qué hace", '[PANTALLA] abrir "Claude"',
+                          '[SHORT "El truco"]', "Le pido a Claude", "que quite las pausas.", "", "Y listo.", "[/SHORT]",
+                          "## [CHAPTER] End", "> smile", "[GRAPHIC] a list", "Thanks for watching!"])
+        lines, chapters, shorts, notes = scriptcut.parse(text)
+        self.assertEqual(lines, ["Hola, soy Malena.", "Le pido a Claude que quite las pausas.", "Y listo.",
+                                 "Thanks for watching!"])                    # a paragraph is one line; > is not said
+        self.assertEqual(chapters, [{"title": "Qué hace", "line": 1}, {"title": "End", "line": 3}])
+        self.assertEqual(shorts, [{"title": "El truco", "first": 1, "last": 2}])
+        self.assertEqual(notes, [{"kind": "screen", "text": 'abrir "Claude"', "line": 1},
+                                 {"kind": "graphic", "text": "a list", "line": 3}])
+
+    def test_59_script_keeps_the_last_good_take(self):
+        folder = self.dir / "script"
+        folder.mkdir(exist_ok=True)
+        (folder / "script.md").write_text("\n".join([
+            "Hola, soy Malena y hoy os enseño cómo edito mis vídeos con IA.", "", "## [CAPÍTULO] Qué hace la skill",
+            '[SHORT "La IA que me ahorra horas"]', "Le pido a Claude que quite las pausas y los errores.", "",
+            "Y en dos minutos tengo el vídeo listo.", "[/SHORT]", "", "Esta línea no la digo nunca en el vídeo.", "",
+            "## [CHAPTER] Resultado", "Este es el resultado final, ¿qué os parece?"]), "utf-8")
+        said = ("hola soy malena y hoy | Hola, soy Malena y hoy os enseno como edito mis videos con IA. | le pido a "
+                "claude que quite las pausas y los errores | bueno esto lo grabo otra vez porque me he liado | le pido "
+                "a cloud que quite las pausas y errores | y en dos minutos tengo el video listo | este es el resultado "
+                "final que os parece")
+        words, t = [], 0.5
+        for w in said.split():
+            if w == "|":
+                t += 1.5
+                continue
+            words.append({"word": " " + w, "start": round(t, 2), "end": round(t + 0.3, 2)})
+            t += 0.35
+        (folder / "tr.json").write_text(json.dumps({"segments": [{"words": words}]}), "utf-8")
+        (folder / "cuts.json").write_text(json.dumps({"remove": [[50, 51, "a cough"], [1, 2, "script: old entry"]]}),
+                                          "utf-8")
+        out = script("scriptcut.py", "script.md", "tr.json", cwd=folder)
+        self.assertIn("5 lines: 4 found, 1 not said", out)
+        report = (folder / "script-report.md").read_text("utf-8")
+        self.assertIn("NOT SAID: Esta línea", report)
+        self.assertIn("bueno esto lo grabo otra vez", report)                  # kept, for the user to decide
+        cuts = json.loads((folder / "cuts.json").read_text("utf-8"))["remove"]
+        self.assertIn([50, 51, "a cough"], cuts)                               # the user's own cuts stay
+        self.assertNotIn([1, 2, "script: old entry"], cuts)                    # its own earlier entries are replaced
+        labels = [c[2] for c in cuts]
+        self.assertIn("script: false start of line 1", labels)
+        self.assertIn("script: other take of line 2", labels)
+        first_take = next(c for c in cuts if c[2] == "script: other take of line 2")
+        self.assertAlmostEqual(first_take[0], 9.75, delta=0.06)               # the first take of line 2 goes
+        self.assertLess(first_take[1], 15.15)                                  # and the aside after it is kept
+        self.assertEqual(json.loads((folder / "chapters.json").read_text("utf-8")),
+                         [{"title": "Intro", "at": 0}, {"title": "Qué hace la skill", "say": "le pido a cloud"},
+                          {"title": "Resultado", "say": "este es el resultado"}])
+        self.assertEqual(json.loads((folder / "shorts.json").read_text("utf-8")),
+                         [{"title": "La IA que me ahorra horas", "say": "le pido a cloud",
+                           "until": "tengo el video listo"}])
+        script("scriptcut.py", "script.md", "tr.json", "--drop-unscripted", cwd=folder)
+        labels = [c[2] for c in json.loads((folder / "cuts.json").read_text("utf-8"))["remove"]]
+        self.assertIn("script: not in the script", labels)
+
+    def test_60_script_cut_builds_with_cutplan(self):
+        (self.dir / "sc-script.md").write_text("Hola amigos.\n\nHoy glow serum es genial.\n", "utf-8")
+        script("scriptcut.py", "sc-script.md", "tr.json", "--cuts", "sc-cuts.json", cwd=self.dir)
+        cuts = json.loads((self.dir / "sc-cuts.json").read_text("utf-8"))["remove"]
+        self.assertEqual(len(cuts), 1)                                         # "Hola amigas" is the earlier take
+        self.assertLess(cuts[0][0], 0.5)
+        self.assertLess(cuts[0][1], 2.5)
+        script("cutplan.py", "build", "src.mp4", "tr.json", "--cuts", "sc-cuts.json", "--out", "sc-plan.json",
+               cwd=self.dir)
+        frames = json.loads((self.dir / "sc-plan.json").read_text("utf-8"))["frames"]
+        self.assertGreaterEqual(frames[0][0] / FPS, 1.5)                       # the first take is cut
+
+    def test_61_shorts_from_the_long_video(self):
+        folder = self.dir / "shorts-test"
+        folder.mkdir(exist_ok=True)
+        caps, t = [], 0.0
+        for w in ("hola a todos " + "palabra " * 40 + "le pido a claude " + "que quite " * 30 + "tengo el vídeo listo "
+                  + "adiós").split():
+            caps.append({"start": t, "end": t + 0.4, "words": [[round(t, 2), round(t + 0.38, 2), w.upper()]]})
+            t += 0.4
+        (folder / "captions.json").write_text(json.dumps(caps), "utf-8")
+        (folder / "shorts.json").write_text(json.dumps([
+            {"title": "El truco", "say": "Le pido a Claude", "until": "tengo el video listo"},
+            {"title": "Corto", "say": "hola a todos", "until": "hola a todos"},
+            {"title": "Falta", "say": "esto no se dice"}]), "utf-8")
+        out = script("shorts.py", "shorts.json", "--video", "long.mp4", cwd=folder)
+        rng = json.loads((folder / "shorts" / "short-1" / "range.json").read_text("utf-8"))
+        self.assertAlmostEqual(rng["start"], 43 * 0.4 - 0.02, delta=0.03)       # never into the word before
+        self.assertAlmostEqual(rng["end"], (43 + 4 + 60 + 4) * 0.4, delta=0.03)  # room, but not into "adiós"
+        words = json.loads((folder / "shorts" / "short-1" / "words.json").read_text("utf-8"))["segments"][0]["words"]
+        self.assertEqual(words[0]["word"], " LE")
+        self.assertAlmostEqual(words[0]["start"], 0.02, delta=0.03)            # moved to start at 0
+        self.assertEqual(words[-1]["word"], " LISTO")
+        self.assertIn("reframe.py", (folder / "shorts" / "short-1" / "steps.txt").read_text("utf-8"))
+        self.assertIn("under 15 s", out)                                       # "Corto"
+        self.assertIn("Short 3 skipped", out)
+
+    def test_67_background_already_blurred(self):
+        import numpy as np
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import blurcheck
+        rng = np.random.default_rng(3)
+        sharp = (rng.random((480, 640)) > 0.5).astype(np.float32) * 255   # detail everywhere, face and background
+        face = (240, 120, 400, 330)                                          # forehead-to-chin box, mid-frame
+
+        def blur(img, k=15):                                                 # a box blur, k times each way
+            out = img.copy()
+            for axis in (0, 1):
+                out = sum(np.roll(out, s, axis=axis) for s in range(-(k // 2), k // 2 + 1)) / k
+            return out
+        soft = blur(sharp)
+        inner, _ = blurcheck.regions(640, 480, face)
+        soft[inner[1]:inner[3], inner[0]:inner[2]] = sharp[inner[1]:inner[3], inner[0]:inner[2]]   # face in focus
+        r_sharp, r_soft = blurcheck.ratio(sharp, face), blurcheck.ratio(soft, face)
+        self.assertEqual(blurcheck.verdict(r_sharp), "sharp")
+        self.assertEqual(blurcheck.verdict(r_soft), "already soft")
+        self.assertEqual(blurcheck.verdict(0.5), "a little soft")
+        # a close-up with no room beside or above the head has nothing to measure
+        self.assertIsNone(blurcheck.ratio(sharp, (5, 5, 635, 475)))
+
+    def test_62_puppet_dialogue_format(self):
+        sys.path.insert(0, str(PUPPET / "scripts"))
+        import dialogue
+        chars, turns = dialogue.parse("\n".join([
+            "# a comment", "[Lola] voice=en_GB-cori-medium look=lola", "[Pixel] voice=es_ES-sharvard-medium speaker=F",
+            "Lola: Hi! Could I have a flat white? | ¡Hola! ¿Me pones un café?", "> Pixel: sorprendida", "> pausa 0.5",
+            "> a note for Claude, not said", "Pixel: ¿Un café?"]))
+        self.assertEqual(chars["Pixel"], {"voice": "es_ES-sharvard-medium", "speaker": "F", "look": "max", "colour": None})
+        self.assertEqual(turns[0]["translation"], "¡Hola! ¿Me pones un café?")
+        self.assertEqual((turns[1]["expression"], turns[1]["pause_before"]), ("surprised", 0.5))
+        for bad in ("Lola: hello", "[Lola] look=lola\nLola: hi", "[Lola] voice=x look=dragon\nLola: hi",
+                    "[Lola] voice=x\n> Lola: angry\nLola: hi"):
+            with self.assertRaises(ValueError, msg=bad):
+                dialogue.parse(bad)
+
+    def test_63_puppet_mouths_from_loudness(self):
+        sys.path.insert(0, str(PUPPET / "scripts"))
+        import dialogue
+        import math
+        rate = 48000
+        samples = [0] * (rate // 2) + [int(12000 * math.sin(2 * math.pi * 200 * i / rate)) for i in range(rate)] \
+            + [0] * (rate // 2)
+        cues = dialogue.loudness_cues(samples, rate)
+        shape_at = lambda t: next(c["value"] for c in cues if c["start"] <= t < c["end"])
+        self.assertEqual(shape_at(0.2), "X")                                     # closed in silence
+        self.assertIn(shape_at(1.0), ("C", "D"))                                 # open while it sounds
+        self.assertEqual(shape_at(1.8), "X")
+        self.assertTrue(all(c["end"] - c["start"] >= 1 / 30 * 1.5 - 1e-9 for c in cues[1:-1]))   # no flicker
+
+    def test_64_puppet_voice_track_and_props(self):
+        folder = self.dir / "puppet"
+        folder.mkdir(exist_ok=True)
+        (folder / "rec").mkdir(exist_ok=True)
+        for i, (freq, d) in enumerate([(220, 1.0), (330, 1.5), (440, 0.8)], 1):
+            run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+                 f"aevalsrc='0.4*sin(2*PI*{freq}*t)':s=48000:d={d}", "-af", "adelay=200,apad=pad_dur=0.3",
+                 f"rec/{i:02d}.wav"], cwd=folder)
+        (folder / "d.md").write_text("[Lola] voice=en_GB-cori-medium look=lola\n[Max] voice=x look=max\n"
+                                     "Lola: Hello there! | ¡Hola!\nMax: Hi.\n> pause 0.5\nLola: Bye.\n", "utf-8")
+        out = script(PUPPET / "scripts" / "dialogue.py", "d.md", "--audio-dir", "rec", "--no-rhubarb", "--gap", "0.4",
+                     "--out-dir", "out", cwd=folder)
+        self.assertIn("3 turns", out)
+        props = json.loads((folder / "out" / "puppet-props.json").read_text("utf-8"))
+        turns = props["turns"]
+        self.assertEqual([t["speaker"] for t in turns], ["Lola", "Max", "Lola"])
+        self.assertAlmostEqual(turns[0]["start"], 0.4, delta=0.01)
+        for t, d in zip(turns, (1.0, 1.5, 0.8)):                                 # silence trimmed to a short margin
+            self.assertAlmostEqual(t["end"] - t["start"], d + 0.08, delta=0.05)
+        self.assertAlmostEqual(turns[1]["start"] - turns[0]["end"], 0.4, delta=0.01)
+        self.assertAlmostEqual(turns[2]["start"] - turns[1]["end"], 0.9, delta=0.01)   # gap + pause
+        self.assertAlmostEqual(props["length"], turns[2]["end"] + 0.8, delta=0.01)
+        _, _, audio = probe_audio(folder / "out" / "voice.wav")
+        self.assertAlmostEqual(audio, props["length"], delta=0.05)
+        self.assertTrue(all(t["mouth"][0][0] >= t["start"] - 1e-6 for t in turns))
+        self.assertEqual(turns[0]["translation"], "¡Hola!")
+
+    def test_65_puppet_captions_use_the_script_words(self):
+        props = {"turns": [{"text": "Hmm... a croissant, too.", "start": 1.0, "end": 3.0},
+                           {"text": "That's four pounds fifty.", "start": 3.5, "end": 5.5}]}
+        heard = {"segments": [{"words": [{"word": " I'm", "start": 1.0, "end": 1.4},
+                                         {"word": " a", "start": 1.5, "end": 1.6},
+                                         {"word": " croissant", "start": 1.6, "end": 2.2},
+                                         {"word": " too.", "start": 2.3, "end": 2.8},
+                                         {"word": " That's", "start": 3.5, "end": 3.9},
+                                         {"word": " £4.50.", "start": 4.0, "end": 5.4}]}]}
+        (self.dir / "pp.json").write_text(json.dumps(props), "utf-8")
+        (self.dir / "heard.json").write_text(json.dumps(heard), "utf-8")
+        out = script(PUPPET / "scripts" / "captionwords.py", "pp.json", "--transcript", "heard.json", "--out", "pw.json",
+                     cwd=self.dir)
+        self.assertIn("4 of 8 words matched", out)          # a, croissant, too, That's
+        words = json.loads((self.dir / "pw.json").read_text("utf-8"))["segments"][0]["words"]
+        self.assertEqual(" ".join(w["word"].strip() for w in words),
+                         "Hmm... a croissant, too. That's four pounds fifty.")   # as written, never as heard
+        croissant = next(w for w in words if w["word"].strip() == "croissant,")
+        self.assertEqual((croissant["start"], croissant["end"]), (1.6, 2.2))     # timed from the transcript
+        four, fifty = words[5], words[7]
+        self.assertTrue(3.9 <= four["start"] < fifty["start"] <= 5.5)            # the rest spread in between
+        self.assertTrue(all(b["start"] >= a["start"] for a, b in zip(words, words[1:])))
+
+    def test_66_puppet_template(self):
+        tsx = (PUPPET / "scripts" / "remotion" / "Puppet.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("characters: [], turns: []", default_props)               # sample turns would leak
+        for shape in "ABCDEFGH":                                                  # every mouth shape is drawn
+            self.assertIn(f'case "{shape}":', tsx)
+        sys.path.insert(0, str(PUPPET / "scripts"))
+        import dialogue
+        registered = re.search(r"LOOK_COMPONENTS[^=]*=\s*\{([^}]*)\}", tsx).group(1)
+        for look in dialogue.LOOKS:                                               # every look the script accepts exists
+            self.assertIn(f"{look}:", registered)
+        skill = (PUPPET / "SKILL.md").read_text("utf-8")
+        self.assertTrue(skill.startswith("---\nname: puppet-video\n"))
+        for path in set(re.findall(r"<skill>/((?:scripts|references)/[\w/.-]+\.\w+)", skill)):
+            self.assertTrue((PUPPET / path).exists(), path)
+        for path in set(re.findall(r"<editor>/(scripts/[\w/.-]+\.\w+)", skill)):
+            self.assertTrue((ROOT / path).exists(), path)
 
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
