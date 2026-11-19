@@ -589,6 +589,35 @@ class SkillTest(unittest.TestCase):
         plain_home, plain = self._installed_copy("plain", version="1.0.0")
         self.assertNotIn("git pull", self._update(plain, plain_home, "--weekly").stdout)
 
+    def test_71_work_folder_check(self):
+        def folder(*args, env=None):
+            e = {k: v for k, v in os.environ.items() if not k.lower().startswith("onedrive")}
+            e.update(env or {})
+            return subprocess.run([sys.executable, "-I", str(SCRIPTS / "detect_setup.py"), "folder", *map(str, args)],
+                                  capture_output=True, text=True, encoding="utf-8", env=e)
+        plain = self.dir / "work" / "plain"
+        r = folder(plain)
+        self.assertIn("OK", r.stdout)
+        self.assertNotIn("NOT OK", r.stdout)
+        self.assertFalse(plain.exists())                                   # it creates nothing
+        for name, service in (("OneDrive - Company", "OneDrive"), ("Dropbox", "Dropbox"),
+                              ("iCloudDrive", "iCloud"), ("Google Drive", "Google Drive")):
+            r = folder(self.dir / name / "video")
+            self.assertIn("NOT OK", r.stdout)
+            self.assertIn("inside " + service, r.stdout)
+        data = json.loads(folder(self.dir / "Dropbox" / "x", "--json").stdout)
+        self.assertEqual(data["synced_service"], "Dropbox")
+        self.assertFalse(data["ok"])
+        synced = self.dir / "odroot"
+        data = json.loads(folder(synced / "videos", "--json", env={"OneDrive": str(synced)}).stdout)
+        self.assertEqual(data["synced_service"], "OneDrive")               # found through the OneDrive variable
+        suggested = json.loads(folder("--json").stdout)
+        self.assertTrue(suggested["suggested"])
+        self.assertTrue(suggested["path"].endswith("video-work"))
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        self.assertIn("detect_setup.py folder", skill)                     # the setup asks for and checks the folder
+        self.assertIn("working files", skill)
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

@@ -2,6 +2,10 @@
 
 Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rule numbers refer to SKILL.md.
 
+## Folders
+
+Nobody creates folders by hand: Claude makes them. Setup asks where to keep working files (suggesting `~/video-work`) and where finished videos go, checks the work folder with `python -I <skill>/scripts/detect_setup.py folder <path>` (it creates nothing; it says whether the folder is inside OneDrive, iCloud, Dropbox or Google Drive, where big videos time out, and the free space), then creates it. Each video gets `<work folder>/<project-name>/` with a `build/` folder for its working files (`cuts.json`, `plan.json`, `captions.json`, `retouch.json`), `project.md`, and `issues/` when a problem is reported. Finished videos go to the finished-videos folder, or next to the original. A `B-roll kit` folder is optional and the user's own. Windows often syncs Documents and Desktop to OneDrive, so don't suggest those.
+
 ## Updating the skill
 
 **Installed as a plugin** (the usual way now): updates come through Claude Code's plugin system, not this updater. If the user asks to update, tell them: `/plugin`, then **Marketplaces**, **malenaaza**, update (or turn on auto-update there once), then start a new session. `update_skill.py` says the same and changes nothing.

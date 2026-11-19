@@ -41,7 +41,7 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - How to recognise the Log files: <filled in after the first Log clip, e.g. pix_fmt and color tags>
 
 ## Folders
-- Work folder (never inside iCloud, Dropbox, OneDrive or Google Drive): `<e.g. ~/video-work>`
+- Work folder (never inside iCloud, Dropbox, OneDrive or Google Drive): `<e.g. ~/video-work, or C:\Users\<name>\video-work; created at setup, checked with detect_setup.py folder>`
 - Raw footage: `<folder, or "wherever the user points">`
 - B-roll folder: `<folder with product photos and clips, logos and graphics, or "B-roll kit next to the video">`
 - Finished videos: `<folder, or "next to the original">`
