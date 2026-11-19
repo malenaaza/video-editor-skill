@@ -56,10 +56,10 @@ It lives outside the skill folder so that updating the skill never deletes it. I
    - Which cameras or phones do you film with? Do you ever shoot Log (Apple Log, S-Log, V-Log, C-Log...)?
    - Which languages do you speak in your videos?
    - Who are the videos for? List each brand or channel (a business, your personal account...).
-   - Where should finished videos go?
+   - Where should I keep working files, and where should finished videos go? Get the suggestion first with `python <skill>/scripts/detect_setup.py folder` (it proposes `~/video-work`): "I'll keep working files in `<path>`: big temporary files, never in OneDrive, iCloud, Dropbox or Google Drive. OK, or another folder? And finished videos next to the originals, or in a folder?"
    - Remove every pause and filler, or keep a natural pace? Speed up a little after cutting?
    - Which country do they film in (for 50 or 60 Hz lights)? Then, with the first video from each camera or app, run the footage check in `references/cameras.md` and give the settings advice once.
-5. **Save** the answers: copy `<skill>/setup-template.md` to `~/.video-editor/my-setup.md` and fill it in. Leave brand colors and fonts as `unknown` until the first video for that brand (Rule 5).
+5. **Create the folders and save** the answers. Check the work folder with `python <skill>/scripts/detect_setup.py folder <path>`; if it says NOT OK, tell the user in one line and use the suggested one. Then create the work folder (and the finished-videos folder, if it isn't "next to the original") yourself. Copy `<skill>/setup-template.md` to `~/.video-editor/my-setup.md` and fill it in. Leave brand colors and fonts as `unknown` until the first video for that brand (Rule 5).
 6. **Show what you can do.** End setup by showing the menu from What I can do, so a new user knows the options before their first edit.
 
 **Run setup again** when the user says they have a new computer or camera, or when a saved encoder fails. If an encoder fails mid-job, fall back to the `libx264` line in `my-setup.md`, say so, finish the job, then offer to re-run detection.
@@ -89,7 +89,7 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 
 **The skill installed twice:** this skill is now a plugin. If it runs from Claude's plugin folder (`<skill>` contains `.claude/plugins/`) and `~/.claude/skills/video-editor` also exists as a plain folder (not a link to a Git clone, which is a developer's setup), tell the user once, in one line, that the old copy can make Claude pick either one, and offer to remove it: `python -I <skill>/scripts/update_skill.py --remove-old-copy` (it makes a backup first). Then ask them to restart Claude Code.
 
-**A newer version of the skill:** if `my-setup.md` has `Update check: weekly`, run `python -I <skill>/scripts/update_skill.py --weekly` at the start of an edit. It contacts GitHub at most once every 7 days, prints nothing unless a newer version exists, and prints nothing when offline. If it prints something, tell the user in one line and don't act on it: "A newer version of this skill is available. Say 'update my skill' whenever you want it." If the line is missing or says `not asked yet`, ask once, with the first-use questions: "May I check once a week whether there is a newer version of this skill? It only contacts GitHub, and sends nothing about you." Save `weekly` or `never`. If they ask which version they have, read `<skill>/VERSION`.
+**A newer version of the skill:** if `my-setup.md` has `Update check: weekly`, run `python -I <skill>/scripts/update_skill.py --weekly` at the start of an edit. It contacts GitHub at most once every 7 days, prints nothing unless a newer version exists, and prints nothing when offline. If it prints something, tell the user in one line and don't act on it: "A newer version of this skill is available. Say 'update my skill' whenever you want it." If it says the skill is linked to a Git clone, give its `git pull` line instead. If the line is missing or says `not asked yet`, ask once, with the first-use questions: "May I check once a week whether there is a newer version of this skill? It only contacts GitHub, and sends nothing about you." Save `weekly` or `never`. If they ask which version they have, read `<skill>/VERSION`.
 
 **Commands in this skill** use `-/filter_complex <file>`, which needs FFmpeg 7. On FFmpeg 6 or older, write `-filter_complex_script <file>` instead; the `Filter files:` line in `my-setup.md` says which this computer needs. Run every Python script with `-I` and the right environment's interpreter, as saved in `my-setup.md`.
 
@@ -132,7 +132,7 @@ The answer to question 1 decides the branding in Rule 5.
 ## Rule 2: Never touch the original
 
 - Never modify, move, rename or overwrite the original file.
-- Copy it to a new subfolder of the work folder from `my-setup.md`: `<work folder>/<project-name>/`. The work folder must never be inside iCloud, Dropbox, OneDrive or Google Drive, because big videos time out there.
+- Create `<work folder>/<project-name>/` and its `build/` folder if they don't exist (nobody makes folders by hand), and copy the original into the project folder. The work folder comes from `my-setup.md`; if it has none (a setup made before this was asked), ask once with the suggestion from `detect_setup.py folder`, check it, and save it there. The work folder must never be inside iCloud, Dropbox, OneDrive or Google Drive, because big videos time out there.
 - Do all the work on that copy.
 - Save each finished video under a new name, like `<original-name>-edited-reels.mp4`, in the finished-videos folder from `my-setup.md`, or next to the original. Never overwrite an existing file; add `-v2`, `-v3` instead.
 - If the user asks for a storyboard, show it and get their answers before exporting.

@@ -2,6 +2,10 @@
 
 Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rule numbers refer to SKILL.md.
 
+## Folders
+
+Nobody creates folders by hand: Claude makes them. Setup asks where to keep working files (suggesting `~/video-work`) and where finished videos go, checks the work folder with `python -I <skill>/scripts/detect_setup.py folder <path>` (it creates nothing; it says whether the folder is inside OneDrive, iCloud, Dropbox or Google Drive, where big videos time out, and the free space), then creates it. Each video gets `<work folder>/<project-name>/` with a `build/` folder for its working files (`cuts.json`, `plan.json`, `captions.json`, `retouch.json`), `project.md`, and `issues/` when a problem is reported. Finished videos go to the finished-videos folder, or next to the original. A `B-roll kit` folder is optional and the user's own. Windows often syncs Documents and Desktop to OneDrive, so don't suggest those.
+
 ## Updating the skill
 
 **Installed as a plugin** (the usual way now): updates come through Claude Code's plugin system, not this updater. If the user asks to update, tell them: `/plugin`, then **Marketplaces**, **malenaaza**, update (or turn on auto-update there once), then start a new session. `update_skill.py` says the same and changes nothing.
@@ -21,7 +25,7 @@ The first only says whether a newer version exists (the `VERSION` file). The sec
 - Tell the user, in plain words and their language, the new version and what's new, from the changelog it prints. Don't paste the changelog.
 - If it lists files the user had changed by hand, say that the update replaced them, and that their versions are in the backup folder it names. Offer to put a change back if they want it.
 - If it says it can't tell whether files were changed (the skill wasn't installed by this updater before), say so once.
-- If it says the skill is linked to a repository, nothing was changed: that setup is updated with `git pull`. Tell the user and stop.
+- If it says the skill is linked to a Git clone, nothing was changed: that setup (the skill's developer, with `~/.claude/skills/video-editor` a link or junction into a clone) is updated with `git pull` in the clone it names, on `main`, then a new session. Tell the user that command and stop. `--check` and `--weekly` say the same when a newer version exists.
 - If it can't reach the internet, say so and that nothing was changed.
 - Tell the user to start a new session so the new instructions are read.
 

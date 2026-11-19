@@ -22,6 +22,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
 - Background noise and hum removal, voice polish and leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
 - Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp (and isn't added when your camera already blurred the background), a part in black and white, a slow push in on your face at a key line
+- Makes its own folders: at first setup it asks where to keep working files (suggesting `~/video-work`), checks that the folder isn't in OneDrive, iCloud, Dropbox or Google Drive (where big videos time out), and creates it and a folder for each video. You never make folders by hand
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
 - Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera

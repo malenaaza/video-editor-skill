@@ -7,6 +7,10 @@ Usage:
                                          also check whether Whisper can use an NVIDIA GPU
   python detect_setup.py power           only say whether a laptop is plugged in, and which
                                          power mode it uses on battery
+  python detect_setup.py folder [path] [--json]
+                                         check a work folder: suggests ~/video-work when no path is given, says whether
+                                         it exists, the free space, and whether it is inside OneDrive, iCloud,
+                                         Dropbox or Google Drive (big videos time out there). Creates nothing.
 
 Uses only the Python standard library, so it runs before anything else is installed.
 """
@@ -63,6 +67,52 @@ def run(cmd, timeout=120):
         return r.returncode, (r.stdout or "") + (r.stderr or "")
     except (OSError, subprocess.TimeoutExpired) as e:
         return -1, str(e)
+
+
+SYNCED_NAMES = (("onedrive", "OneDrive"), ("dropbox", "Dropbox"), ("icloud", "iCloud"),
+                ("mobile documents", "iCloud"), ("google drive", "Google Drive"), ("googledrive", "Google Drive"),
+                ("my drive", "Google Drive"), ("cloudstorage", "a cloud-synced folder"))
+
+
+def synced_service(path):
+    """Which sync service the path is inside (OneDrive, Dropbox, iCloud, Google Drive), or None.
+    Follows links and junctions, and also checks the folders Windows names in OneDrive* variables."""
+    real = os.path.normcase(os.path.realpath(os.path.expanduser(path)))
+    for var in ("OneDrive", "OneDriveConsumer", "OneDriveCommercial"):
+        root = os.environ.get(var)
+        if root:
+            root = os.path.normcase(os.path.realpath(root))
+            if real == root or real.startswith(root + os.sep):
+                return "OneDrive"
+    for part in real.lower().replace("\\", "/").split("/"):
+        for key, name in SYNCED_NAMES:
+            if key in part:
+                return name
+    return None
+
+
+def folder_report(path=None):
+    suggested = path is None
+    path = path or os.path.join(os.path.expanduser("~"), "video-work")
+    full = os.path.abspath(os.path.expanduser(path))
+    probe = full
+    while not os.path.exists(probe) and os.path.dirname(probe) != probe:
+        probe = os.path.dirname(probe)
+    free = round(shutil.disk_usage(probe).free / 1e9, 1)
+    service = synced_service(full)
+    return {"path": full, "suggested": suggested, "exists": os.path.isdir(full), "free_gb": free,
+            "synced_service": service, "ok": service is None}
+
+
+def print_folder_report(report):
+    print(("Suggested work folder: " if report["suggested"] else "Folder: ") + report["path"])
+    print("Exists: " + ("yes" if report["exists"] else "no (create it when the user agrees)"))
+    print(f"Free space: {report['free_gb']} GB")
+    if report["ok"]:
+        print("OK: not inside a synced folder.")
+    else:
+        print(f"NOT OK: inside {report['synced_service']}. Big videos time out there; pick another folder, "
+              f"for example {os.path.join(os.path.expanduser('~'), 'video-work')}.")
 
 
 def power():
@@ -235,6 +285,14 @@ def test_encoder(args, ten_bit, tmp):
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "power":
         print(power_report())
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "folder":
+        rest = [x for x in sys.argv[2:] if x != "--json"]
+        report = folder_report(rest[0] if rest else None)
+        if "--json" in sys.argv:
+            print(json.dumps(report, indent=2, ensure_ascii=False))
+        else:
+            print_folder_report(report)
         return
     as_json = "--json" in sys.argv
     speech_python = None

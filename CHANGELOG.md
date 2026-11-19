@@ -2,6 +2,21 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-19 · version 2.6.1
+
+### New
+- **Work folder at setup:** the first-use questions now ask where to keep working files (suggesting `~/video-work`),
+  and `detect_setup.py folder [path]` checks it: it says whether it is inside OneDrive, iCloud, Dropbox or Google
+  Drive (big videos time out there; Windows often syncs Documents and Desktop) and how much space is free. Claude
+  creates the work folder, each video's project folder and its `build` folder itself. Older setups without a work
+  folder are asked once.
+
+### Fixed
+- **Updates for a linked clone:** when `~/.claude/skills/video-editor` is a link or junction into a clone of this
+  repository (how the skill's developer runs it), the weekly notice and `update_skill.py --check` now say to run
+  `git pull` in that clone, and name the folder. Before, the notice said "update my skill", which then refused.
+  The clone is also found from the skill's new place deep inside the repository.
+
 ## 2026-11-19 · version 2.6.0
 
 ### Changed
