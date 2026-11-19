@@ -24,6 +24,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp (and isn't added when your camera already blurred the background), a part in black and white, a slow push in on your face at a key line
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
+- Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
 - Puppet videos, with no one on camera: one or two cartoon characters (drawn in code, all original) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
 - Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked; after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
@@ -111,6 +112,7 @@ plugins/video-editor/
       pushin.py            a slow, smooth push in on your face at a key line, keeping your head in the frame
       reframe.py           turns a wide video into a vertical one for Shorts, following you like a camera operator
       chapters.py          YouTube chapters for the description, checked against YouTube's rules
+      footcheck.py         reads how a video was recorded (camera, app, settings) and says what to change next time
       screen.py            screen recordings: smooth zooms onto the action, and screen-above-speaker Shorts
       scriptcut.py         follows your script in the edit: keeps the last good take of each line, finds chapters and Shorts
       shorts.py            cuts the Shorts out of the long video, with their words for vertical captions

@@ -34,6 +34,8 @@ Checked on: <date>, with `scripts/detect_setup.py`
 
 ## Camera and footage
 - Cameras / phones: <e.g. iPhone 16 Pro with the Blackmagic Camera app, Sony ZV-E10>
+- Country and mains: <e.g. Spain, 50 Hz: film at 25 fps>
+- Camera check results: <per camera and app, what footcheck.py found and what the user agreed, with the date; e.g. iPhone 16 Pro Max, Blackmagic app: 4K 25 fps, shutter 1/50, mic receiver plugged in (2026-11-19)>
 - Shoots Log: <no / Apple Log / S-Log3 / ...>
 - LUT for that Log: `<path to the manufacturer's Log-to-Rec.709 .cube file>`
 - How to recognise the Log files: <filled in after the first Log clip, e.g. pix_fmt and color tags>
