@@ -1061,6 +1061,18 @@ class SkillTest(unittest.TestCase):
         self.assertIn("audio", out)
         self.assertEqual(screen.panel_crop(1920, 1080, 1080, 960, 1800), (1216, 1080, 704, 0))   # kept inside
 
+    def test_57_youtube_thumbnail_template(self):
+        tsx = (SCRIPTS / "remotion" / "Thumbnail.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("lines: []", default_props)          # sample words would leak into real thumbnails
+        self.assertNotIn("highlight", default_props)
+        self.assertIn("width={1280}", tsx)
+        self.assertIn("height={720}", tsx)
+        face_box = (SCRIPTS / "cover" / "face_box.py").read_text("utf-8")
+        for prop in ("bgWidth", "bgHeight", "faceX", "faceY", "faceSize"):   # what the template needs
+            self.assertIn(f'"{prop}"', face_box)
+            self.assertIn(f"{prop}:", tsx)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

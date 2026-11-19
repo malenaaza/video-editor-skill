@@ -119,6 +119,7 @@ plugins/video-editor/
       remotion/ProductPop.tsx the product's photo or clip popping in beside you when you name it
       remotion/WordCaptions.tsx captions with each word lit up in your accent colour as you say it
       remotion/CoverCard.tsx  cover image with products around the speaker's face
+      remotion/Thumbnail.tsx  YouTube thumbnail: your face big on one side, a few huge words on the other
       remotion/brandFont.ts   loads the brand font for the templates
       cover/cutout.py      cuts products out of shop photos or video frames
       cover/face_box.py    finds the face so the products go around it

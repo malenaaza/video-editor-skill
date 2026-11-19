@@ -2,8 +2,8 @@
 
 Usage: python -I face_box.py <frame.png> <face_landmarker.task>
 
-Prints the props to copy into cover.json, in pixels of that frame:
-  {"faceX": ..., "faceY": ..., "faceSize": ...}
+Prints the props to copy into cover.json (or thumbnail.json), in pixels of that frame:
+  {"faceX": ..., "faceY": ..., "faceSize": ..., "bgWidth": ..., "bgHeight": ...}
 faceX/faceY is the middle of the face, faceSize the forehead-to-chin height.
 Exits with an error if no face is found: pick another frame, or use the row layout.
 """
@@ -34,4 +34,6 @@ print(json.dumps({
     "faceX": round((min(xs) + max(xs)) / 2),
     "faceY": round((forehead.y + chin.y) / 2 * h),
     "faceSize": round(abs(chin.y - forehead.y) * h),
+    "bgWidth": w,   # the frame's size, for the YouTube Thumbnail template
+    "bgHeight": h,
 }))

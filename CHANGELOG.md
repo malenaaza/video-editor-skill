@@ -2,6 +2,22 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-19 · version 2.4.0
+
+### New: for YouTube
+- **Shorts from your horizontal video:** `scripts/reframe.py` turns a wide video into a vertical one that follows
+  you like a camera operator: still while you talk, a smooth move when you shift, keeping up when you walk, and a cut
+  when the footage cuts. Film once in 4K, and get the YouTube video and the Shorts from the same recording.
+- **Screen recordings for tutorials:** `scripts/screen.py` finds where the action is on the screen (typing, a menu,
+  a result appearing), suggests zooms you can check on a contact sheet, and draws smooth zooms onto them. For Shorts
+  it puts the screen on top and you below, centred on your face.
+- **Chapters:** `scripts/chapters.py` turns the topics Claude marks in the transcript into the chapter lines for the
+  YouTube description, with times that follow the cuts, checked against YouTube's rules (first at 0:00, at least 3,
+  each at least 10 seconds). It can also embed them in the video file.
+- **Thumbnails:** a new Remotion template, `Thumbnail.tsx`: your face big on one side and two to four huge words
+  on the other, in your brand's colours, kept clear of the corner where YouTube shows the length, and checked at
+  phone size. `face_box.py` now also prints the frame's size for it.
+
 ## 2026-11-18 · version 2.3.1
 
 ### Fixed
