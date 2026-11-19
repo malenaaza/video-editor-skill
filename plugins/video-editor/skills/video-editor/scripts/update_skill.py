@@ -118,13 +118,29 @@ def remove_old_copy(old, backup_dir, settings_dir):
     print(f"Removed the old copy at {old}. Backup: {backup}\nRestart Claude Code so it only finds the plugin.")
 
 
+def repository_root(skill_dir):
+    """The Git clone the skill lives in (following a link or junction), or None."""
+    real = Path(os.path.realpath(skill_dir))
+    for folder in (real, *real.parents):
+        if (folder / ".git").exists():
+            return folder
+    return None
+
+
 def linked_to_repository(skill_dir):
     """True if the folder is a link, or lives inside a Git clone (developers' setups)."""
     absolute = os.path.abspath(skill_dir)
     real = os.path.realpath(skill_dir)
     if os.path.islink(absolute) or os.path.normcase(real) != os.path.normcase(absolute):
         return True
-    return (Path(real).parent / ".git").exists() or (Path(real) / ".git").exists()
+    return repository_root(skill_dir) is not None
+
+
+def git_pull_hint(skill_dir):
+    """What a developer's linked setup does instead of this script: pull in the clone."""
+    root = repository_root(skill_dir) or Path(os.path.realpath(skill_dir))
+    return (f"This skill is linked to a Git clone, so it is updated with `git pull` in {root} (on the main branch), "
+            "not with 'update my skill'. Then start a new Claude Code session.")
 
 
 def download(source, target):
@@ -197,6 +213,8 @@ def main():
             print(f"A newer version of the video-editor skill is available ({installed or 'unknown'} -> {latest}).")
             if installed_as_plugin(skill_dir):
                 print("It arrives through Claude's plugin system: /plugin, Marketplaces, malenaaza, Update.")
+            elif linked_to_repository(skill_dir):
+                print(git_pull_hint(skill_dir))
         return
 
     try:
@@ -208,7 +226,10 @@ def main():
             if installed_as_plugin(skill_dir):
                 if newer:
                     print(PLUGIN_UPDATES.replace(" Nothing was changed.", ""))
-            elif not linked_to_repository(skill_dir):
+            elif linked_to_repository(skill_dir):
+                if newer:
+                    print(git_pull_hint(skill_dir))
+            else:
                 print(move_to_plugin_hint())
             return
     except OSError as error:
@@ -218,8 +239,7 @@ def main():
         print(PLUGIN_UPDATES)
         return
     if linked_to_repository(skill_dir):
-        sys.exit("This skill is linked to a repository (a Git clone), so it is updated with `git pull` in that folder, "
-                 "not with this script. Nothing was changed.")
+        sys.exit(git_pull_hint(skill_dir) + " Nothing was changed.")
 
     work = tempfile.mkdtemp(prefix="video-editor-update-")
     try:

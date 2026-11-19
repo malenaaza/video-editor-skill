@@ -565,6 +565,30 @@ class SkillTest(unittest.TestCase):
         self.assertEqual((skill / "VERSION").read_text("utf-8").strip(), "1.0.0")            # a check changes nothing
         self.assertFalse((home / "backups").exists())
 
+    def test_70_a_linked_clone_is_told_to_git_pull(self):
+        # a developer's setup: the skill sits deep inside a Git clone (plugins/video-editor/skills/video-editor)
+        home = self.dir / "dev"
+        clone = home / "clone"
+        skill = clone / "plugins" / "video-editor" / "skills" / "video-editor"
+        shutil.copytree(ROOT, skill, ignore=shutil.ignore_patterns("__pycache__", "my-setup.md"))
+        (skill / "VERSION").write_text("1.0.0\n", "utf-8")
+        (clone / ".git").mkdir()
+        weekly = self._update(skill, home, "--weekly").stdout
+        self.assertIn("newer version", weekly)
+        self.assertIn("git pull", weekly)
+        self.assertIn(str(clone), weekly)                     # names the clone, not the skill folder inside it
+        check = self._update(skill, home, "--check").stdout
+        self.assertIn("git pull", check)
+        self.assertNotIn("plugin marketplace add", check)     # not offered the move to the plugin
+        refused = self._update(skill, home, check=False)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("git pull", refused.stderr)
+        self.assertEqual((skill / "VERSION").read_text("utf-8").strip(), "1.0.0")  # nothing replaced
+        self.assertFalse((home / "backups").exists())
+        # a plain copy is not told to git pull
+        plain_home, plain = self._installed_copy("plain", version="1.0.0")
+        self.assertNotIn("git pull", self._update(plain, plain_home, "--weekly").stdout)
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

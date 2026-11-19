@@ -2,6 +2,14 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-19 · version 2.6.1
+
+### Fixed
+- **Updates for a linked clone:** when `~/.claude/skills/video-editor` is a link or junction into a clone of this
+  repository (how the skill's developer runs it), the weekly notice and `update_skill.py --check` now say to run
+  `git pull` in that clone, and name the folder. Before, the notice said "update my skill", which then refused.
+  The clone is also found from the skill's new place deep inside the repository.
+
 ## 2026-11-19 · version 2.6.0
 
 ### Changed

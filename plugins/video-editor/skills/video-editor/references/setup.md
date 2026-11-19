@@ -21,7 +21,7 @@ The first only says whether a newer version exists (the `VERSION` file). The sec
 - Tell the user, in plain words and their language, the new version and what's new, from the changelog it prints. Don't paste the changelog.
 - If it lists files the user had changed by hand, say that the update replaced them, and that their versions are in the backup folder it names. Offer to put a change back if they want it.
 - If it says it can't tell whether files were changed (the skill wasn't installed by this updater before), say so once.
-- If it says the skill is linked to a repository, nothing was changed: that setup is updated with `git pull`. Tell the user and stop.
+- If it says the skill is linked to a Git clone, nothing was changed: that setup (the skill's developer, with `~/.claude/skills/video-editor` a link or junction into a clone) is updated with `git pull` in the clone it names, on `main`, then a new session. Tell the user that command and stop. `--check` and `--weekly` say the same when a newer version exists.
 - If it can't reach the internet, say so and that nothing was changed.
 - Tell the user to start a new session so the new instructions are read.
 
