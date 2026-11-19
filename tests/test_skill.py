@@ -935,6 +935,51 @@ class SkillTest(unittest.TestCase):
                 self.assertGreaterEqual(after[1], before[1] - 0.2, (skin, g))              # not paler or greyer
                 self.assertLess(abs(after[2] - before[2]), 1.5, (skin, g))                 # not more orange, not pinker
 
+    def test_54_reframe_holds_still_and_follows(self):
+        import numpy as np
+        sys.path.insert(0, str(SCRIPTS))
+        import reframe
+        width, height = 1280, 720
+        crop_w = reframe.crop_width(height)
+        self.assertEqual(crop_w, 404)
+        rng = np.random.default_rng(1)
+        times = [i * 0.2 for i in range(60)]                                   # 12 s
+        # talking in place: small head movements never move the picture
+        still = [(t, 640 + rng.normal(0, 12)) for t in times]
+        start, moves, gaps = reframe.plan_path(still, width, crop_w)
+        self.assertEqual((moves, gaps), ([], []))
+        # a quick lean out and back (0.2 s) is ignored; a real step to the side is followed, eased, once
+        lean = [(t, 640 + (90 if 2.0 <= t < 2.2 else 0) + 200 * min(max(t - 6, 0), 1)) for t in times]   # step over 1 s
+        start, moves, _ = reframe.plan_path(lean, width, crop_w)
+        self.assertEqual(len(moves), 1)
+        self.assertGreater(moves[0][1] - moves[0][0], 0.3)                    # eased, not a jump
+        self.assertAlmostEqual(reframe.centre_at(11.9, start, moves), 840, delta=1)
+        # walking across the room: the face never leaves the picture
+        walk = [(t, 300 + max(0.0, min(t - 2, 6)) * 110) for t in times]
+        start, moves, _ = reframe.plan_path(walk, width, crop_w)
+        for t, x in walk:
+            self.assertLess(abs(x - reframe.centre_at(t, start, moves)), crop_w * 0.4, t)
+        # a cut to another framing is a cut; the crop stays inside the frame; no face holds still and is listed
+        cut = [(t, 300 if t < 4 else (None if t < 6 else 1100)) for t in times]
+        start, moves, gaps = reframe.plan_path(cut, width, crop_w)
+        self.assertEqual(gaps, [(4.0, 6.0)])
+        self.assertEqual(moves[-1][0], moves[-1][1])                           # instant
+        self.assertLessEqual(reframe.centre_at(11.9, start, moves), width - crop_w / 2)
+        # FFmpeg draws the same path: a box that steps right at 6 s stays in the middle of the vertical video
+        box = "overlay=x='if(lt(t,6),600,800)':y=300"   # (drawbox reads t only once, so overlay a red square)
+        start, moves, _ = reframe.plan_path([(t, 640 if t < 6 else 840) for t in times], width, crop_w)
+        line = reframe.filter_line(height, crop_w, start, moves, 360, 640)
+        out = self.dir / "reframed.mp4"
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color=gray:s={width}x{height}:r=10:d=12",
+             "-f", "lavfi", "-i", "color=red:s=80x80:r=10:d=12", "-filter_complex", f"[0][1]{box},{line}",
+             "-c:v", "libx264", "-preset", "ultrafast", out])
+        for t in (3, 11):
+            raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", out, "-frames:v", "1", "-f", "rawvideo",
+                                  "-pix_fmt", "rgb24", "-"], capture_output=True, check=True).stdout
+            frame = np.frombuffer(raw, np.uint8).reshape(640, 360, 3).astype(int)
+            red = np.where((frame[..., 0] > 150) & (frame[..., 1] < 100))[1]
+            self.assertAlmostEqual(red.mean(), 180, delta=12, msg=t)
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

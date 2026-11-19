@@ -224,6 +224,7 @@ When the user wants to borrow the style of creators they admire, borrow the form
 
 - Reels, TikTok and Shorts: vertical 9:16, 1080x1920. YouTube: wide 16:9, 1920x1080, or the source resolution if higher.
 - Don't upscale. When reframing wide to vertical, keep the speaker's face in frame.
+- **Shorts from a YouTube video** (one horizontal recording, a wide video and vertical clips): `<face python> -I <skill>/scripts/reframe.py <retouched wide clip> <face_landmarker.task> --check reframe.png` writes `reframe.txt`, a crop that follows the speaker like a camera operator: still while they talk, an eased move when they shift, keeping up when they walk, a cut when the footage cuts. Put its line first in the vertical render, then add captions and graphics made for the vertical size. Look at `reframe.png` (the crop drawn on the wide frames). It lists stretches with no face, such as screen recordings: give those their own vertical layout. From 4K the crop is full quality (1216x2160); from 1080p it's enlarged, so suggest filming in 4K when a video will also be cut into Shorts, with the speaker and anything they show near the middle third of the frame.
 - **Final export** (what the viewer sees), always:
 
 ```

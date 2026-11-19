@@ -102,6 +102,7 @@ plugins/video-editor/
       balance.py           measures a colour cast (white balance) and gives the filter that removes it
       mono.py              turns a part of the video black and white, fading back to colour
       pushin.py            a slow, smooth push in on your face at a key line, keeping your head in the frame
+      reframe.py           turns a wide video into a vertical one for Shorts, following you like a camera operator
       editreport.py        the edit in numbers: what was cut, pauses left, loudness, size
       update_skill.py      updates the skill safely, with a backup
       fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
