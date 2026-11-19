@@ -13,6 +13,11 @@ What each update of the video-editor skill brings. Newest first.
   goes under each line for language students. Use it for a helper character inside your videos or for short
   dialogues for students. `credits.txt` lists each voice's license and the credit line to add when it asks for one.
 
+### New: background already blurred
+- Before offering background blur, the skill now checks whether your camera already blurred the background (a
+  phone's Cinematic or Portrait mode, or a lens wide open) with `scripts/retouch/blurcheck.py`, and doesn't add more.
+  It also reminds you to check that a product held up wasn't blurred by that mode, which can't be fixed afterwards.
+
 ### New: for YouTube
 - **Script first:** ask for a script and Claude writes it with chapters, screen recordings, graphics and Shorts
   marked, plus a shot list for filming in one sitting (`references/script.md`). After filming,

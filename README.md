@@ -21,7 +21,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Captions (plain, or with each word lit up as you say it), titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
 - Background noise and hum removal, voice polish and leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
-- Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp, a part in black and white, a slow push in on your face at a key line
+- Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp (and isn't added when your camera already blurred the background), a part in black and white, a slow push in on your face at a key line
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
@@ -118,7 +118,8 @@ plugins/video-editor/
       update_skill.py      updates the skill safely, with a backup
       fillers.py, filler_prompts.py, findfill.py, checkcuts.py   filler hunting and cut checks
       hunt_fillers.py      short-window pass for fillers glued onto words
-      retouch/             skin and teeth masks, beautify extras, background blur, mouth check;
+      retouch/             skin and teeth masks, beautify extras, background blur (and blurcheck.py, which notices a
+                           background your camera already blurred), mouth check;
                            settings.py reads each video's retouch.json
       sfx/                 four small sound effects, generated with FFmpeg, and typing.py (key clicks
                            for a typewriter title)

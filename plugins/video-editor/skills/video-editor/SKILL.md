@@ -275,7 +275,7 @@ Apply the color choice from the brand's `Look:` lines in the clean render. If th
 All of these run when the brand's settings in `my-setup.md` say "every video", or when the user asks. Each has its own reference file with the steps, tested levels and checks. Read it before starting.
 
 - **Skin softening, light beautify and teeth whitening:** face-tracked masks on `clean.mp4`, underneath the text so text stays sharp. Include the tightest close-up in the before/after frames: a face cut by the frame edge needs the edge fallback described in `references/retouch.md`.
-- **Background blur:** a mask that keeps the speaker and held products sharp. Offer it before any request to replace a background, which is far slower and fails on moving objects. `references/retouch.md`.
+- **Background blur:** a mask that keeps the speaker and held products sharp. Offer it before any request to replace a background, which is far slower and fails on moving objects. First run `retouch/blurcheck.py`: when the background is already blurred (Cinematic or Portrait mode, a lens wide open), don't add more, and check held products weren't blurred by that mode. `references/retouch.md`.
 - **Animated title, product tag, emojis:** `references/graphics.md`. Never guess a price, and don't ask the user for emoji files.
 - **Sound effects:** `references/sound.md`. Don't ask the user for sound files.
 

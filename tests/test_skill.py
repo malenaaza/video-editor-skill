@@ -1180,6 +1180,29 @@ class SkillTest(unittest.TestCase):
         self.assertIn("under 15 s", out)                                       # "Corto"
         self.assertIn("Short 3 skipped", out)
 
+    def test_67_background_already_blurred(self):
+        import numpy as np
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import blurcheck
+        rng = np.random.default_rng(3)
+        sharp = (rng.random((480, 640)) > 0.5).astype(np.float32) * 255   # detail everywhere, face and background
+        face = (240, 120, 400, 330)                                          # forehead-to-chin box, mid-frame
+
+        def blur(img, k=15):                                                 # a box blur, k times each way
+            out = img.copy()
+            for axis in (0, 1):
+                out = sum(np.roll(out, s, axis=axis) for s in range(-(k // 2), k // 2 + 1)) / k
+            return out
+        soft = blur(sharp)
+        inner, _ = blurcheck.regions(640, 480, face)
+        soft[inner[1]:inner[3], inner[0]:inner[2]] = sharp[inner[1]:inner[3], inner[0]:inner[2]]   # face in focus
+        r_sharp, r_soft = blurcheck.ratio(sharp, face), blurcheck.ratio(soft, face)
+        self.assertEqual(blurcheck.verdict(r_sharp), "sharp")
+        self.assertEqual(blurcheck.verdict(r_soft), "already soft")
+        self.assertEqual(blurcheck.verdict(0.5), "a little soft")
+        # a close-up with no room beside or above the head has nothing to measure
+        self.assertIsNone(blurcheck.ratio(sharp, (5, 5, 635, 475)))
+
     def test_62_puppet_dialogue_format(self):
         sys.path.insert(0, str(PUPPET / "scripts"))
         import dialogue
