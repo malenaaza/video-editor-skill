@@ -13,9 +13,17 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install FFmpeg and Python packages
+        # Ubuntu's package servers sometimes time out: retry each download, and the whole
+        # install up to 3 times, so a server hiccup doesn't fail the tests.
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q ffmpeg fonts-dejavu-core
-          pip install numpy opencv-python-headless pillow
+          for try in 1 2 3; do
+            sudo apt-get update -q -o Acquire::Retries=5 &&
+            sudo apt-get install -y -q -o Acquire::Retries=5 --fix-missing ffmpeg fonts-dejavu-core &&
+            break
+            [ "$try" = 3 ] && exit 1
+            echo "Package install failed (try $try of 3), waiting 30 s"
+            sleep 30
+          done
+          pip install --retries 5 numpy opencv-python-headless pillow
       - name: Run the tests
         run: python tests/test_skill.py

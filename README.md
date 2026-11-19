@@ -26,7 +26,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
 - Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
-- Puppet videos, with no one on camera: one or two cartoon characters (drawn in code, all original) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
+- Puppet videos, with no one on camera: one or two illustrated adult characters or a robot (drawn in code, all original, with your brand's colours and the skin tones and hair you choose) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
 - Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked; after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
 
 You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
@@ -49,7 +49,12 @@ The skill is a Claude Code plugin. In Claude Code, type these two commands (or p
 /plugin install video-editor@malenaaza
 ```
 
-Restart Claude Code, then ask for an edit ("edit this video for Reels: ..."). The first time, it checks your computer and asks a few setup questions.
+The plugin has two skills, and these commands install both: **video-editor** (editing the videos you film) and
+**puppet-video** (animated characters that say a script, with no one on camera).
+
+Restart Claude Code, then ask for an edit ("edit this video for Reels: ...") or a puppet video ("make a puppet video
+where Lola orders a coffee in English"). The first time, it checks your computer and asks a few setup questions; the
+first puppet video also installs its voice and lip-sync tools.
 
 **Already installed it the old way** (a `video-editor` folder copied into `~/.claude/skills/`)? Say "update my video-editor skill" (or *actualiza mi skill*). Claude brings that copy up to date and then moves you to the plugin: it installs the plugin, makes a backup of the old folder and removes it, so Claude doesn't find the skill twice. Your settings in `~/.video-editor/` stay as they are.
 
@@ -62,7 +67,7 @@ Plugin updates come through Claude Code's plugin system. Type `/plugin`, open **
 - **Your settings are safe.** They live in `~/.video-editor/my-setup.md`, outside the skill, and an update never touches them. Each video's own settings (`retouch.json`) are in that video's folder.
 - **Please don't edit the skill's own files.** Preferences go in your settings, and Claude saves them there when you ask for a change ("less blur", "always put my logo here").
 - **Want your own version of the skill?** Make a copy of the repository on GitHub (a "fork") and add your copy as the marketplace instead.
-- **Without the plugin system:** you can still copy the folder `plugins/video-editor/skills/video-editor` into `~/.claude/skills/` and say "update my video-editor skill" to update it. A developer's clone linked there is updated with `git pull`.
+- **Without the plugin system:** you can still copy the folder `plugins/video-editor/skills/video-editor` into `~/.claude/skills/` and say "update my video-editor skill" to update it. For puppet videos, copy `plugins/video-editor/skills/puppet-video` there too, next to it (it uses the video editor's scripts). A developer's clone linked there is updated with `git pull`.
 
 ### What it installs on first use
 

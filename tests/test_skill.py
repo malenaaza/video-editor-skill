@@ -1257,7 +1257,8 @@ class SkillTest(unittest.TestCase):
             "# a comment", "[Lola] voice=en_GB-cori-medium look=lola", "[Pixel] voice=es_ES-sharvard-medium speaker=F",
             "Lola: Hi! Could I have a flat white? | ¡Hola! ¿Me pones un café?", "> Pixel: sorprendida", "> pausa 0.5",
             "> a note for Claude, not said", "Pixel: ¿Un café?"]))
-        self.assertEqual(chars["Pixel"], {"voice": "es_ES-sharvard-medium", "speaker": "F", "look": "max", "colour": None})
+        self.assertEqual(chars["Pixel"], {"voice": "es_ES-sharvard-medium", "speaker": "F", "look": "max", "colour": None,
+                                          "skin": None, "hair": None})
         self.assertEqual(turns[0]["translation"], "¡Hola! ¿Me pones un café?")
         self.assertEqual((turns[1]["expression"], turns[1]["pause_before"]), ("surprised", 0.5))
         for bad in ("Lola: hello", "[Lola] look=lola\nLola: hi", "[Lola] voice=x look=dragon\nLola: hi",
@@ -1346,6 +1347,20 @@ class SkillTest(unittest.TestCase):
             self.assertTrue((PUPPET / path).exists(), path)
         for path in set(re.findall(r"<editor>/(scripts/[\w/.-]+\.\w+)", skill)):
             self.assertTrue((ROOT / path).exists(), path)
+
+    def test_69_puppet_people_colours(self):
+        sys.path.insert(0, str(PUPPET / "scripts"))
+        import dialogue
+        chars, _ = dialogue.parse("[Max] voice=x look=max color=#2F5D62 skin=#8D5A3B hair=#1E1A18\nMax: Hello.")
+        self.assertEqual({k: chars["Max"][k] for k in ("colour", "skin", "hair")},
+                         {"colour": "#2F5D62", "skin": "#8D5A3B", "hair": "#1E1A18"})   # color= is accepted too
+        for bad in ("skin=brown", "hair=#12345", "colour=red"):                        # a typo fails before rendering
+            with self.assertRaises(ValueError, msg=bad):
+                dialogue.parse(f"[Max] voice=x look=max {bad}\nMax: Hello.")
+        tsx = (PUPPET / "scripts" / "remotion" / "Puppet.tsx").read_text("utf-8")
+        self.assertIn("skin={c.skin} hair={c.hair}", tsx)                              # the template uses them
+        src = (PUPPET / "scripts" / "dialogue.py").read_text("utf-8")
+        self.assertRegex(src, r'"skin": c\["skin"\],\s*"hair": c\["hair"\]')        # and the props carry them
 
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")

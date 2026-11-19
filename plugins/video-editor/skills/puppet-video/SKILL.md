@@ -1,6 +1,6 @@
 ---
 name: puppet-video
-description: Makes short animated videos where cartoon characters (puppets drawn in code) say a script with a free voice made on the user's computer, with lip-sync, captions and optional translations. Use when the user wants a video with no one on camera, an animated character or puppet, a dialogue between two characters, a talking robot or helper for an explainer, or a listening or conversation video for language students, in any language (for example "make a puppet video", "vídeo con muñecos", "un diálogo animado para alumnos de inglés", "que lo diga el robot"). Not for editing footage the user filmed: that's the video-editor skill.
+description: Makes short animated videos where illustrated adult characters (drawn in code) say a script with a free voice made on the user's computer, with lip-sync, captions and optional translations. Use when the user wants a video with no one on camera, an animated character or puppet, a dialogue between two characters, a talking robot or helper for an explainer, or a listening or conversation video for language students, in any language (for example "make a puppet video", "vídeo con muñecos", "un diálogo animado para alumnos de inglés", "que lo diga el robot"). Not for editing footage the user filmed: that's the video-editor skill.
 ---
 
 # Puppet videos
@@ -19,7 +19,8 @@ licenses, the installs, and the timing and writing tips.
    run that first if it's missing). Read its `Puppets:` section. If it's empty, install Piper and Rhubarb
    (`references/puppet.md`, Install), and ask once, saving the answers there:
    - the voices for each language (suggest the ones in `references/puppet.md`; play a sample line of each);
-   - the characters (lola, max, pixel) and colours, from the brand's palette;
+   - the characters (lola, a woman; max, a man; pixel, a robot), their clothes colours from the brand's palette,
+     and their skin tone and hair if the user wants them to look like their audience;
    - whether to credit the voices in the description (required by some licenses: `credits.txt` says which).
 2. **Whose video:** the brand comes from `my-setup.md` (colours, font, logo, end card, call to action). A video
    for a client (for example a school) uses the client's brand and contact details, and is checked by them before

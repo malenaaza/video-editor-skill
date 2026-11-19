@@ -2,6 +2,15 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-19 · version 2.6.0
+
+### Changed
+- **Grown-up puppets:** Lola, Max and Pixel are redrawn as adults in a flat editorial style, from the chest up behind
+  a table on a warm neutral background, instead of round cartoon creatures on pink. Smaller almond eyes, thin brows,
+  a nose, real hair (Lola: shoulder-length with a fringe and earrings; Max: short hair, beard and thin glasses) and
+  calmer movement. `colour=` is now the clothes colour, and the new `skin=` and `hair=` set a person's skin tone and
+  hair, so the characters can look like the people the video is for. Dialogues written before still work.
+
 ## 2026-11-19 · version 2.5.0
 
 ### New

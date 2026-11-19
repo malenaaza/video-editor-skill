@@ -7,7 +7,7 @@ Part of the puppet-video skill. `<skill>` is the folder that holds its SKILL.md.
 ```
 # At the café (a comment: lines starting with # aren't said)
 [Lola] voice=en_GB-cori-medium look=lola
-[Max] voice=en_GB-alba-medium look=max colour=#7FD1AE
+[Max] voice=en_GB-northern_english_male-medium look=max colour=#2F5D62 skin=#8D5A3B
 Lola: Hi! Could I have a flat white, please? | ¡Hola! ¿Me pones un café con leche, por favor?
 > Max: happy
 Max: Of course. Anything else? | Claro. ¿Algo más?
@@ -18,7 +18,9 @@ Max: That's four pounds fifty. | Son cuatro libras con cincuenta.
 ```
 
 - `[Name]` lines come first: `voice=` a Piper voice name (below); `speaker=` for a voice with several speakers
-  (sharvard: `M` or `F`); `look=` `lola`, `max` or `pixel`; `colour=` recolours the character (brand palette).
+  (sharvard: `M` or `F`); `look=` `lola` (a woman), `max` (a man with a beard and glasses) or `pixel` (a robot);
+  `colour=` the clothes colour (the robot's body), from the brand palette; `skin=` and `hair=` a person's skin tone
+  and hair colour, so the characters can look like the people the video is for.
 - `Name: text` is one turn. After ` | `, a translation, shown under the captions with `"showTranslation": true`.
 - `> Name: happy` (or `surprised`, `thinking`, `sad`, `neutral`; Spanish `feliz`, `sorprendido/a`, `pensando`,
   `triste`, `normal`) sets that character's expression from their next turn. `> pause 0.8` (or `pausa`) adds
@@ -81,7 +83,11 @@ or from huggingface.co/rhasspy/piper-voices, path `<lang>/<lang_COUNTRY>/<name>/
   0.8 s at the end, and levels the voice to -14 LUFS.
 - Rhubarb runs with the turn's text for English (more accurate) and its phonetic recognizer for other languages.
   Each turn takes about 1 to 2 seconds to analyse.
-- In `Puppet.tsx`: vertical videos put the characters' feet at 72% of the height, so captions at `--margin-v` 300
+- **The look:** adults in a flat editorial style, from the chest up, sitting behind a table on a warm neutral
+  background: small almond eyes, thin brows that carry the expression, muted clothes. It suits adult learners and
+  professional channels. `bgTop`, `bgBottom` and `floor` (the table) take the brand's colours; keep them calm and
+  light, so dark captions read on the table.
+- In `Puppet.tsx`: vertical videos put the bottom of the characters at 72% of the height, behind the table, so captions at `--margin-v` 300
   and a translation under them fit below; two characters face each other, and the one speaking leans in while the
   other looks at them. Blinks come every 3 to 5 seconds, at different moments for each character.
 - A new character is a new component in `Puppet.tsx` with the same props (mouth shape, blink, look direction,
