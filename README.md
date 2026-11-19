@@ -49,7 +49,12 @@ The skill is a Claude Code plugin. In Claude Code, type these two commands (or p
 /plugin install video-editor@malenaaza
 ```
 
-Restart Claude Code, then ask for an edit ("edit this video for Reels: ..."). The first time, it checks your computer and asks a few setup questions.
+The plugin has two skills, and these commands install both: **video-editor** (editing the videos you film) and
+**puppet-video** (animated characters that say a script, with no one on camera).
+
+Restart Claude Code, then ask for an edit ("edit this video for Reels: ...") or a puppet video ("make a puppet video
+where Lola orders a coffee in English"). The first time, it checks your computer and asks a few setup questions; the
+first puppet video also installs its voice and lip-sync tools.
 
 **Already installed it the old way** (a `video-editor` folder copied into `~/.claude/skills/`)? Say "update my video-editor skill" (or *actualiza mi skill*). Claude brings that copy up to date and then moves you to the plugin: it installs the plugin, makes a backup of the old folder and removes it, so Claude doesn't find the skill twice. Your settings in `~/.video-editor/` stay as they are.
 
@@ -62,7 +67,7 @@ Plugin updates come through Claude Code's plugin system. Type `/plugin`, open **
 - **Your settings are safe.** They live in `~/.video-editor/my-setup.md`, outside the skill, and an update never touches them. Each video's own settings (`retouch.json`) are in that video's folder.
 - **Please don't edit the skill's own files.** Preferences go in your settings, and Claude saves them there when you ask for a change ("less blur", "always put my logo here").
 - **Want your own version of the skill?** Make a copy of the repository on GitHub (a "fork") and add your copy as the marketplace instead.
-- **Without the plugin system:** you can still copy the folder `plugins/video-editor/skills/video-editor` into `~/.claude/skills/` and say "update my video-editor skill" to update it. A developer's clone linked there is updated with `git pull`.
+- **Without the plugin system:** you can still copy the folder `plugins/video-editor/skills/video-editor` into `~/.claude/skills/` and say "update my video-editor skill" to update it. For puppet videos, copy `plugins/video-editor/skills/puppet-video` there too, next to it (it uses the video editor's scripts). A developer's clone linked there is updated with `git pull`.
 
 ### What it installs on first use
 
