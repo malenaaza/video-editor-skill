@@ -187,7 +187,7 @@ const Person: React.FC<CharacterProps & { clothes: string; skinTone: string; hai
 
 // Lola: a woman with shoulder-length hair and a side fringe, small gold earrings.
 const Lola: React.FC<CharacterProps> = ({ s, colour, skin, hair }) => {
-  const skinTone = skin || "#C68863";
+  const skinTone = skin || "#F2CDB0";
   const h = hair || "#3A2722";
   return (
     <Person s={s} clothes={colour || "#B9553F"} skinTone={skinTone} hairColour={h} lips={shade(skinTone, -0.38)}
@@ -202,7 +202,7 @@ const Lola: React.FC<CharacterProps> = ({ s, colour, skin, hair }) => {
 
 // Max: a man with short hair, a trimmed beard, thin glasses and a shirt collar.
 const Max: React.FC<CharacterProps> = ({ s, colour, skin, hair }) => {
-  const skinTone = skin || "#E8BE9A";
+  const skinTone = skin || "#F5D6BF";
   const h = hair || "#4A403A";
   return (
     <Person s={s} clothes={colour || "#2F5D62"} skinTone={skinTone} hairColour={h} lips={shade(skinTone, -0.42)}
