@@ -12,7 +12,8 @@ dialogue.md (references/puppet.md has the full format):
   Max: Of course. Anything else?
   > pause 0.8
 The [Name] lines set each character's voice (a Piper voice name; speaker= picks one voice of a multi-speaker model,
-by name or number) and look (lola, max or pixel, the characters drawn in Puppet.tsx; colour=#RRGGBB recolours it).
+by name or number) and look (lola, max or pixel, the characters drawn in Puppet.tsx; colour=#RRGGBB is the clothes
+colour, skin=#RRGGBB and hair=#RRGGBB change a person's skin tone and hair).
 "Name: text" is one turn; text after " | " is a translation shown under the captions (for students). "> Name:
 happy|surprised|thinking|sad|neutral" changes that character's expression from the next turn; "> pause 0.8" adds
 seconds of silence. Lines starting with "#" are comments.
@@ -64,7 +65,7 @@ VOICE_LICENSES = {
 # ---- the script ----------------------------------------------------------------------------------------------------
 
 def parse(text):
-    """(characters, turns). characters: {name: {voice, speaker, look, colour}}; turns: [{speaker, text, translation,
+    """(characters, turns). characters: {name: {voice, speaker, look, colour, skin, hair}}; turns: [{speaker, text, translation,
     expression, pause_before}]. Raises ValueError with the line number."""
     characters, turns, expressions = {}, [], {}
     pause = 0.0
@@ -81,8 +82,11 @@ def parse(text):
                 raise ValueError(f"line {n}: look={look} isn't one of {', '.join(LOOKS)}.")
             if "voice" not in opts:
                 raise ValueError(f"line {n}: [{name}] needs voice=<Piper voice name>.")
-            characters[name] = {"voice": opts["voice"], "speaker": opts.get("speaker"), "look": look,
-                                "colour": opts.get("colour") or opts.get("color")}
+            colours = {k: opts.get(k) or (opts.get("color") if k == "colour" else None) for k in ("colour", "skin", "hair")}
+            for k, v in colours.items():
+                if v and not re.fullmatch(r"#[0-9A-Fa-f]{6}", v):
+                    raise ValueError(f"line {n}: {k}={v} should be a colour like #7FD1AE.")
+            characters[name] = {"voice": opts["voice"], "speaker": opts.get("speaker"), "look": look, **colours}
             continue
         if s.startswith(">"):
             d = s[1:].strip()
@@ -293,7 +297,8 @@ def main():
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", joined, "-af",
                         f"loudnorm=I={a.loudness}:TP=-1.5:LRA=11", "-ar", str(RATE), "-ac", "2", voice], check=True)
 
-    props = {"characters": [{"name": n, "look": c["look"], "colour": c["colour"]} for n, c in characters.items()],
+    props = {"characters": [{"name": n, "look": c["look"], "colour": c["colour"], "skin": c["skin"],
+                             "hair": c["hair"]} for n, c in characters.items()],
              "turns": out_turns, "length": round(total, 3), "fps": FPS, "width": width, "height": height}
     json.dump(props, open(os.path.join(a.out_dir, "puppet-props.json"), "w", encoding="utf-8"), ensure_ascii=False,
               indent=1)
