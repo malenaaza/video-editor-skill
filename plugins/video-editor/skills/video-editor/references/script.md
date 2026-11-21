@@ -56,6 +56,9 @@ Write `shotlist.md` next to it, for filming in one sitting:
 1. **Camera:** every spoken line in order, numbered, with the `>` directions. Remind the user to repeat a line from
    its start when they trip (the last complete take is kept), to film horizontal in 4K with the speaker in the middle
    third if Shorts will be cut (Rule 6), and to pause a second before each line.
+   When the user films some lines with a second camera (an iPhone for the hook, the ending or a close-up), add
+   which camera films each line, `[main]` or `[iPhone]`, and group the iPhone lines so the phone is set up once.
+   Two or three per video are plenty. The settings to match are in `references/cameras.md`, Two cameras.
 2. **Screen recordings:** every `[SCREEN]` note as a separate short clip to record, with the tips in Rule 6
    (bigger text, Do Not Disturb, nothing private on screen).
 3. **Graphics:** the `[GRAPHIC]` notes, made later in the edit.

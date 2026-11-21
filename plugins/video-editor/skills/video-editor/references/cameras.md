@@ -67,3 +67,38 @@ if the user can't find one, ask what they see and guide them from there.
 - **Social apps:** recording inside Instagram, TikTok, CapCut or Edits, or sending the file over WhatsApp, squeezes
   it. Record with the camera app and send the original file (AirDrop, a cable, a cloud folder with original
   quality).
+
+## Two cameras: the main one, and an iPhone for some lines
+
+The easy way to change angle: the main camera films most of the video and the iPhone films a few lines (the hook,
+the ending, a close-up). They don't film at the same time, so there is nothing to sync: each take is its own clip
+and the angle changes where one clip ends and the next begins, between sentences. Filming everything with both at
+once is real multicam; the skill doesn't do it, and it's much more work while filming.
+
+**Before filming,** tell the user once:
+- the same frame rate on both (25 fps in Spain; iPhone: Settings > Camera > Record Video, Show PAL Formats), and
+  HDR Video off on the iPhone;
+- the iPhone on a stand, with exposure and focus locked (press and hold on the screen);
+- the same light, clothes and position in every take, and the same microphone for both if they have one, because
+  the two cameras' own sound differs;
+- film the iPhone lines one after another, not swapping camera every sentence. Mark them in the shot list
+  (`references/script.md`).
+
+**In the edit,** run the footage check (above) once for the iPhone, then make each iPhone clip match the main camera
+before transcribing it:
+
+```
+python -I <skill>/scripts/conform.py <iphone clip> --like <main camera clip> --check
+python -I <skill>/scripts/conform.py <iphone clip> --like <main camera clip> --encoder "<in-between encoder>"
+```
+
+`--check` only lists what differs. Without it, it writes `<clip>-conformed.mov`: the main camera's frame rate at a
+constant rate (phones record a variable one, which makes the sound drift), its size (a clip filmed the other way
+round is cropped to fill, or `--fit pad` for bars), HDR tone mapped to SDR, Rec.709 tags, and the main camera's
+sample rate and channels. Tell the user the lines it prints in one short message. Then the clips go through the
+usual steps, and their voices are joined at one loudness with `voice/leveljoin.py` (`references/sound.md`).
+
+**Colour is not matched by the script:** the two cameras' white balance, contrast and saturation differ. Put a
+frame of each side by side, correct the iPhone clips in the grade until skin and the background match, and show
+the user the pair before the full render.
+

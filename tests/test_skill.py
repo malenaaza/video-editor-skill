@@ -6,6 +6,7 @@ skipped without it. The face-tracking scripts (masks, mouth check) and the Whisp
 are only compiled here, not run.
 """
 import json
+from fractions import Fraction
 import os
 import py_compile
 import re
@@ -698,6 +699,60 @@ class SkillTest(unittest.TestCase):
         (work / "retouch.json").write_text(json.dumps({"pixel_extra": [{"start": 1}]}), "utf-8")
         self.assertNotEqual(run("build", "clean.mp4").returncode, 0)
         self.assertIn("pixelfaces.py", (ROOT / "SKILL.md").read_text("utf-8"))
+
+    def test_73_second_camera_matches_the_main_one(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import conform
+        cam = {"width": 1920, "height": 1080, "fps": Fraction(25), "variable": False, "pix_fmt": "yuv420p",
+               "transfer": "bt709", "primaries": "bt709", "matrix": "bt709", "rate": 48000, "channels": 2}
+        phone = dict(cam, fps=Fraction(30), variable=True, transfer="arib-std-b67", primaries="bt2020",
+                     matrix="bt2020nc", rate=44100, channels=1, width=3840, height=2160)
+        notes, vf, af, tags = conform.plan(cam, phone)
+        self.assertIn("tonemap", vf)                                     # HDR to SDR
+        self.assertIn("fps=25", vf)
+        self.assertIn("scale=1920:1080", vf)
+        self.assertEqual(af, "aresample=48000")
+        self.assertEqual(tags["color_trc"], "bt709")
+        self.assertEqual(len(notes), 4)
+        notes, vf, _, tags = conform.plan(cam, phone, zscale=False)      # no zscale: said, not hidden
+        self.assertNotIn("tonemap", vf)
+        self.assertTrue(any("NOT converted" in n for n in notes))
+        wobbly = dict(cam, variable=True)                                # same rate, but variable: made constant
+        notes, vf, _, _ = conform.plan(cam, wobbly)
+        self.assertEqual(len(notes), 1)
+        self.assertIn("constant", notes[0])
+        self.assertEqual(conform.plan(cam, dict(cam))[0], [])            # already the same: nothing to do
+        upright = dict(cam, width=1080, height=1920)
+        self.assertIn("crop=1920:1080", conform.plan(cam, upright)[1])
+        self.assertIn("pad=1920:1080", conform.plan(cam, upright, fit="pad")[1])
+        # on real files
+        work = self.dir / "conform"
+        work.mkdir()
+        ff = lambda *args: subprocess.run(["ffmpeg", "-v", "error", "-y", *args], cwd=work, check=True)
+        ff("-f", "lavfi", "-i", "testsrc2=s=640x360:r=25:d=2", "-f", "lavfi", "-i", "sine=f=440:r=48000:d=2",
+           "-ac", "2", "-pix_fmt", "yuv420p", "-c:v", "libx264", "-c:a", "aac", "main.mp4")
+        ff("-f", "lavfi", "-i", "testsrc2=s=1280x720:r=30:d=2", "-f", "lavfi", "-i", "sine=f=440:r=44100:d=2",
+           "-ac", "1", "-pix_fmt", "yuv420p", "-c:v", "libx264", "-color_primaries", "bt2020",
+           "-color_trc", "arib-std-b67", "-colorspace", "bt2020nc", "-c:a", "aac", "phone.mov")
+        run = lambda *args: subprocess.run([sys.executable, "-I", str(SCRIPTS / "conform.py"), *args], cwd=work,
+                                          capture_output=True, text=True, encoding="utf-8")
+        checked = run("phone.mov", "--like", "main.mp4", "--check")
+        self.assertIn("30 -> 25", checked.stdout)
+        self.assertFalse((work / "phone-conformed.mov").exists())        # --check writes nothing
+        made = run("phone.mov", "--like", "main.mp4")
+        self.assertEqual(made.returncode, 0, made.stdout + made.stderr)
+        out = conform.probe(str(work / "phone-conformed.mov"))
+        self.assertEqual((out["width"], out["height"], out["fps"], out["rate"], out["channels"]), (640, 360, 25, 48000, 2))
+        self.assertFalse(out["variable"])
+        self.assertAlmostEqual(out["duration"], 2.0, delta=0.15)
+        if conform.has_filter("zscale"):
+            self.assertEqual(out["transfer"], "bt709")
+            luma = subprocess.run(["ffmpeg", "-v", "error", "-i", "phone-conformed.mov", "-frames:v", "1", "-pix_fmt",
+                                   "gray", "-f", "rawvideo", "-"], cwd=work, capture_output=True, check=True).stdout
+            mean = sum(luma) / len(luma)
+            self.assertTrue(30 < mean < 220, mean)                       # tone mapped, not black or blown out
+        self.assertIn("nothing to change", run("main.mp4", "--like", "main.mp4").stdout)
+        self.assertNotEqual(run("main.mp4", "--like", "phone.mov", "--out", "main.mp4").returncode, 0)  # never overwrites
 
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]

@@ -2,6 +2,18 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-21 · version 2.8.0
+
+### New
+- **A second camera for some lines:** film most of a video with your main camera and a few lines (the hook, the
+  ending, a close-up) with your iPhone. `scripts/conform.py` makes each iPhone clip match the main camera before
+  the edit: the same frame rate at a steady rate (phones record a variable one, which makes the sound drift), the
+  same size (a clip filmed the other way round is cropped to fill, or put on bars), HDR turned into normal video,
+  Rec.709 colour tags, and the same sound settings. `--check` only says what differs. The colour of the two
+  cameras is still matched by eye in the grade. Guide: `references/cameras.md`, Two cameras.
+- **Shot list:** when some lines go on a second camera, the shot list says which camera films each line and groups
+  the iPhone lines, so the phone is set up once.
+
 ## 2026-11-21 · version 2.7.0
 
 ### New
