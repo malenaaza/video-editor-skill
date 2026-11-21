@@ -16,8 +16,9 @@ What each update of the video-editor skill brings. Newest first.
 - **Teleprompter:** with the first script the skill asks once whether you read from a teleprompter and on which
   camera, and saves it (`Teleprompter:` in your settings). If you do, it also writes `teleprompter.txt`: only the
   words you say, no markers or numbers, directions in capitals and brackets so you don't read them out, and a pause
-  where each chapter ends. With the teleprompter on the main camera only, the iPhone lines go in the shot list to
-  learn; with one on every camera, there is a file per camera.
+  where each chapter ends. When the iPhone films from the side while you keep reading the main camera's
+  teleprompter, every line is in it, with an `(IPHONE)` reminder before the iPhone parts; lines said into a front-on
+  iPhone without a teleprompter go in the shot list to learn; with one on every camera, there is a file per camera.
 
 ### Fixed
 - `conform.py`: on newer FFmpeg (7 and later) the conformed clip came out with no colour tags, because FFmpeg now

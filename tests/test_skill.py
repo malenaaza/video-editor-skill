@@ -761,6 +761,7 @@ class SkillTest(unittest.TestCase):
         self.assertIn("Don't assume one", script)
         self.assertIn("teleprompter.txt", script)
         self.assertIn("teleprompter-iphone.txt", script)               # one file per camera when both have one
+        self.assertIn("from the side, while they keep reading", script)  # a side angle still reads every line
 
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]

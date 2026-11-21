@@ -72,9 +72,12 @@ any teleprompter app can open:
 - the `>` directions on their own line, in capitals and brackets, so they stand out and aren't read: `(LOOK AT THE
   CAMERA, SMILE)`, in the script's language;
 - a line `(PAUSE)` where a chapter ends, so there's a natural place to stop and restart.
-With the teleprompter on the main camera only, it holds only the `[main]` lines: the `[iPhone]` lines are filmed
-apart and are short, so put them at the top of the shot list to learn. With one on every camera, write
-`teleprompter-main.txt` and `teleprompter-iphone.txt`.
+The teleprompter holds every line the user reads from it. Ask where the second camera points:
+- **from the side, while they keep reading the main camera's teleprompter** (the usual way): every line goes in
+  `teleprompter.txt`, and an `(IPHONE)` line before each `[iPhone]` passage reminds them to have it recording;
+- **at them, as a second front-on angle without a teleprompter:** those lines are said into the iPhone, so put them
+  at the top of the shot list to learn instead (they are short);
+- **at them, with a teleprompter on each camera:** write `teleprompter-main.txt` and `teleprompter-iphone.txt`.
 
 ## 3. After filming: follow the script
 
