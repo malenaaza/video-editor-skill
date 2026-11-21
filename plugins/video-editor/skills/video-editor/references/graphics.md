@@ -57,8 +57,8 @@ explain better as an animation, in one line each, and make them only if the user
    of box ids, there and back for a request and its answer, `say`). The full format is at the top of
    `<skill>/scripts/explainer.py`. Keep labels short: two or three words fit in a box.
 2. **Make the props:** `python -I <skill>/scripts/explainer.py explainer.json --captions captions.json --size
-   <video size> --fps <video fps>` with the brand's colours and font (`--background`, `--box`, `--text`,
-   `--accent`, `--line`, `--font`, `--font-file`; `--background transparent` lays it over the speaker instead of
+   <video size> --fps <video fps>` with the brand's colours and font (`--palette` with the brand's colours for the boxes, in
+   turn, `--background`/`--background2` for the gradient, `--accent`, `--line`, `--font`, `--font-file`; `--background transparent` lays it over the speaker instead of
    filling the screen). It lays the boxes out (a row in a wide video, a column in a vertical one, with room for
    the arrows and their labels), works out when each piece appears from the captions, and prints that timeline
    and anything it couldn't find. A link never appears before its boxes, nor the dot before its path.

@@ -859,8 +859,8 @@ class SkillTest(unittest.TestCase):
                 "links": [{"from": "claude", "to": "mcp", "label": "pide", "say": "le pide"},
                           {"from": "mcp", "to": "gmail", "label": "conecta", "say": "habla con"}],
                 "flows": [{"path": ["claude", "mcp", "gmail", "mcp", "claude"], "say": "y vuelve"}]}
-        style = {"font": "sans-serif", "fontFile": "", "background": "#101820", "boxColor": "#FFFFFF",
-                 "textColor": "#101820", "accentColor": "#FF4F8B", "lineColor": "#FFFFFF"}
+        style = {"font": "sans-serif", "fontFile": "", "background": "#1B1033", "background2": "#0E2A47",
+                 "accentColor": "#FF4F8B", "lineColor": "#FFFFFF"}
         props, start, timeline, problems, mode = explainer.build_props(spec, captions, 1920, 1080, 25, style)
         self.assertEqual((start, mode), (when("os"), "row"))
         frames = {n["id"]: n["frame"] for n in props["nodes"]}
@@ -872,6 +872,12 @@ class SkillTest(unittest.TestCase):
         self.assertGreaterEqual(props["flows"][0]["frame"], max(frames[i] for i in ("claude", "mcp", "gmail")))  # after its path
         said_end = words[[w[2] for w in words].index("así") - 1][0]                 # "y así de fácil" starts at its "y"
         self.assertAlmostEqual(props["seconds"], said_end - start, delta=0.01)       # ends where the end phrase is said
+        colours = [n["color"] for n in props["nodes"]]
+        self.assertEqual(len(set(colours)), len(colours))                            # each box its own colour
+        self.assertEqual(explainer.readable_text("#FF4F8B"), "#FFFFFF")              # white on pink and violet...
+        self.assertEqual(explainer.readable_text("#7C5CFF"), "#FFFFFF")
+        self.assertEqual(explainer.readable_text("#22C3A6"), "#1A1A1A")              # ...dark on light teal and amber
+        self.assertEqual(explainer.readable_text("#FFB020"), "#1A1A1A")
         boxes = sorted(props["nodes"], key=lambda n: n["x"])
         for n in boxes:                                                               # inside the frame
             self.assertTrue(0 <= n["x"] - n["w"] / 2 and n["x"] + n["w"] / 2 <= 1920 and 0 <= n["y"] - n["h"] / 2)

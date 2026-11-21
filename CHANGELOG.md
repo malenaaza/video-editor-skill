@@ -10,8 +10,9 @@ What each update of the video-editor skill brings. Newest first.
   when you name it: Claude writes what the diagram has and the phrase that brings in each piece, and
   `scripts/explainer.py` finds those phrases in the captions, lays the boxes out (a row in a wide video, a column
   in a vertical one, with room for the arrows and their labels) and prints the timeline. The new Remotion template
-  `Explainer.tsx` draws it in your brand's colours and font: boxes pop in, arrows draw themselves, the dot travels
-  the path and each box glows as it passes. Full screen, or over you with a transparent background. Guide:
+  `Explainer.tsx` draws it in your brand's colours and font: each box in its own colour on a soft gradient, boxes
+  pop in, arrows draw themselves and keep moving dashes along them, a glowing dot with a short trail travels the
+  path and each box lights up as it passes. Full screen, or over you with a transparent background. Guide:
   `references/graphics.md`, Animated explanations. When Claude writes a script it proposes them itself: one to three
   passages per educational video where something is explained that can't be filmed, marked with the boxes and
   arrows, and the lines written to name each piece once and in order, so the animation follows your voice. Without a

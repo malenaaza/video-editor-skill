@@ -3,14 +3,14 @@ something works (how an MCP connects Claude to Gmail, how a request travels...),
 speaker names it.
 
   python -I explainer.py explainer.json --captions captions.json --size 1920x1080 --fps 25
-         [--font "Montserrat" --font-file fonts/Montserrat-Bold.ttf] [--background "#101820" --box "#FFFFFF"
-         --text "#101820" --accent "#FF4F8B" --line "#FFFFFF"] [--out explainer-props.json]
+         [--font "Montserrat" --font-file fonts/Montserrat-Bold.ttf] [--palette "#FF4F8B,#7C5CFF,#22C3A6"
+         --background "#1B1033" --background2 "#0E2A47" --accent "#FF4F8B" --line "#FFFFFF"] [--out explainer-props.json]
 
 explainer.json is written by Claude from the script's [GRAPHIC] note and the transcript:
   {"title": "Cómo funciona un MCP",
    "start_say": "os enseño cómo funciona",          where the graphic starts (or "start": seconds)
    "end_say": "y así de fácil",                     where it ends (or "end": seconds, or "seconds": length)
-   "nodes": [{"id": "claude", "label": "Claude", "icon": "🤖", "say": "Claude"},
+   "nodes": [{"id": "claude", "label": "Claude", "icon": "🤖", "say": "Claude"},   (optional "color" per box)
              {"id": "mcp", "label": "Servidor MCP", "say": "un servidor MCP"},
              {"id": "gmail", "label": "Gmail", "icon": "📧", "say": "tu Gmail"}],
    "links": [{"from": "claude", "to": "mcp", "label": "pide", "say": "le pide"},
@@ -24,8 +24,9 @@ found is said, and that piece is timed like one with neither. layout: "row" (lef
 bottom) or "auto" (a row in a wide video, a column in a vertical one). Up to 6 boxes.
 
 Writes the props for scripts/remotion/Explainer.tsx: every position in pixels and every time in frames from the
-graphic's start, so the template only draws. Prints when each piece appears, the render command and how to put it
-on the video. Standard library only.
+graphic's start, so the template only draws. Each box takes the next colour of --palette (the brand's colours, or a
+lively default), with white or dark text, whichever reads better on it. Prints when each piece appears, the render
+command and how to put it on the video. Standard library only.
 """
 import argparse
 import json
@@ -42,6 +43,23 @@ TAIL = 2.5        # seconds the finished diagram stays when no end is given
 DRAW = 0.5        # seconds an arrow takes to draw
 FLOW = 1.8        # seconds the dot takes along a flow's whole path
 MAX_NODES = 6
+PALETTE = "#FF4F8B,#7C5CFF,#22C3A6,#FFB020,#3BA9FF,#FF7A45"  # pink, violet, teal, amber, blue, orange
+
+
+def readable_text(colour):
+    """White when it reads well on the colour, otherwise near-black. The labels are large and bold, so WCAG's 3:1
+    for large text is enough; white on the brand's pink or violet looks livelier than black, which plain "most
+    contrast" would pick."""
+    c = colour.lstrip("#")
+    if len(c) == 3:
+        c = "".join(ch * 2 for ch in c)
+    try:
+        r, g, b = (int(c[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    except ValueError:
+        return "#FFFFFF"
+    lin = lambda v: v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    return "#FFFFFF" if 1.05 / (luminance + 0.05) >= 3.0 else "#1A1A1A"
 
 
 def stamp(seconds):
@@ -114,7 +132,7 @@ def resolve_time(item, flat, start, problems, name):
     return None
 
 
-def build_props(spec, captions, width, height, fps, style):
+def build_props(spec, captions, width, height, fps, style, palette=PALETTE.split(",")):
     flat = flat_words(captions) if captions else []
     problems = []
     nodes, links, flows = spec.get("nodes", []), spec.get("links", []), spec.get("flows", [])
@@ -186,7 +204,9 @@ def build_props(spec, captions, width, height, fps, style):
              **style, "nodes": [], "links": [], "flows": []}
     for i, node in enumerate(nodes):
         cx, cy, w, h = boxes[node["id"]]
+        colour = node.get("color") or palette[i % len(palette)]
         props["nodes"].append({"id": node["id"], "label": node["label"], "icon": node.get("icon", ""),
+                               "color": colour, "textColor": readable_text(colour),
                                "x": cx, "y": cy, "w": w, "h": h, "frame": frame(timed[("node", i)])})
     for i, link in enumerate(links):
         a, b = boxes[link["from"]], boxes[link["to"]]
@@ -210,10 +230,10 @@ def main():
     ap.add_argument("--fps", type=float, default=25)
     ap.add_argument("--font", default="sans-serif")
     ap.add_argument("--font-file", default="", help="inside the Remotion project's public folder")
-    ap.add_argument("--background", default="#101820", help='"transparent" to lay it over the speaker')
-    ap.add_argument("--box", default="#FFFFFF")
-    ap.add_argument("--text", default="#101820")
-    ap.add_argument("--accent", default="#FF4F8B")
+    ap.add_argument("--palette", default=PALETTE, help="box colours, comma-separated, used in turn (the brand's colours)")
+    ap.add_argument("--background", default="#1B1033", help='"transparent" to lay it over the speaker')
+    ap.add_argument("--background2", default="#0E2A47", help="the other end of the background gradient")
+    ap.add_argument("--accent", default="#FF4F8B", help="the travelling dot, the moving dashes and the title's line")
     ap.add_argument("--line", default="#FFFFFF")
     ap.add_argument("--out", default="explainer-props.json")
     a = ap.parse_args()
@@ -225,10 +245,11 @@ def main():
             captions = json.load(f)
     width, height = (int(v) for v in a.size.lower().split("x"))
     fps = int(a.fps) if float(a.fps).is_integer() else a.fps
-    style = {"font": a.font, "fontFile": a.font_file, "background": a.background, "boxColor": a.box,
-             "textColor": a.text, "accentColor": a.accent, "lineColor": a.line}
+    style = {"font": a.font, "fontFile": a.font_file, "background": a.background, "background2": a.background2,
+             "accentColor": a.accent, "lineColor": a.line}
+    palette = [c.strip() for c in a.palette.split(",") if c.strip()]
     try:
-        props, start, timeline, problems, mode = build_props(spec, captions, width, height, fps, style)
+        props, start, timeline, problems, mode = build_props(spec, captions, width, height, fps, style, palette)
     except ValueError as error:
         sys.exit(str(error))
     with open(a.out, "w", encoding="utf-8") as f:
