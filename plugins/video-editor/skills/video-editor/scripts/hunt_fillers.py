@@ -34,7 +34,7 @@ p.add_argument("--language", required=True)
 p.add_argument("audio")
 p.add_argument("out", nargs="?", default="hunt.json")
 p.add_argument("--model", default="small")
-p.add_argument("--engine", choices=["openai", "faster"], default="openai",
+p.add_argument("--engine", choices=["openai", "faster", "parakeet"], default="openai",
                help="openai (default) is slow: about 35 minutes for a 285 s cut on a laptop with other jobs running. "
                     "faster is several times quicker, but it missed a filler that openai caught in testing: "
                     "use it for a first look, and run openai once on the final cut")

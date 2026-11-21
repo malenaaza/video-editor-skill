@@ -39,7 +39,7 @@ Ask before installing anything. Use the system's package manager.
 
 - **FFmpeg 7 or newer** and **yt-dlp**: Windows `winget install Gyan.FFmpeg yt-dlp.yt-dlp`; macOS `brew install ffmpeg yt-dlp`; Linux the distro's packages (check the FFmpeg version; on FFmpeg 6 or older, replace `-/filter_complex <file>` in this file with `-filter_complex_script <file>`).
 - **Python 3.10 to 3.12**, with separate virtual environments, so their packages don't conflict (`speech` is always needed; `face` and `cutout` only for the features named). Put them in `~/.video-editor/`:
-  - `speech`: `pip install openai-whisper faster-whisper`. For transcription on an NVIDIA GPU, also install the CUDA 12 and cuDNN 9 libraries that faster-whisper's documentation lists, then confirm with `detect_setup.py --speech-python`.
+  - `speech`: `pip install openai-whisper faster-whisper`. Optional, to try NVIDIA Parakeet: `pip install "onnx-asr[cpu,hub]"` (its 640 MB model downloads on first use). For transcription on an NVIDIA GPU, also install the CUDA 12 and cuDNN 9 libraries that faster-whisper's documentation lists, then confirm with `detect_setup.py --speech-python`.
   - `face` (only needed for retouch, blur and the mouth check): `pip install mediapipe opencv-python numpy`, and download Google's MediaPipe models into `~/.video-editor/models/`:
     - `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`
     - `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`
@@ -60,3 +60,24 @@ On a laptop, run `python <skill>/scripts/detect_setup.py power` before long jobs
 - **"unknown"**: say it may be slower on battery, without claiming it is.
 
 The first time a long job runs on battery in a power-saving mode, time it against the same job plugged in if the user agrees, and save the result on the `Laptop:` line in `my-setup.md` (for example "transcription took 1.5x longer on battery in Best power efficiency").
+
+## Transcription engines
+
+Whisper (faster-whisper `medium`) is the default and the one every step was tuned with. **Parakeet**
+(NVIDIA parakeet-tdt-0.6b-v3, through `onnx-asr`) is an option: it understands 25 European languages including
+Spanish and English and finds the language itself. In a first test (16 s of synthetic Spanish speech, CPU only)
+it took 1.3 s against 7.1 s for Whisper medium, wrote the same words but for one ("basta" for "va hasta"), wrote
+"mmm" but dropped an "eh" as Whisper did, and its word starts were as close to the real starts of speech
+(0.13 s off on average against 0.10 s). That says nothing yet about a real voice or a long recording, where
+Whisper's word times drifted up to 1 s around pauses. So compare on the user's own voice before switching:
+
+```
+<speech python> -I <skill>/scripts/asrcompare.py <recording> --start 60 --seconds 120 --language es
+```
+
+Pick two minutes with pauses, a filler or two and the brand's names. It prints each engine's speed, its text,
+the words where they disagree (read them), the fillers each wrote and how far each one's word starts are from
+where speech really starts after each pause, measured on the sound. Tell the user the result in plain words
+and save their choice as `Transcription engine:` in `my-setup.md`. `hear.py`, `checkcuts.py` and
+`hunt_fillers.py` take `--engine parakeet` too.
+
