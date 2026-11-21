@@ -904,6 +904,9 @@ class SkillTest(unittest.TestCase):
         self.assertIn("box \"Claude\"", out)
         self.assertIn("remotion render", out)
         self.assertTrue((self.dir / "ex-props.json").exists())
+        guide = (ROOT / "references" / "script.md").read_text("utf-8")
+        self.assertIn("Propose the animated explanations yourself", guide)          # proposed when writing, not asked for
+        self.assertIn("name each piece once", guide)                                  # so the voice brings each box in
 
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]

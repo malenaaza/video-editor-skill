@@ -12,7 +12,10 @@ What each update of the video-editor skill brings. Newest first.
   in a vertical one, with room for the arrows and their labels) and prints the timeline. The new Remotion template
   `Explainer.tsx` draws it in your brand's colours and font: boxes pop in, arrows draw themselves, the dot travels
   the path and each box glows as it passes. Full screen, or over you with a transparent background. Guide:
-  `references/graphics.md`, Animated explanations. A `[GRAPHIC]` note in a script can describe one.
+  `references/graphics.md`, Animated explanations. When Claude writes a script it proposes them itself: one to three
+  passages per educational video where something is explained that can't be filmed, marked with the boxes and
+  arrows, and the lines written to name each piece once and in order, so the animation follows your voice. Without a
+  script, it suggests passages after reading the transcript.
 
 ## 2026-11-21 · version 2.8.0
 

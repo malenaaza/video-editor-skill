@@ -46,7 +46,9 @@ Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`tr
 For a part of an educational video that explains how something works (how an MCP connects Claude to Gmail, how a
 request travels, the steps of a process): boxes, arrows between them and an accent-coloured dot that travels the
 path, each piece appearing as the speaker names it. The voice goes on underneath. It comes from the script's
-`[GRAPHIC]` notes (`references/script.md`), or from a part the user points at after filming.
+`[GRAPHIC]` notes (`references/script.md`: Claude proposes them when writing the script), or from a part the user
+points at after filming. Without a script, after reading the transcript, suggest one or two passages that would
+explain better as an animation, in one line each, and make them only if the user wants them.
 
 1. **Write `explainer.json`** in the build folder, from the transcript of the cut: the title, where it starts and
    ends (`start_say`/`end_say`, phrases the speaker says, or seconds), up to 6 boxes (`nodes`: `id`, a short
