@@ -44,7 +44,9 @@ Este es el resultado final. ¿Qué os parece?
   that work with no context: the first line is its own hook, no "as I said before", and it ends on a complete idea.
   Give each a title that works as the Short's hook on screen.
 - **Screen recordings and graphics:** a `[SCREEN]` line before the line it illustrates, saying exactly what to show;
-  a `[GRAPHIC]` line for a diagram or a list to animate. Switch between the speaker and screen or graphics every 20 to
+  a `[GRAPHIC]` line for a diagram or a list to animate (an explanation of how something works becomes an
+  animated explanation: `references/graphics.md`, Animated explanations; write the boxes and the phrases that
+  bring each one in, so it's easy to build later). Switch between the speaker and screen or graphics every 20 to
   40 seconds, so the video keeps moving.
 - **The end:** the takeaway in one line, then the call to action.
 

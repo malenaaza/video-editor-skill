@@ -836,6 +836,75 @@ class SkillTest(unittest.TestCase):
         self.assertNotEqual(refused.returncode, 0)                         # a clip of another size: conform first
         self.assertIn("conform.py", refused.stderr)
 
+    def test_76_animated_explanation(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import explainer
+        said = ("os enseño cómo funciona un MCP . Por un lado está Claude . Y por otro un servidor MCP . "
+                "Claude le pide algo al servidor . y este habla con tu Gmail . y vuelve con la respuesta . y así de fácil").split()
+        t, words = 40.0, []
+        for w in said:
+            if w == ".":
+                t += 0.5
+                continue
+            words.append([round(t, 2), round(t + 0.3, 2), w])
+            t += 0.35
+        captions = [{"start": words[i][0], "end": words[min(i + 5, len(words) - 1)][1],
+                     "text": " ".join(x[2] for x in words[i:i + 6]), "words": words[i:i + 6]} for i in range(0, len(words), 6)]
+        when = lambda word: next(w[0] for w in words if w[2] == word)
+        spec = {"title": "Cómo funciona un MCP", "start_say": "os enseño", "end_say": "y así de fácil",
+                "nodes": [{"id": "claude", "label": "Claude", "icon": "🤖", "say": "está Claude"},
+                          {"id": "mcp", "label": "Servidor MCP", "say": "un servidor MCP"},
+                          {"id": "gmail", "label": "Gmail", "say": "tu Gmail"},
+                          {"id": "drive", "label": "Drive", "say": "tu Drive"}],             # never said
+                "links": [{"from": "claude", "to": "mcp", "label": "pide", "say": "le pide"},
+                          {"from": "mcp", "to": "gmail", "label": "conecta", "say": "habla con"}],
+                "flows": [{"path": ["claude", "mcp", "gmail", "mcp", "claude"], "say": "y vuelve"}]}
+        style = {"font": "sans-serif", "fontFile": "", "background": "#101820", "boxColor": "#FFFFFF",
+                 "textColor": "#101820", "accentColor": "#FF4F8B", "lineColor": "#FFFFFF"}
+        props, start, timeline, problems, mode = explainer.build_props(spec, captions, 1920, 1080, 25, style)
+        self.assertEqual((start, mode), (when("os"), "row"))
+        frames = {n["id"]: n["frame"] for n in props["nodes"]}
+        self.assertEqual(frames["claude"], round((when("está") - start) * 25))       # appears as it's named
+        self.assertEqual(frames["drive"], frames["gmail"] + round(explainer.GAP * 25))  # not said: just after the one before
+        self.assertTrue(any("tu Drive" in p for p in problems))
+        link = props["links"][1]
+        self.assertGreaterEqual(link["frame"], frames["gmail"])                       # never before its boxes
+        self.assertGreaterEqual(props["flows"][0]["frame"], max(frames[i] for i in ("claude", "mcp", "gmail")))  # after its path
+        said_end = words[[w[2] for w in words].index("así") - 1][0]                 # "y así de fácil" starts at its "y"
+        self.assertAlmostEqual(props["seconds"], said_end - start, delta=0.01)       # ends where the end phrase is said
+        boxes = sorted(props["nodes"], key=lambda n: n["x"])
+        for n in boxes:                                                               # inside the frame
+            self.assertTrue(0 <= n["x"] - n["w"] / 2 and n["x"] + n["w"] / 2 <= 1920 and 0 <= n["y"] - n["h"] / 2)
+        for a, b in zip(boxes, boxes[1:]):                                            # room for an arrow and its label
+            self.assertGreater((b["x"] - b["w"] / 2) - (a["x"] + a["w"] / 2), props["fontSize"] * 2)
+        for l in props["links"]:                                                      # arrows start and end outside the boxes
+            a = next(n for n in props["nodes"] if n["id"] == l["from"])
+            self.assertGreater(abs(l["x1"] - a["x"]), a["w"] / 2)
+        tall, _, _, _, tall_mode = explainer.build_props(spec, captions, 1080, 1920, 25, style)
+        self.assertEqual(tall_mode, "column")
+        self.assertEqual(tall["labelSide"], "right")
+        self.assertEqual(len({n["x"] for n in tall["nodes"]}), 1)                     # one column, centred
+        with self.assertRaises(ValueError):                                           # an arrow to a box that isn't there
+            explainer.build_props(dict(spec, links=[{"from": "claude", "to": "slack"}]), captions, 1920, 1080, 25, style)
+        with self.assertRaises(ValueError):                                           # too many boxes to read
+            explainer.build_props(dict(spec, nodes=[{"id": str(i), "label": str(i)} for i in range(7)], links=[], flows=[]),
+                                  captions, 1920, 1080, 25, style)
+        # the template draws exactly what the script writes
+        tsx = (SCRIPTS / "remotion" / "Explainer.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("nodes: [], links: [], flows: []", default_props)            # sample boxes would leak into videos
+        for key in list(props["nodes"][0]) + list(props["links"][0]) + list(props["flows"][0]):
+            self.assertRegex(tsx, rf"\b{key}\??:", key)
+        for key in props:
+            if key not in ("nodes", "links", "flows"):
+                self.assertRegex(tsx, rf"\b{key}\??:", key)
+        (self.dir / "ex.json").write_text(json.dumps(spec, ensure_ascii=False), "utf-8")
+        (self.dir / "ex-caps.json").write_text(json.dumps(captions, ensure_ascii=False), "utf-8")
+        out = script("explainer.py", "ex.json", "--captions", "ex-caps.json", "--out", "ex-props.json", cwd=self.dir)
+        self.assertIn("box \"Claude\"", out)
+        self.assertIn("remotion render", out)
+        self.assertTrue((self.dir / "ex-props.json").exists())
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

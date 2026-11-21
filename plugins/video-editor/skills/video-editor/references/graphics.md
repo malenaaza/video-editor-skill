@@ -29,6 +29,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `CoverCard` | Cover image with the products (see `references/cover.md`) | `background`, `products` (one `image` each), `faceX`/`faceY`/`faceSize`, `lines` | a still: `npx remotion still` |
 | `Thumbnail` | YouTube thumbnail, 1280x720: the face big on one side, a few huge words on the other (see `references/cover.md`) | `background`, `bgWidth`/`bgHeight`, `faceX`/`faceY`/`faceSize`, `lines` | a still: `npx remotion still` |
 | `WordCaptions` | Word highlight captions: a box in the accent colour behind each word as it's said (see below) | written by `captions.py --remotion-props` | the whole video |
+| `Explainer` | An animated explanation in an educational video: boxes, arrows and a moving dot showing how something works, each piece appearing as the speaker names it (see Animated explanations below) | written by `explainer.py` | the stretch it explains |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
@@ -39,6 +40,35 @@ Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`tr
 - **ProductTag:** show it when the product is first named or held up, starting a few frames after the name is said. Use it only for the main products, once each, unless asked for more. Keep it above the caption area from `my-setup.md` and on the side away from the speaker's face and the product. Put the price only if the user gave it or it's said in the video; never guess a price.
 - **Placing:** the same as emojis: `setpts=PTS-STARTPTS+<frame>/(<fps>*TB)` and `overlay=0:0:format=rgb:eof_action=pass`, with `format=rgba` on both inputs.
 - **Check:** look at one frame mid-animation and one fully shown for each graphic, on the real footage: text readable, nothing covering the face, product, captions or logo.
+
+## Animated explanations
+
+For a part of an educational video that explains how something works (how an MCP connects Claude to Gmail, how a
+request travels, the steps of a process): boxes, arrows between them and an accent-coloured dot that travels the
+path, each piece appearing as the speaker names it. The voice goes on underneath. It comes from the script's
+`[GRAPHIC]` notes (`references/script.md`), or from a part the user points at after filming.
+
+1. **Write `explainer.json`** in the build folder, from the transcript of the cut: the title, where it starts and
+   ends (`start_say`/`end_say`, phrases the speaker says, or seconds), up to 6 boxes (`nodes`: `id`, a short
+   `label`, an optional `icon` emoji, and the phrase that brings it in, `say`), the arrows (`links`: `from`, `to`,
+   an optional one- or two-word `label`, `both` for a two-way arrow, `say`) and the dot's trips (`flows`: a `path`
+   of box ids, there and back for a request and its answer, `say`). The full format is at the top of
+   `<skill>/scripts/explainer.py`. Keep labels short: two or three words fit in a box.
+2. **Make the props:** `python -I <skill>/scripts/explainer.py explainer.json --captions captions.json --size
+   <video size> --fps <video fps>` with the brand's colours and font (`--background`, `--box`, `--text`,
+   `--accent`, `--line`, `--font`, `--font-file`; `--background transparent` lays it over the speaker instead of
+   filling the screen). It lays the boxes out (a row in a wide video, a column in a vertical one, with room for
+   the arrows and their labels), works out when each piece appears from the captions, and prints that timeline
+   and anything it couldn't find. A link never appears before its boxes, nor the dot before its path.
+3. **Show the user** the timeline in one short message, then render a few stills before the whole clip
+   (`npx remotion still src/index.ts Explainer out/f.png --props=explainer-props.json --frame=<n>`): one with
+   every box, one with the dot halfway. Then render it and place it with the FFmpeg line it prints.
+4. **Check** on the real video: every piece appears as it's named, nothing covers the captions (put the captions
+   over the explanation, or raise them), and the text is readable on a phone.
+
+The template only draws what `explainer.py` computed, so a different diagram never needs a change to
+`Explainer.tsx`. For something it can't show (a chart, a screen, a photo), use the other templates or a screen
+recording.
 
 ## Product pop-in from B-roll
 
