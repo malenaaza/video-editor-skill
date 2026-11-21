@@ -44,11 +44,24 @@ Este es el resultado final. ¿Qué os parece?
   that work with no context: the first line is its own hook, no "as I said before", and it ends on a complete idea.
   Give each a title that works as the Short's hook on screen.
 - **Screen recordings and graphics:** a `[SCREEN]` line before the line it illustrates, saying exactly what to show;
-  a `[GRAPHIC]` line for a diagram or a list to animate. Switch between the speaker and screen or graphics every 20 to
-  40 seconds, so the video keeps moving.
+  a `[GRAPHIC]` line for a diagram or a list to animate. Switch between the speaker and screen or graphics every 20
+  to 40 seconds, so the video keeps moving.
+- **Propose the animated explanations yourself:** don't wait to be asked. In an educational video, look for the
+  passages where the speaker explains how something works that can't be filmed: how parts connect (Claude, an MCP
+  server and Gmail), how a request goes and comes back, the steps of a process, what talks to what. Mark one to
+  three of them per video (not every passage: they lose their effect), each as a `[GRAPHIC]` line with the boxes in
+  order, the arrows and the dot's trip, for example
+  `[GRAPHIC] explanation: Claude 🤖, Servidor MCP 🔌, Gmail 📧; Claude -> Servidor MCP "pide"; Servidor MCP -> Gmail
+  "conecta"; dot: Claude > Gmail > Claude`. Then **write the lines under it so they name each piece once, clearly,
+  in the order it should appear** ("Por un lado está Claude. Por otro, un servidor MCP. Claude le pide algo al
+  servidor, y este habla con tu Gmail..."): those words are what bring each box in (`say` in `explainer.json`,
+  `references/graphics.md`, Animated explanations), so the animation follows the voice with no extra work. Keep a
+  passage like that to 10 to 30 seconds and up to 6 boxes.
 - **The end:** the takeaway in one line, then the call to action.
 
-Show the user the script and adjust it with them before they film.
+Show the user the script and adjust it with them before they film. Point out the animated explanations you
+marked, in one line each ("At 'cómo funciona un MCP' an animation: Claude, the MCP server and Gmail with arrows"), so
+they can drop or add one.
 
 ## 2. The shot list
 

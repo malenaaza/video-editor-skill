@@ -2,6 +2,24 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-21 · version 2.9.0
+
+### New
+- **Animated explanations** for educational videos: boxes, arrows and a dot that travels between them, showing how
+  something works (how an MCP connects Claude to your Gmail, how a request goes and comes back). Each piece appears
+  when you name it: Claude writes what the diagram has and the phrase that brings in each piece, and
+  `scripts/explainer.py` finds those phrases in the captions, lays the boxes out (a row in a wide video, a column
+  in a vertical one, with room for the arrows and their labels) and prints the timeline. The new Remotion template
+  `Explainer.tsx` draws it in your brand's colours and font: each box in its own colour on a soft gradient, boxes
+  pop in, arrows draw themselves and keep moving dashes along them, a glowing dot with a short trail travels the
+  path and each box lights up as it passes. It comes with its own sound effects, timed to the picture: a
+  pop as each box appears, a soft whoosh for each arrow and as the dot sets off, a tick at each box it reaches and
+  a sparkle when it arrives (`explainer-sfx.wav`, mixed under your voice). Full screen, or over you with a transparent background. Guide:
+  `references/graphics.md`, Animated explanations. When Claude writes a script it proposes them itself: one to three
+  passages per educational video where something is explained that can't be filmed, marked with the boxes and
+  arrows, and the lines written to name each piece once and in order, so the animation follows your voice. Without a
+  script, it suggests passages after reading the transcript.
+
 ## 2026-11-21 · version 2.8.0
 
 ### New
