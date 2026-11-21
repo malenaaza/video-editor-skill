@@ -754,6 +754,14 @@ class SkillTest(unittest.TestCase):
         self.assertIn("nothing to change", run("main.mp4", "--like", "main.mp4").stdout)
         self.assertNotEqual(run("main.mp4", "--like", "phone.mov", "--out", "main.mp4").returncode, 0)  # never overwrites
 
+    def test_74_teleprompter_is_asked_not_assumed(self):
+        setup = (ROOT / "setup-template.md").read_text("utf-8")
+        self.assertIn("Teleprompter: <not asked yet", setup)
+        script = (ROOT / "references" / "script.md").read_text("utf-8")
+        self.assertIn("Don't assume one", script)
+        self.assertIn("teleprompter.txt", script)
+        self.assertIn("teleprompter-iphone.txt", script)               # one file per camera when both have one
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

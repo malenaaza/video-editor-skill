@@ -121,6 +121,11 @@ def plan(main, clip, fit="crop", zscale=True):
                          "head isn't cut, or use --fit pad. Film both cameras the same way round next time.")
             vf.append(f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H}")
     vf.append(f"setsar=1,format={main['pix_fmt']}")
+    if tags:
+        # Newer FFmpeg (7 and later) takes the colour tags from the frames, not from -color_trc and friends,
+        # and its scale filter leaves them unset: without this the output had no tags at all.
+        vf.append(f"setparams=color_primaries={tags['color_primaries']}:color_trc={tags['color_trc']}:"
+                  f"colorspace={tags['colorspace']}")
     af = None
     if main["rate"] and clip["rate"]:
         af = f"aresample={main['rate']}"

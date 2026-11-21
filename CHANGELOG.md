@@ -13,6 +13,19 @@ What each update of the video-editor skill brings. Newest first.
   cameras is still matched by eye in the grade. Guide: `references/cameras.md`, Two cameras.
 - **Shot list:** when some lines go on a second camera, the shot list says which camera films each line and groups
   the iPhone lines, so the phone is set up once.
+- **Teleprompter:** with the first script the skill asks once whether you read from a teleprompter and on which
+  camera, and saves it (`Teleprompter:` in your settings). If you do, it also writes `teleprompter.txt`: only the
+  words you say, no markers or numbers, directions in capitals and brackets so you don't read them out, and a pause
+  where each chapter ends. With the teleprompter on the main camera only, the iPhone lines go in the shot list to
+  learn; with one on every camera, there is a file per camera.
+
+### Fixed
+- `conform.py`: on newer FFmpeg (7 and later) the conformed clip came out with no colour tags, because FFmpeg now
+  takes them from the frames; they are now set on the frames too.
+- `voice/leveljoin.py` (joining clips at one loudness) stopped with an error on FFmpeg 8 and later, which removed
+  the `-filter_complex_script` option it used. It now passes the filter directly, which works on every version.
+- With a second camera, the script's report is read per camera: lines filmed on the other camera are expected to be
+  missing.
 
 ## 2026-11-21 · version 2.7.0
 
