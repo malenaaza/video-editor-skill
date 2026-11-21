@@ -70,22 +70,26 @@ if the user can't find one, ask what they see and guide them from there.
 
 ## Two cameras: the main one, and an iPhone for some lines
 
-The easy way to change angle: the main camera films most of the video and the iPhone films a few lines (the hook,
-the ending, a close-up). They don't film at the same time, so there is nothing to sync: each take is its own clip
-and the angle changes where one clip ends and the next begins, between sentences. Filming everything with both at
-once is real multicam; the skill doesn't do it, and it's much more work while filming.
+The main camera films the whole video and a second camera (usually an iPhone) films a few parts from another
+angle: the hook, the ending, a side view. **Ask once how they film**, the first time a second camera appears,
+and save it in `my-setup.md` as `Second camera:`. Don't assume:
+
+- **at the same time:** the main camera keeps recording, and the iPhone records some parts from the side while
+  they keep talking to the main camera (and its teleprompter, if any). The best way: one take, one sound, and the
+  picture can switch anywhere, even in the middle of a sentence. Sync it (below).
+- **separate takes:** they stop the main camera and say some lines into the iPhone. Each take is its own clip and
+  the angle changes between clips, between sentences. Nothing to sync.
 
 **Before filming,** tell the user once:
 - the same frame rate on both (25 fps in Spain; iPhone: Settings > Camera > Record Video, Show PAL Formats), and
   HDR Video off on the iPhone;
 - the iPhone on a stand, with exposure and focus locked (press and hold on the screen);
-- the same light, clothes and position in every take, and the same microphone for both if they have one, because
-  the two cameras' own sound differs;
-- film the iPhone lines one after another, not swapping camera every sentence. Mark them in the shot list
-  (`references/script.md`).
+- at the same time: keep the iPhone's microphone on, even though its sound isn't used (the sync needs it), and
+  start it a second before the part and stop it a second after. Separate takes: the same light, clothes and position
+  in every take, and the same microphone for both if they have one, because the two cameras' own sound differs;
+- mark the iPhone parts in the shot list (`references/script.md`).
 
-**In the edit,** run the footage check (above) once for the iPhone, then make each iPhone clip match the main camera
-before transcribing it:
+**In the edit, first make each iPhone clip match the main camera** (and run the footage check above once for it):
 
 ```
 python -I <skill>/scripts/conform.py <iphone clip> --like <main camera clip> --check
@@ -95,10 +99,28 @@ python -I <skill>/scripts/conform.py <iphone clip> --like <main camera clip> --e
 `--check` only lists what differs. Without it, it writes `<clip>-conformed.mov`: the main camera's frame rate at a
 constant rate (phones record a variable one, which makes the sound drift), its size (a clip filmed the other way
 round is cropped to fill, or `--fit pad` for bars), HDR tone mapped to SDR, Rec.709 tags, and the main camera's
-sample rate and channels. Tell the user the lines it prints in one short message. Then the clips go through the
-usual steps, and their voices are joined at one loudness with `voice/leveljoin.py` (`references/sound.md`).
+sample rate and channels. Tell the user the lines it prints in one short message.
 
-**Colour is not matched by the script:** the two cameras' white balance, contrast and saturation differ. Put a
-frame of each side by side, correct the iPhone clips in the grade until skin and the background match, and show
-the user the pair before the full render.
+**At the same time: sync, then build one recording.** Before transcribing:
 
+```
+<speech python> -I <skill>/scripts/syncclip.py find <main recording> <conformed iphone clip> [<more clips>]
+<speech python> -I <skill>/scripts/syncclip.py build <main recording> --encoder "<in-between encoder>"
+```
+
+`find` compares the sounds and prints where each clip starts in the main recording, how sure the match is, and the
+stretch where its picture will be used: the whole time it recorded, less a second at each end. It writes
+`angles.json`; a clip whose sound doesn't clearly match (another take, no speech) is reported and left out. Tell the
+user the stretches; if they want the iPhone only for part of one, or a cut at a particular line, change `from` and
+`to` there (seconds in the main recording; use the transcript to find a line's time), or split one into two entries.
+`build` writes `angles.mov`: the main recording with the iPhone's picture in those stretches and the main camera's
+sound throughout. Use `angles.mov` as the source for everything after (transcribe, `cutplan.py`, retouch, captions):
+cuts then apply to both angles at once. If `find` says the clocks drift, the clip wasn't conformed, or use shorter
+stretches.
+
+**Separate takes:** the conformed clips go through the usual steps one by one, and their voices are joined at one
+loudness with `voice/leveljoin.py` (`references/sound.md`).
+
+**Colour is not matched by the scripts:** the two cameras' white balance, contrast and saturation differ. Put a
+frame of each side by side, correct the iPhone picture in the grade until skin and the background match, and show
+the user the pair before the full render. With `angles.mov`, grade before `build`, on the conformed iPhone clip.

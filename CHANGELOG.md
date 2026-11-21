@@ -11,6 +11,13 @@ What each update of the video-editor skill brings. Newest first.
   same size (a clip filmed the other way round is cropped to fill, or put on bars), HDR turned into normal video,
   Rec.709 colour tags, and the same sound settings. `--check` only says what differs. The colour of the two
   cameras is still matched by eye in the grade. Guide: `references/cameras.md`, Two cameras.
+- **Second camera at the same time:** when the main camera keeps recording and the iPhone films some parts from the
+  side, `scripts/syncclip.py find` finds where each iPhone clip starts in the main recording by comparing their
+  sound (to about a millisecond; a clip that doesn't clearly match is reported, not used, and drifting clocks are
+  flagged), and proposes using its picture for the whole time it recorded. `build` then writes one recording with
+  the iPhone's picture in those stretches and the main camera's sound throughout, so the voice never changes and
+  the rest of the edit works on it unchanged. The skill asks once how you film with a second camera (at the same
+  time or in separate takes) and saves it as `Second camera:`.
 - **Shot list:** when some lines go on a second camera, the shot list says which camera films each line and groups
   the iPhone lines, so the phone is set up once.
 - **Teleprompter:** with the first script the skill asks once whether you read from a teleprompter and on which

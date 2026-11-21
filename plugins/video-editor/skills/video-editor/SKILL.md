@@ -29,7 +29,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 
 Each step works on the result of the one before. Skip the steps a video doesn't need.
 
-1. Find or start the project folder and its `project.md` (Rule 2). Copy the original into it. Log footage: convert to a light copy first (`references/log.md`). Clips from a second camera (an iPhone used for some lines): run `scripts/conform.py` on each against a clip from the main camera, and use the conformed copies from here on (`references/cameras.md`, Two cameras).
+1. Find or start the project folder and its `project.md` (Rule 2). Copy the original into it. Log footage: convert to a light copy first (`references/log.md`). Clips from a second camera (an iPhone filming some parts): ask once whether the main camera kept recording, run `scripts/conform.py` on each, and if it did, put them into one recording with `scripts/syncclip.py` before transcribing (`references/cameras.md`, Two cameras).
 2. Transcribe (Rule 3). Measure the voice's noise on the original (Rule 7).
 3. Decide the cuts: retakes, pauses, fillers. Build `plan.json` with `cutplan.py` (Rule 3).
 4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, white balance if the user wants it (Rule 8), grade, zooms. No text yet. (If the grade changes later, build masks on the render the colour keys were sampled on: `references/retouch.md`.)

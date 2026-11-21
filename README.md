@@ -24,7 +24,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp (and isn't added when your camera already blurred the background), a part in black and white, a slow push in on your face at a key line
 - Makes its own folders: at first setup it asks where to keep working files (suggesting `~/video-work`), checks that the folder isn't in OneDrive, iCloud, Dropbox or Google Drive (where big videos time out), and creates it and a folder for each video. You never make folders by hand
 - Pixelates the faces of other people in the shot (bystanders, customers, children) and keeps yours sharp: it follows every face, shows you a sheet to check, covers moments the detector loses, and checks the result for any face left visible. People who are small or far away (shop staff and customers in the background) need the thorough search; it hides faces only, not voices or name tags
-- A second camera for some lines: film most of the video with your main camera and a few lines with your iPhone, and it makes the iPhone clips match (same frame rate, at a steady rate, same size, HDR turned into normal video, same sound settings) and marks in the shot list which lines go on which camera
+- A second camera for some parts: your main camera films the whole video and your iPhone films a few parts from another angle. Filmed at the same time, it syncs them by their sound and switches to the iPhone's picture for those parts while your voice stays the main camera's; filmed as separate takes, it joins them. Either way it makes the iPhone clips match first (same frame rate, at a steady rate, same size, HDR turned into normal video) and marks in the shot list which parts go on which camera
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
 - Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
@@ -122,6 +122,7 @@ plugins/video-editor/
       chapters.py          YouTube chapters for the description, checked against YouTube's rules
       footcheck.py         reads how a video was recorded (camera, app, settings) and says what to change next time
       conform.py           makes a clip from a second camera (an iPhone) match the main camera before the edit
+      syncclip.py          syncs a second camera filmed at the same time by its sound and puts its picture into the main recording
       screen.py            screen recordings: smooth zooms onto the action, and screen-above-speaker Shorts
       scriptcut.py         follows your script in the edit: keeps the last good take of each line, finds chapters and Shorts
       shorts.py            cuts the Shorts out of the long video, with their words for vertical captions

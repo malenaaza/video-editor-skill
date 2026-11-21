@@ -56,9 +56,10 @@ Write `shotlist.md` next to it, for filming in one sitting:
 1. **Camera:** every spoken line in order, numbered, with the `>` directions. Remind the user to repeat a line from
    its start when they trip (the last complete take is kept), to film horizontal in 4K with the speaker in the middle
    third if Shorts will be cut (Rule 6), and to pause a second before each line.
-   When the user films some lines with a second camera (an iPhone for the hook, the ending or a close-up), add
-   which camera films each line, `[main]` or `[iPhone]`, and group the iPhone lines so the phone is set up once.
-   Two or three per video are plenty. The settings to match are in `references/cameras.md`, Two cameras.
+   When the user films some parts with a second camera (an iPhone for the hook, the ending or a side view), add
+   which camera films each line, `[main]` or `[iPhone]`. Filming at the same time, the `[iPhone]` marks say when to
+   have it recording; in separate takes, group the iPhone lines so the phone is set up once. Two or three parts per
+   video are plenty. The settings to match are in `references/cameras.md`, Two cameras.
 2. **Screen recordings:** every `[SCREEN]` note as a separate short clip to record, with the tips in Rule 6
    (bigger text, Do Not Disturb, nothing private on screen).
 3. **Graphics:** the `[GRAPHIC]` notes, made later in the edit.
@@ -87,8 +88,9 @@ Transcribe the camera recording (Rule 3), then in the build folder:
 python -I <skill>/scripts/scriptcut.py script.md <transcript.json> --cuts cuts.json
 ```
 
-With a second camera, transcribe and run this on each camera's recording: the `[iPhone]` lines are expected
-to show as not said in the main camera's report, and the other way round, so only report lines missing from both.
+With a second camera filming at the same time, run this on `angles.mov` (`references/cameras.md`), which has every
+line. In separate takes, run it on each camera's recording: the `[iPhone]` lines are expected to show as not said in
+the main camera's report, and the other way round, so only report lines missing from both.
 
 It keeps the last take that says at least 80% of each line, removes the other takes and the false starts (two or
 more words, then a restart), and writes `script-report.md`. Read the report and tell the user, briefly:

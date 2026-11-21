@@ -757,11 +757,84 @@ class SkillTest(unittest.TestCase):
     def test_74_teleprompter_is_asked_not_assumed(self):
         setup = (ROOT / "setup-template.md").read_text("utf-8")
         self.assertIn("Teleprompter: <not asked yet", setup)
+        self.assertIn("Second camera: <not asked yet", setup)               # how they film with two cameras: asked too
+        self.assertIn("Ask once how they film", (ROOT / "references" / "cameras.md").read_text("utf-8"))
         script = (ROOT / "references" / "script.md").read_text("utf-8")
         self.assertIn("Don't assume one", script)
         self.assertIn("teleprompter.txt", script)
         self.assertIn("teleprompter-iphone.txt", script)               # one file per camera when both have one
         self.assertIn("from the side, while they keep reading", script)  # a side angle still reads every line
+
+    def test_75_second_camera_at_the_same_time(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy not installed")
+        import wave
+        work = self.dir / "sync"
+        work.mkdir()
+
+        def speechy(seconds, seed):                                   # syllable-like bursts, like speech
+            r = np.random.default_rng(seed)
+            n = int(seconds * 48000)
+            env, t = np.zeros(n), 0
+            while t < n:
+                length = int(r.uniform(.08, .25) * 48000)
+                env[t:t + length] = np.hanning(length)[:len(env[t:t + length])] * r.uniform(.3, 1)
+                t += length + int(r.uniform(.05, .4) * 48000)
+            return env * (np.sin(2 * np.pi * np.cumsum(r.uniform(120, 220, n)) / 48000) + .3 * r.standard_normal(n)) * .3
+
+        def save(name, x):
+            with wave.open(str(work / name), "wb") as w:
+                w.setnchannels(1)
+                w.setsampwidth(2)
+                w.setframerate(48000)
+                w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
+
+        main = speechy(20, 1)
+        save("main.wav", main)
+        other_mic = lambda x: np.convolve(x, np.ones(8) / 8, mode="same") * .5 + .01 * np.random.default_rng(2).standard_normal(len(x))
+        save("phone.wav", other_mic(main[int(6.3 * 48000):int(14.3 * 48000)]))            # starts at 6.3 s
+        save("early.wav", other_mic(np.concatenate([speechy(1, 5), main[:5 * 48000]])))   # started 1 s before the main one
+        save("other.wav", speechy(8, 99))                                                  # another take altogether
+        ff = lambda *args: subprocess.run(["ffmpeg", "-v", "error", "-y", *args], cwd=work, check=True)
+        ff("-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=20", "-i", "main.wav", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+           "-c:a", "aac", "-shortest", "main.mp4")
+        for name, colour, seconds in (("phone", "red", 8), ("early", "green", 6), ("other", "blue", 8)):
+            ff("-f", "lavfi", "-i", f"color=c={colour}:s=320x180:r=25:d={seconds}", "-i", f"{name}.wav", "-c:v", "libx264",
+               "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", f"{name}.mp4")
+        run = lambda *args: subprocess.run([sys.executable, "-I", str(SCRIPTS / "syncclip.py"), *args], cwd=work,
+                                          capture_output=True, text=True, encoding="utf-8")
+        found = run("find", "main.mp4", "phone.mp4", "early.mp4", "other.mp4")
+        self.assertEqual(found.returncode, 0, found.stdout + found.stderr)
+        angles = json.loads((work / "angles.json").read_text("utf-8"))["angles"]
+        offsets = {a["clip"]: a["offset"] for a in angles}
+        self.assertAlmostEqual(offsets["phone.mp4"], 6.3, delta=0.01)      # found to the frame and better
+        self.assertAlmostEqual(offsets["early.mp4"], -1.0, delta=0.01)     # a clip that started first
+        self.assertNotIn("other.mp4", offsets)                             # another take is not trusted
+        self.assertIn("NOT SURE", found.stdout)
+        phone = next(a for a in angles if a["clip"] == "phone.mp4")
+        self.assertAlmostEqual(phone["from"], 7.32, delta=0.001)           # the margin, rounded inwards to whole frames
+        built = run("build", "main.mp4")
+        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
+
+        def colour_at(t):
+            raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", "angles.mov", "-frames:v", "1",
+                                  "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], cwd=work, capture_output=True).stdout
+            return np.frombuffer(raw, np.uint8).reshape(-1, 3).mean(axis=0)
+        self.assertGreater(colour_at(10)[0], 200)                          # the iPhone's picture in its stretch
+        self.assertLess(colour_at(7.24)[0], 200)                           # the main camera's just before it
+        self.assertLess(colour_at(16)[0], 200)                             # and after it
+        self.assertGreater(colour_at(2)[1], 100)                           # the early clip, from 0 s on
+        pcm = lambda f: subprocess.run(["ffmpeg", "-v", "error", "-i", f, "-map", "0:a", "-f", "s16le", "-"], cwd=work,
+                                       capture_output=True).stdout
+        self.assertEqual(pcm("angles.mov"), pcm("main.mp4"))               # the main camera's sound, untouched
+        ff("-f", "lavfi", "-i", "color=c=red:s=640x360:r=25:d=8", "-i", "phone.wav", "-c:v", "libx264", "-shortest", "big.mp4")
+        (work / "big.json").write_text(json.dumps({"main": "main.mp4", "angles": [
+            {"clip": "big.mp4", "offset": 6.3, "from": 7, "to": 9}]}), "utf-8")
+        refused = run("build", "main.mp4", "--angles", "big.json", "--out", "x.mov")
+        self.assertNotEqual(refused.returncode, 0)                         # a clip of another size: conform first
+        self.assertIn("conform.py", refused.stderr)
 
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
