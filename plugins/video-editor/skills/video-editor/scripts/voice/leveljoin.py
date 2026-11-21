@@ -80,7 +80,11 @@ def main():
     final, peak = None, None
     for attempt in range(4):
         write_filter(a.filter_file, a.clips, gains, durations, a.rate, total, a.limit)
-        run(["ffmpeg", "-nostdin", "-hide_banner", "-y", *inputs, "-filter_complex_script", a.filter_file, "-map", "[a]",
+        # The graph is passed as text: -filter_complex_script is gone in FFmpeg 8 and later, and -/filter_complex
+        # needs 7, so a file option would break on one side or the other. The file stays, to read or reuse.
+        with open(a.filter_file, encoding="utf-8") as f:
+            graph = f.read()
+        run(["ffmpeg", "-nostdin", "-hide_banner", "-y", *inputs, "-filter_complex", graph, "-map", "[a]",
              "-ar", a.rate, "-c:a", "pcm_s16le", a.out])
         new, peak = measure(a.out)
         print(f"try {attempt + 1}: whole-voice gain {total:+.1f} dB -> {new:.1f} LUFS" + (f", true peak {peak:.1f} dBFS" if peak is not None else ""))

@@ -37,6 +37,8 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - Country and mains: <e.g. Spain, 50 Hz: film at 25 fps>
 - Camera check results: <per camera and app, what footcheck.py found and what the user agreed, with the date; e.g. iPhone 16 Pro Max, Blackmagic app: 4K 25 fps, shutter 1/50, mic receiver plugged in (2026-11-19)>
 - Shoots Log: <no / Apple Log / S-Log3 / ...>
+- Second camera: <not asked yet / none / at the same time (the main camera keeps recording) / separate takes>: asked the first time a second camera appears (`references/cameras.md`)
+- Teleprompter: <not asked yet / none / on the main camera / on every camera>: asked once, with the first script (`references/script.md`)
 - LUT for that Log: `<path to the manufacturer's Log-to-Rec.709 .cube file>`
 - How to recognise the Log files: <filled in after the first Log clip, e.g. pix_fmt and color tags>
 

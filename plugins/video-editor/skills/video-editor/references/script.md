@@ -56,9 +56,29 @@ Write `shotlist.md` next to it, for filming in one sitting:
 1. **Camera:** every spoken line in order, numbered, with the `>` directions. Remind the user to repeat a line from
    its start when they trip (the last complete take is kept), to film horizontal in 4K with the speaker in the middle
    third if Shorts will be cut (Rule 6), and to pause a second before each line.
+   When the user films some parts with a second camera (an iPhone for the hook, the ending or a side view), add
+   which camera films each line, `[main]` or `[iPhone]`. Filming at the same time, the `[iPhone]` marks say when to
+   have it recording; in separate takes, group the iPhone lines so the phone is set up once. Two or three parts per
+   video are plenty. The settings to match are in `references/cameras.md`, Two cameras.
 2. **Screen recordings:** every `[SCREEN]` note as a separate short clip to record, with the tips in Rule 6
    (bigger text, Do Not Disturb, nothing private on screen).
 3. **Graphics:** the `[GRAPHIC]` notes, made later in the edit.
+
+**Teleprompter.** Don't assume one. If `my-setup.md` has no `Teleprompter:` line, or it says `not asked yet`, ask
+once when you show the first script: "Do you read from a teleprompter when you film? On which camera?" Save
+`none`, `on the main camera` or `on every camera`. When they use one, also write `teleprompter.txt`, plain text that
+any teleprompter app can open:
+- only the words they say, in order, one line per paragraph, with a blank line between lines;
+- no markers (`[CHAPTER]`, `[SCREEN]`, `[SHORT]`...) and no numbers: they would be read out;
+- the `>` directions on their own line, in capitals and brackets, so they stand out and aren't read: `(LOOK AT THE
+  CAMERA, SMILE)`, in the script's language;
+- a line `(PAUSE)` where a chapter ends, so there's a natural place to stop and restart.
+The teleprompter holds every line the user reads from it. Ask where the second camera points:
+- **from the side, while they keep reading the main camera's teleprompter** (the usual way): every line goes in
+  `teleprompter.txt`, and an `(IPHONE)` line before each `[iPhone]` passage reminds them to have it recording;
+- **at them, as a second front-on angle without a teleprompter:** those lines are said into the iPhone, so put them
+  at the top of the shot list to learn instead (they are short);
+- **at them, with a teleprompter on each camera:** write `teleprompter-main.txt` and `teleprompter-iphone.txt`.
 
 ## 3. After filming: follow the script
 
@@ -67,6 +87,10 @@ Transcribe the camera recording (Rule 3), then in the build folder:
 ```
 python -I <skill>/scripts/scriptcut.py script.md <transcript.json> --cuts cuts.json
 ```
+
+With a second camera filming at the same time, run this on `angles.mov` (`references/cameras.md`), which has every
+line. In separate takes, run it on each camera's recording: the `[iPhone]` lines are expected to show as not said in
+the main camera's report, and the other way round, so only report lines missing from both.
 
 It keeps the last take that says at least 80% of each line, removes the other takes and the false starts (two or
 more words, then a restart), and writes `script-report.md`. Read the report and tell the user, briefly:

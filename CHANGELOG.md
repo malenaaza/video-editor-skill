@@ -2,6 +2,39 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-21 · version 2.8.0
+
+### New
+- **A second camera for some lines:** film most of a video with your main camera and a few lines (the hook, the
+  ending, a close-up) with your iPhone. `scripts/conform.py` makes each iPhone clip match the main camera before
+  the edit: the same frame rate at a steady rate (phones record a variable one, which makes the sound drift), the
+  same size (a clip filmed the other way round is cropped to fill, or put on bars), HDR turned into normal video,
+  Rec.709 colour tags, and the same sound settings. `--check` only says what differs. The colour of the two
+  cameras is still matched by eye in the grade. Guide: `references/cameras.md`, Two cameras.
+- **Second camera at the same time:** when the main camera keeps recording and the iPhone films some parts from the
+  side, `scripts/syncclip.py find` finds where each iPhone clip starts in the main recording by comparing their
+  sound (to about a millisecond; a clip that doesn't clearly match is reported, not used, and drifting clocks are
+  flagged), and proposes using its picture for the whole time it recorded. `build` then writes one recording with
+  the iPhone's picture in those stretches and the main camera's sound throughout, so the voice never changes and
+  the rest of the edit works on it unchanged. The skill asks once how you film with a second camera (at the same
+  time or in separate takes) and saves it as `Second camera:`.
+- **Shot list:** when some lines go on a second camera, the shot list says which camera films each line and groups
+  the iPhone lines, so the phone is set up once.
+- **Teleprompter:** with the first script the skill asks once whether you read from a teleprompter and on which
+  camera, and saves it (`Teleprompter:` in your settings). If you do, it also writes `teleprompter.txt`: only the
+  words you say, no markers or numbers, directions in capitals and brackets so you don't read them out, and a pause
+  where each chapter ends. When the iPhone films from the side while you keep reading the main camera's
+  teleprompter, every line is in it, with an `(IPHONE)` reminder before the iPhone parts; lines said into a front-on
+  iPhone without a teleprompter go in the shot list to learn; with one on every camera, there is a file per camera.
+
+### Fixed
+- `conform.py`: on newer FFmpeg (7 and later) the conformed clip came out with no colour tags, because FFmpeg now
+  takes them from the frames; they are now set on the frames too.
+- `voice/leveljoin.py` (joining clips at one loudness) stopped with an error on FFmpeg 8 and later, which removed
+  the `-filter_complex_script` option it used. It now passes the filter directly, which works on every version.
+- With a second camera, the script's report is read per camera: lines filmed on the other camera are expected to be
+  missing.
+
 ## 2026-11-21 · version 2.7.0
 
 ### New
