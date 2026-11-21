@@ -23,15 +23,23 @@ after the one before it. A link never appears before its two boxes, nor a flow b
 found is said, and that piece is timed like one with neither. layout: "row" (left to right), "column" (top to
 bottom) or "auto" (a row in a wide video, a column in a vertical one). Up to 6 boxes.
 
+It also writes explainer-sfx.wav (unless --no-sounds), the graphic's sound effects timed to its frames, from the free
+sounds in scripts/sfx/: a pop as each box appears, a soft whoosh as each arrow draws, a whoosh as the dot sets off, a
+light tick each time it reaches a box and a sparkle when it arrives. It is as long as the graphic: mix it under the
+voice from the graphic's start, like the other sound effects (references/sound.md).
+
 Writes the props for scripts/remotion/Explainer.tsx: every position in pixels and every time in frames from the
 graphic's start, so the template only draws. Each box takes the next colour of --palette (the brand's colours, or a
 lively default), with white or dark text, whichever reads better on it. Prints when each piece appears, the render
 command and how to put it on the video. Standard library only.
 """
 import argparse
+import array
 import json
+import math
 import os
 import sys
+import wave
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from chapters import find_phrase, flat_words  # noqa: E402
@@ -130,6 +138,67 @@ def resolve_time(item, flat, start, problems, name):
             return None
         return t - start
     return None
+
+
+SFX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sfx")
+# (sound, volume): loud enough to notice, well under the voice (the mix scales them all again)
+SOUNDS = {"box": ("pop", 0.8), "arrow": ("whoosh", 0.45), "flow": ("whoosh", 0.6), "reach": ("pop", 0.35),
+          "arrive": ("sparkle", 0.6)}
+
+
+def ease_inverse(y):
+    """The time (0 to 1) at which the template's ease-in-out reaches progress y."""
+    y = min(max(y, 0.0), 1.0)
+    return math.sqrt(y / 2) if y <= 0.5 else 1 - math.sqrt(2 * (1 - y)) / 2
+
+
+def sound_events(props):
+    """[(seconds from the graphic's start, kind)] for every box, arrow and trip of the dot, matching the template:
+    the dot moves at an even speed along its path with an ease-in-out, so it reaches each box at ease_inverse of
+    the share of the path behind it."""
+    fps = props["fps"]
+    events = [(n["frame"] / fps, "box") for n in props["nodes"]]
+    events += [(l["frame"] / fps, "arrow") for l in props["links"]]
+    for f in props["flows"]:
+        pts = f["points"]
+        lengths = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(pts, pts[1:])]
+        total = sum(lengths) or 1.0
+        events.append((f["frame"] / fps, "flow"))
+        done = 0.0
+        for i, length in enumerate(lengths):
+            done += length
+            t = (f["frame"] + f["frames"] * ease_inverse(done / total)) / fps
+            events.append((t, "arrive" if i == len(lengths) - 1 else "reach"))
+    return sorted(events)
+
+
+def read_sound(name):
+    with wave.open(os.path.join(SFX_DIR, name + ".wav"), "rb") as w:
+        if (w.getnchannels(), w.getsampwidth(), w.getframerate()) != (2, 2, 48000):
+            raise ValueError(f"{name}.wav must be 48 kHz 16-bit stereo.")
+        return array.array("h", w.readframes(w.getnframes()))
+
+
+def write_sounds(events, seconds, path, rate=48000):
+    """Mixes the events into one stereo wav as long as the graphic, with a limiter so pops on top of each other
+    never clip."""
+    total = int(round(seconds * rate)) * 2
+    mix = [0.0] * total
+    cache = {}
+    for t, kind in events:
+        name, gain = SOUNDS[kind]
+        sound = cache.setdefault(name, read_sound(name))
+        start = int(round(t * rate)) * 2
+        for i in range(min(len(sound), total - start)):
+            mix[start + i] += sound[i] * gain
+    peak = max((abs(v) for v in mix), default=0)
+    scale = min(1.0, 32000 / peak) if peak else 1.0
+    out = array.array("h", (int(v * scale) for v in mix))
+    with wave.open(path, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(out.tobytes())
 
 
 def build_props(spec, captions, width, height, fps, style, palette=PALETTE.split(",")):
@@ -236,6 +305,8 @@ def main():
     ap.add_argument("--accent", default="#FF4F8B", help="the travelling dot, the moving dashes and the title's line")
     ap.add_argument("--line", default="#FFFFFF")
     ap.add_argument("--out", default="explainer-props.json")
+    ap.add_argument("--sounds", default="explainer-sfx.wav", help="the sound effects track to write")
+    ap.add_argument("--no-sounds", action="store_true", help="don't write the sound effects")
     a = ap.parse_args()
     with open(a.spec, encoding="utf-8") as f:
         spec = json.load(f)
@@ -265,7 +336,14 @@ def main():
         print(f"  {stamp(start + t)}  {what}")
     for p in problems:
         print("  NOTE: " + p)
-    print(f"Wrote {a.out}. Render it (from the Remotion project):")
+    print(f"Wrote {a.out}.")
+    if not a.no_sounds:
+        events = sound_events(props)
+        write_sounds(events, props["seconds"], a.sounds)
+        print(f"Wrote {a.sounds}: {len(events)} sound effects (pops, whooshes, a sparkle), {props['seconds']:.1f} s. Mix it "
+              f"under the voice from {start:.2f} s (adelay={int(round(start * 1000))}|{int(round(start * 1000))}), at about "
+              "0.4 to 0.5 like the other effects (references/sound.md); quieter if the explanation is long.")
+    print("Render it (from the Remotion project):")
     print(f"  npx remotion render src/index.ts Explainer out/explainer.mov --props={os.path.basename(a.out)}"
           + (" --codec=prores --prores-profile=4444 --pixel-format=yuva444p10le --image-format=png"
              if a.background == "transparent" else ""))

@@ -906,10 +906,34 @@ class SkillTest(unittest.TestCase):
                 self.assertRegex(tsx, rf"\b{key}\??:", key)
         (self.dir / "ex.json").write_text(json.dumps(spec, ensure_ascii=False), "utf-8")
         (self.dir / "ex-caps.json").write_text(json.dumps(captions, ensure_ascii=False), "utf-8")
-        out = script("explainer.py", "ex.json", "--captions", "ex-caps.json", "--out", "ex-props.json", cwd=self.dir)
+        out = script("explainer.py", "ex.json", "--captions", "ex-caps.json", "--out", "ex-props.json",
+                     "--sounds", "ex-sfx.wav", "--size", "1920x1080", "--fps", "25", cwd=self.dir)
         self.assertIn("box \"Claude\"", out)
         self.assertIn("remotion render", out)
         self.assertTrue((self.dir / "ex-props.json").exists())
+        # sound effects timed to the picture: a pop per box, a whoosh per arrow, the dot's trip and arrivals
+        events = explainer.sound_events(props)
+        kinds = [k for _, k in events]
+        self.assertEqual(kinds.count("box"), len(props["nodes"]))
+        self.assertEqual(kinds.count("arrow"), len(props["links"]))
+        self.assertEqual(kinds.count("arrive"), 1)
+        self.assertEqual(kinds.count("reach"), len(props["flows"][0]["points"]) - 2)
+        pop = next(t for t, k in events if k == "box")
+        self.assertAlmostEqual(pop, props["nodes"][0]["frame"] / 25, places=3)        # on the box's frame
+        flow = props["flows"][0]
+        arrive = next(t for t, k in events if k == "arrive")
+        self.assertAlmostEqual(arrive, (flow["frame"] + flow["frames"]) / 25, places=3)  # when the dot gets home
+        wav = self.dir / "ex-sfx.wav"
+        self.assertTrue(wav.exists())                                                 # written by the run above
+        import wave
+        with wave.open(str(wav)) as w:
+            self.assertEqual(w.getframerate(), 48000)
+            self.assertAlmostEqual(w.getnframes() / 48000, props["seconds"], delta=0.05)  # as long as the graphic
+            import array
+            samples = array.array("h", w.readframes(w.getnframes()))
+        loud = lambda sec: max(abs(v) for v in samples[int(sec * 48000) * 2:int((sec + 0.1) * 48000) * 2])
+        self.assertGreater(loud(pop), 1000)                                           # a pop where the box appears
+        self.assertLess(loud(0.2), 50)                                                # silence before anything happens
         guide = (ROOT / "references" / "script.md").read_text("utf-8")
         self.assertIn("Propose the animated explanations yourself", guide)          # proposed when writing, not asked for
         self.assertIn("name each piece once", guide)                                  # so the voice brings each box in
