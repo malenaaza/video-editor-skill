@@ -618,6 +618,87 @@ class SkillTest(unittest.TestCase):
         self.assertIn("detect_setup.py folder", skill)                     # the setup asks for and checks the folder
         self.assertIn("working files", skill)
 
+    def test_72_pixelate_other_faces(self):
+        try:
+            import numpy  # noqa: F401
+        except ImportError:
+            self.skipTest("numpy not installed")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import pixelfaces
+        # two faces move across 40 frames; the small one is lost for 3 frames; a 2-frame blip is not a face
+        frames = []
+        for n in range(40):
+            row = [[100 + n, 100, 300 + n, 300]]                       # the speaker, 200 px
+            if not 15 <= n < 18:
+                row.append([700 - n, 120, 780 - n, 200])               # someone else, 80 px
+            if n in (5, 6):
+                row.append([10, 10, 30, 30])                           # a blip
+            frames.append(row)
+        tracks = pixelfaces.build_tracks(frames, max_lost=10)
+        self.assertEqual(len(tracks), 2)
+        speaker = pixelfaces.pick_speaker(tracks)
+        other = [t for t in tracks if t["id"] != speaker][0]
+        self.assertEqual(len(tracks[speaker]["boxes"]) if tracks[0]["id"] == speaker else len(tracks[1]["boxes"]), 40)
+        self.assertEqual(len(other["boxes"]), 37)
+        filled = pixelfaces.fill_track(other["boxes"], 40, gap=5, hold=2)
+        self.assertFalse(numpy.isnan(filled[16]).any())                 # the lost frames are bridged
+        self.assertLess(filled[16][0], filled[14][0])                   # and the box keeps moving
+        self.assertFalse(numpy.isnan(filled[0]).any())                  # held before the first sighting
+        long_gap = pixelfaces.fill_track({0: [0, 0, 10, 10], 20: [0, 0, 10, 10]}, 40, gap=5, hold=0)
+        self.assertTrue(numpy.isnan(long_gap[10]).all())                # a long loss is not guessed at
+        squares = pixelfaces.tiles(1280, 720)                           # small faces: the frame is searched in squares too
+        self.assertEqual([s[2] for s in squares], [720] * len(squares))
+        self.assertTrue(all(0 <= x and x + s <= 1280 and 0 <= y and y + s <= 720 for x, y, s in squares))
+        self.assertEqual(max(x for x, y, s in squares) + 720, 1280)       # the last square reaches the edge
+        self.assertGreater(len(pixelfaces.tiles(1280, 720, thorough=True)), 4 * len(squares))
+        self.assertEqual(len(pixelfaces.tiles(1080, 1920)), 3)            # a vertical video: three squares down
+        merged = pixelfaces.merge_boxes([[100, 100, 200, 200], [105, 98, 198, 205], [600, 100, 650, 150]])
+        self.assertEqual(len(merged), 2)                                 # one face seen twice is kept once
+        grown = pixelfaces.mask_frame([[10, 10, 50, 50]], 200, 100, 16)  # snapped out to whole squares
+        self.assertTrue((grown[0:64, 0:64] == 255).all())
+        self.assertEqual(int(grown.sum()) // 255, 64 * 64)
+        # the whole chain on a real video: a mask from the tracks, applied with the command build prints
+        work = self.dir / "pix"
+        work.mkdir()
+        src = work / "clean.mp4"
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=640x360:r=25:d=2",
+                        "-pix_fmt", "yuv420p", str(src)], check=True)
+        boxes = {str(n): [60.0, 60.0, 180.0, 200.0] for n in range(50)}
+        far = {str(n): [420.0, 80.0, 500.0, 170.0] for n in range(50)}
+        (work / "pixelfaces.json").write_text(json.dumps({
+            "video": "clean.mp4", "width": 640, "height": 360, "fps": 25.0, "frames": 50, "speaker": 0,
+            "tracks": [{"id": 0, "boxes": boxes}, {"id": 1, "boxes": far}]}), "utf-8")
+        run = lambda *args: subprocess.run([sys.executable, "-I", str(SCRIPTS / "retouch" / "pixelfaces.py"), *args],
+                                          cwd=work, capture_output=True, text=True, encoding="utf-8")
+        built = run("build", "clean.mp4")
+        self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
+        self.assertTrue((work / "pixmask.mkv").exists())
+        graph = re.search(r'-filter_complex "([^"]+)"', built.stdout).group(1)
+        block = int(re.search(r"pixelize=w=(\d+)", graph).group(1))
+        gray = lambda *args: numpy.frombuffer(subprocess.run(
+            ["ffmpeg", "-v", "error", *args, "-frames:v", "1", "-pix_fmt", "gray", "-f", "rawvideo", "-"],
+            cwd=work, capture_output=True, check=True).stdout, numpy.uint8).reshape(360, 640)
+        a = gray("-i", "clean.mp4", "-i", "pixmask.mkv", "-filter_complex", graph, "-map", "[v]")
+        b = gray("-i", "clean.mp4")
+        squares = gray("-i", "clean.mp4", "-vf", f"pixelize=w={block}:h={block}")
+        mask = gray("-i", "pixmask.mkv")
+        self.assertTrue((mask[60:200, 60:180] == 0).all())                    # nothing is pixelated on the speaker
+        self.assertTrue((a[mask == 0] == b[mask == 0]).all())                 # outside the mask: the source, bit for bit
+        self.assertTrue((a[mask == 255] == squares[mask == 255]).all())       # inside: fully pixelated, none of the original
+        self.assertFalse((a[80:170, 420:500] == b[80:170, 420:500]).all())    # and it did change
+        # a 10-bit render stays 10-bit
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", "clean.mp4", "-pix_fmt", "yuv420p10le", "ten.mkv"],
+                       cwd=work, check=True)
+        ten = run("build", "ten.mkv").stdout
+        self.assertIn("yuva420p10le", ten)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", "ten.mkv", "-i", "pixmask.mkv", "-filter_complex",
+                        re.search(r'-filter_complex "([^"]+)"', ten).group(1), "-map", "[v]", "-frames:v", "2",
+                        "ten-out.mkv"], cwd=work, check=True)
+        # a bad pixel_extra is refused
+        (work / "retouch.json").write_text(json.dumps({"pixel_extra": [{"start": 1}]}), "utf-8")
+        self.assertNotEqual(run("build", "clean.mp4").returncode, 0)
+        self.assertIn("pixelfaces.py", (ROOT / "SKILL.md").read_text("utf-8"))
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

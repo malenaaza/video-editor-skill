@@ -59,6 +59,22 @@ blurmask.py and blurmask_hands.py (background blur):
   hand_hold       frames to keep a hand after tracking loses it (default 10); the kept area grows
                   while it's lost, because the hand may have moved
 
+pixelfaces.py (pixelating the faces of other people):
+  pixel_keep      null (default: only the speaker, the face seen most, stays sharp) or a list of track
+                  numbers to leave sharp, as printed by `pixelfaces.py scan`. Use it when the speaker was
+                  split into two tracks, or when a second person should stay visible.
+  pixel_extra     faces the detector misses (small, in profile, turned away): a list of
+                  {"start": seconds, "end": seconds, "box": [x, y, width, height]} in pixels of the video.
+  pixel_margin    how much is added on every side of a face, as a share of its size (0.35; the top gets
+                  0.15 more for hair and forehead)
+  pixel_block     size in pixels of the squares, or null: a seventh of the largest pixelated face, so a
+                  face is never more than about 7 squares wide and smaller ones are a single blur
+  pixel_gap       seconds of missed detections that are bridged by moving the box between the last and
+                  next sighting (1.5)
+  pixel_hold      seconds the box stays before the first and after the last sighting (0.4), because the
+                  face is on screen before and after the detector notices it
+  pixel_faces     most faces the detector looks for in a frame (6)
+
 A colour key is a set of ranges, all of which must match. Each range is [low, high], both
 included, with null for no limit:
   lum 0..255, a and b -128..127 (Lab, as OpenCV gives them minus 128),
@@ -103,6 +119,13 @@ DEFAULTS = {
     "hand_pad": 120,
     "hand_reach": 0.4,
     "hand_hold": 10,
+    "pixel_keep": None,
+    "pixel_extra": [],
+    "pixel_margin": 0.35,
+    "pixel_block": None,
+    "pixel_gap": 1.5,
+    "pixel_hold": 0.4,
+    "pixel_faces": 6,
 }
 CHANNELS = ("lum", "a", "b", "hue", "sat", "val")
 
@@ -137,6 +160,13 @@ def load(path="retouch.json"):
         if crown is not None and not (isinstance(crown, dict) and len(crown.get("grow", [])) == 2 and "raise" in crown):
             sys.exit('retouch.json: crown must be {"grow": [x, y], "raise": number}, for example '
                      '{"grow": [1.45, 1.30], "raise": 0.36}.')
+        for extra in settings["pixel_extra"]:
+            box = extra.get("box") if isinstance(extra, dict) else None
+            if not (isinstance(box, list) and len(box) == 4 and "start" in extra and "end" in extra):
+                sys.exit('retouch.json: each pixel_extra must be {"start": s, "end": s, "box": [x, y, width, height]}.')
+        keep = settings["pixel_keep"]
+        if keep is not None and not (isinstance(keep, list) and all(isinstance(k, int) for k in keep)):
+            sys.exit("retouch.json: pixel_keep must be null or a list of track numbers, for example [0, 2].")
         changed = {k: v for k, v in settings.items() if v != DEFAULTS[k]}
         print(f"Settings from {path}: {json.dumps(changed, ensure_ascii=False)}", flush=True)
     else:

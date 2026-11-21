@@ -2,6 +2,21 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-21 · version 2.7.0
+
+### New
+- **Pixelate the faces of other people:** `scripts/retouch/pixelfaces.py` hides bystanders, customers or children
+  and keeps the speaker sharp. `scan` finds and follows every face (with the face model the skill already uses) and
+  writes a sheet with the speaker in green and everyone else in red; `build` makes the mask and prints the FFmpeg
+  command; `verify` looks for any face still visible in the result. The detector misses faces under a tenth of the frame, so the scan searches the whole frame and overlapping squares
+  (`--thorough` adds half-size squares, for faces of about 50 px). A face the detector loses for up to 1.5 s is
+  covered by moving the box between the sightings, the box is held 0.4 s before and after, and the lost stretches
+  are listed so you can look at them. Faces the detector misses (small, side-on, turned away) are added with
+  `pixel_extra`; the speaker can be changed with `pixel_keep`. New settings `pixel_*` in `retouch.json`. Guide:
+  `references/retouch.md`. It hides faces only: voices, name tags and licence plates stay.
+- The mask is applied with alpha, not `maskedmerge`: `maskedmerge` squeezes a gray mask into video levels, and in a
+  test 11,644 of 32,000 pixels of a pixelated face still held some of the original.
+
 ## 2026-11-19 · version 2.6.1
 
 ### New
