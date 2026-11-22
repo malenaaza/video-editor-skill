@@ -2,6 +2,19 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.12.0
+
+### New
+- **Every cut checked by its sound** (`scripts/cutedges.py`), before the cut is rendered. Word times from a transcript
+  are often 50 to 100 ms off, so a cut can land inside a word. It looks at the recording around every edge and lists
+  cuts that start or end in the middle of a sound, scraps of removed words left at an edge, and pieces too short to
+  see. `--fix` writes a corrected plan: a word cut in two is kept whole when most of it was kept and dropped whole
+  otherwise (moving to "the quietest moment nearby" left half a word in a first test).
+- **The opening checked** (`scripts/hookcheck.py`) on every finished video: a black or blank first frame, a clipped
+  first word, more than half a second of silence before you speak, a sound effect on your first word, nothing
+  written on screen in the first 1.5 seconds (most people start muted), and the words of the first 3 seconds, to
+  judge whether they're the promise or the question.
+
 ## 2026-11-22 · version 2.11.0
 
 ### New

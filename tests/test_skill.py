@@ -1031,6 +1031,81 @@ class SkillTest(unittest.TestCase):
         lost = checkexport.missing_words(said(["hola", "hoy", "os", "enseño", "algo"]), said(["hola", "os", "enseño", "algo"]))
         self.assertEqual(lost, [(0.4, "hoy")])                                    # a word clipped at a cut
 
+    def test_79_cut_edges_by_their_sound(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy not installed")
+        sys.path.insert(0, str(SCRIPTS))
+        import cutedges
+        rate = cutedges.RATE
+        x = np.random.default_rng(1).standard_normal(10 * rate).astype(np.float32) * 0.001     # room noise
+
+        def word(a, b):
+            n = int((b - a) * rate)
+            x[int(a * rate):int(a * rate) + n] += 0.3 * np.sin(2 * np.pi * 220 * np.arange(n) / rate) * np.hanning(n) ** 0.3
+        for a in (0.5, 1.1, 1.7, 3.2, 4.1, 5.0, 6.0):
+            word(a, a + 0.3)
+        word(3.0, 3.06)                                                           # a fragment of a removed word
+        sound = cutedges.Sound(x)
+
+        def plan_of(pieces):
+            offsets, total = [], 0
+            for a, b in pieces:
+                offsets.append(total)
+                total += b - a
+            return {"fps": "25", "frames": pieces, "offsets": offsets, "total_frames": total}
+        # 0-1.24 ends inside the word 1.1-1.4 (mostly outside); 3.00-3.64 opens on the fragment; 4.04-4.60 is clean;
+        # 4.84-5.24 starts in silence and ends inside 5.0-5.3, mostly inside; 7.0-7.04 is a sliver
+        plan = plan_of([[0, 31], [75, 91], [101, 115], [121, 131], [175, 176]])
+        problems = cutedges.check(plan, sound)
+        found = {(p["piece"], p["edge"]): p for p in problems}
+        self.assertEqual(found[(0, "end")]["kind"], "ends mid-sound")
+        self.assertLess(found[(0, "end")]["fix"], 1.1)                            # most of the word is outside: dropped whole
+        self.assertEqual(found[(1, "start")]["kind"], "fragment")
+        self.assertTrue(3.06 <= found[(1, "start")]["fix"] <= 3.2)                # the start moves into the gap after it
+        self.assertNotIn((2, "start"), found)                                     # clean edges are left alone
+        self.assertNotIn((2, "end"), found)
+        self.assertGreater(found[(3, "end")]["fix"], 5.3)                         # mostly inside: kept whole
+        self.assertEqual(found[(4, "both")]["kind"], "sliver")
+        fixed = cutedges.apply_fixes(plan, problems)
+        self.assertEqual(len(fixed["frames"]), 4)                                 # the sliver is gone
+        self.assertEqual(fixed["offsets"][1], fixed["frames"][0][1] - fixed["frames"][0][0])  # offsets recounted
+        self.assertEqual(fixed["total_frames"], sum(b - a for a, b in fixed["frames"]))
+        self.assertEqual(cutedges.check(fixed, sound), [])                        # nothing left to fix
+
+    def test_80_hook_check(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy not installed")
+        sys.path.insert(0, str(SCRIPTS))
+        import hookcheck
+        rate = 16000
+        picture = np.full(96 * 54, 120.0) + np.random.default_rng(0).standard_normal(96 * 54) * 30
+        black = np.zeros(96 * 54)
+        quiet_then_speech = np.concatenate([np.zeros(int(0.2 * rate)), 0.3 * np.ones(int(0.3 * rate))])
+        speech_at_once = 0.3 * np.ones(int(0.5 * rate))
+        caps = lambda start, words: [{"start": start, "end": start + 1, "words": words}]
+        good_words = [(0.2, 0.5, "Tres"), (0.5, 0.8, "errores"), (0.8, 1.2, "que"), (3.5, 3.8, "luego")]
+        fails, warns, opening = hookcheck.check(picture, quiet_then_speech, good_words, caps(0.2, good_words), sfx=[2.0])
+        self.assertEqual((fails, warns), ([], []))
+        self.assertEqual(opening, "Tres errores que")                              # the first 3 seconds, to judge
+        late = [(1.2, 1.5, "Hola")]
+        fails, warns, _ = hookcheck.check(picture, np.zeros(rate), late, caps(2.0, late))
+        self.assertTrue(any("before the first word" in w for w in warns))           # silence before speaking
+        self.assertTrue(any("nothing written on screen" in w for w in warns))       # nothing to read with the sound off
+        _, warns, _ = hookcheck.check(picture, np.zeros(rate), late, caps(2.0, late), title_at=0.3)
+        self.assertFalse(any("nothing written" in w for w in warns))                # a title counts
+        bad = [(0.0, 0.3, "Hola")]
+        fails, warns, _ = hookcheck.check(black, speech_at_once, bad, caps(0.0, bad), sfx=[0.1])
+        self.assertTrue(any("first frame is black" in f for f in fails))
+        self.assertTrue(any("clipped" in f for f in fails))
+        self.assertTrue(any("lands on the first word" in w for w in warns))
+        mix = self.dir / "sfx-mix.txt"
+        mix.write_text("[1:a]adelay=2350|2350,volume=0.4[s0];[2:a]adelay=120|120[s1]", "utf-8")
+        self.assertEqual(hookcheck.sfx_times(str(mix)), [0.12, 2.35])
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()
