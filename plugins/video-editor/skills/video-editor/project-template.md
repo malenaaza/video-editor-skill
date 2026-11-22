@@ -16,7 +16,7 @@ Mark each step: done (with the file it produced and the date), skipped (why), or
 2. Transcribe: <done: transcript/source.json, language es> · Voice measure: <gap 38 dB, light cleaning suggested>
 3. Cuts: <done: build/cuts.json, build/plan.json; 42.3 s kept at 1.1x> · Filler passes: <done / not wanted>
 4. Clean edit: <done: build/clean.mp4, 1269 frames; grade, zooms>
-5. Retouch and blur: <done: build/retouched.mp4; build/retouch.json; masks skin.mkv, teeth.mkv, skin_strong.mkv, bgmask.mkv>
+5. Retouch and blur: <done: build/retouched.mp4; build/retouch.json; masks skin.mkv, teeth.mkv, skin_strong.mkv, spots.mkv, bgmask.mkv>
 6. Text and graphics: <captions.ass done; title to do>
 7. Sound: <cleaned (light, RNNoise), leveled to -14 LUFS, effects mixed>
 8. Export and pack: <done: path to the finished video, -post.txt, cover>

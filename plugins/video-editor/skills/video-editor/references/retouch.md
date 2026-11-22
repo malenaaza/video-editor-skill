@@ -9,7 +9,7 @@ Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rul
 Retouch when the brand's `Look:` lines say "every video", or when the user asks. Color alone can't separate skin from things like cardboard, so use face-tracked masks. Files are in `<skill>/scripts/retouch/`: `mask.py` builds the masks, `retouch.txt` is the FFmpeg filter.
 
 1. Render a clean edit (cuts, Log conversion, grade, zooms; no title, captions or handle) as `clean.mp4`, with the in-between encoder. The filter runs underneath the text so the text stays sharp.
-2. From that folder, build `skin.mkv`, `teeth.mkv` and `skin_strong.mkv`:
+2. From that folder, build `skin.mkv`, `teeth.mkv`, `skin_strong.mkv` and `spots.mkv` (masks built before 2.14.1 have no `spots.mkv`: run this again):
 
 ```
 <face python> -I <skill>/scripts/retouch/mask.py "<face_landmarker.task>"
@@ -18,10 +18,10 @@ Retouch when the brand's `Look:` lines say "every video", or when the user asks.
 3. Copy `retouch.txt` into the folder, set the levels from `my-setup.md`, and apply it, setting `-frames:v` to the frame count of `clean.mp4`:
 
 ```
-ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -i skin_strong.mkv -/filter_complex retouch.txt -map "[v]" -frames:v <count> <8-bit in-between encoder> retouched.mp4
+ffmpeg -i clean.mp4 -i skin.mkv -i teeth.mkv -i skin_strong.mkv -i spots.mkv -/filter_complex retouch.txt -map "[v]" -frames:v <count> <8-bit in-between encoder> retouched.mp4
 ```
 
-   With background blur as well, use `retouch-blur.txt` instead: the same retouch, then the blur, in one pass. Add `bgmask.mkv` as the fifth input (after `skin_strong.mkv`) and set the blur sigma in it.
+   With background blur as well, use `retouch-blur.txt` instead: the same retouch, then the blur, in one pass. Add `bgmask.mkv` as the sixth input (after `spots.mkv`) and set the blur sigma in it.
 
 4. Add the title, captions, handle and end card to `retouched.mp4`, then do the final export.
 
@@ -34,6 +34,8 @@ Default levels are in `my-setup.md`. If the user asks for more or less, change o
 The mask protects the eyes, brows, lips and mouth (the eyes with a margin of `protect_eyes`, default 15 px, the lips and mouth with 25), and only whitens teeth while the lips are visible, so objects passing the mouth aren't touched. Compare close-ups before and after, including a frame where teeth show. Say so if braces or shadows limit the result. Report how many frames had no face detected.
 
 **Neck and clothing:** the skin area includes the neck under the jaw (`neck`, on by default); a softened face over an untouched neck looks odd. `skin_cr_max` keeps very red pixels out, so a red top or scarf isn't softened. Check one frame of `skin.mkv` that shows the neck and the top.
+
+**Freckles and spots (close-ups):** a close-up smooths the skin twice, and a smoothing filter keeps small, dark, high-contrast spots, so after the two passes the speaker's freckles were the only texture left and read as dirt: "little black stains around the eyebrow", worst on the side of the face closer to the camera, where the mask covers the most skin. Two things changed. The brow rule (`brow_mode: "hair"`) protects the brow's hairs, which are dark strokes attached to the brow or long and thin; a small round dark blob beside the brow is skin and is smoothed with it (before, any pixel 14 levels darker than its surroundings within 21 px of the brow counted as a hair, freckles included), with the distances scaled to the face's height. And `spots.mkv` marks small, compact, dark spots on the skin (not the eyes, lips, mouth, brow or its hairs, and not moles, which are bigger and much darker), and a last pass in `retouch.txt` blends a median-smoothed copy through it, so a freckle keeps about half its contrast (`spot_calm`, default 0.55; 0 keeps spots as they were, 1 smooths them away; `spot_contrast` is how dark a spot must be, default 18). Freckles stay freckles: only their contrast drops, and the skill doesn't remove features. **Check:** look at the brow area and the cheek of the tightest close-up and of one shot with the head turned, before the full render; if a freckle still stands out, raise `spot_calm` a step, and if the skin looks too clean, lower it.
 
 **Close-ups:** the same softening that looks right when the face is a normal size leaves texture visible when the speaker leans in or a punch-in zooms: pores are magnified 3 to 4 times. `skin_strong.mkv` adds a second, stronger softening (`bilateral=sigmaS=12:sigmaR=0.10`) on top of the normal one, ramping from nothing when the face is below `close_lo` of the frame height to full above `close_hi`, smoothed between frames so it doesn't flicker. Show the user before/after frames of the biggest-face moments before the full render. If they want it stronger, weaker, or starting earlier, change `close_lo`/`close_hi` in `retouch.json` or the second bilateral, one step at a time, and save it in `my-setup.md`.
 
@@ -81,7 +83,7 @@ What it doesn't hide: voices, name tags, licence plates, screens, and a face ref
 
 Add this when the brand's `Look:` lines say "every video", or when the user asks. A blur forgives small mask mistakes, so it's much faster and safer than replacing the background. If the user wants a background changed, offer this first: replacing it took about 45 minutes on one video, and the cutout failed whenever a held object moved or came close to the camera.
 
-Files in `<skill>/scripts/retouch/`: `blurmask.py` (builds the mask from `clean.mp4`), `background-blur.txt` (blur alone: the start of the FFmpeg filter, with `clean.mp4` as input 0 and the mask as input 4, or renumber it), and `retouch-blur.txt` (retouch and blur together). Set the sigma from `my-setup.md`.
+Files in `<skill>/scripts/retouch/`: `blurmask.py` (builds the mask from `clean.mp4`), `background-blur.txt` (blur alone: the start of the FFmpeg filter, with `clean.mp4` as input 0 and the mask as input 4, or renumber it), and `retouch-blur.txt` (retouch and blur together: the inputs are `clean.mp4`, `skin.mkv`, `teeth.mkv`, `skin_strong.mkv`, `spots.mkv`, `bgmask.mkv`). Set the sigma from `my-setup.md`.
 
 1. Test first. Pass frame numbers to get `bg/blurtest.png`, including frames where the speaker or an object moves:
 
