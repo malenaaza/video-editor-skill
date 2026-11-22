@@ -1367,7 +1367,7 @@ class SkillTest(unittest.TestCase):
         self.assertLess(near(far, 340, 290), 0.1)
         self.assertEqual(spots.spot_mask(np.full((h, w), 190, np.float32), skin, exclude, 700).max(), 0)  # nothing to find
         # the settings
-        self.assertEqual((settings.DEFAULTS["spot_calm"], settings.DEFAULTS["spot_contrast"]), (0.55, 14))
+        self.assertEqual((settings.DEFAULTS["spot_calm"], settings.DEFAULTS["spot_contrast"]), (0, 14))
         here = os.getcwd()
         try:
             os.chdir(self.dir)

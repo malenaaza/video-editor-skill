@@ -9,8 +9,8 @@ less skin, so it looked fine. Two things follow:
     hair. A hair is a dark stroke attached to the brow, or a long thin one; a small round blob apart from it is skin.
     The distances scale with the face's height, so a close-up is judged at its own size.
   - spot_mask: small, compact, dark spots on the skin (not moles, brows, eyes or lips) get a mask, and retouch.txt
-    blends a median-smoothed copy through it, `spot_calm` (default 0.55) deep: the freckle stays, with about half its
-    contrast, so the skin looks natural instead of plastic with dirt. 0 keeps spots as they are, 1 smooths them away.
+    blends a median-smoothed copy through it, `spot_calm` deep (0.55 roughly halves a freckle's contrast): the freckle stays, so the skin looks natural instead
+    of plastic with dirt. Off by default (0): freckles are left as they are; 1 smooths them away.
 
 Numpy and OpenCV only; mask.py calls these once per frame.
 """
