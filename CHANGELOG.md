@@ -2,6 +2,16 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.5
+
+### Fixed
+- **A grainy patch under the eyebrow in close-ups.** A patch of small bright specks (shimmery eyeshadow or
+  highlighter, or a dry or bumpy patch of skin) is kept by the smoothing, so it stood out next to the smooth skin ("still some texture
+  around the eyebrows"). The spot pass (`spots.mkv`) now also finds small bright specks and calms them
+  (`shimmer_calm` in `retouch.json`, default 0.6; 0 turns it off; `shimmer_contrast`, default 8). Real reflections,
+  eyes, lips and brows are never touched. **Rebuild your masks** (`mask.py`). Guide: `references/retouch.md`,
+  Bright specks.
+
 ## 2026-11-22 · version 2.14.4
 
 ### Fixed

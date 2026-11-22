@@ -1,6 +1,6 @@
 """Writes per-frame skin and teeth masks as FFV1 grayscale videos (skin.mkv, teeth.mkv), plus
 skin_strong.mkv: extra softening for close-ups, weighted by how big the face is in the frame.
-spots.mkv: where freckles and other small dark spots get less contrast (spots.py, setting spot_calm).
+spots.mkv: where freckles (spot_calm) and the glitter of shimmery makeup (shimmer_calm) get less contrast (spots.py).
 
 Usage (from the folder with the clean render): python -I mask.py <face_landmarker.task> [clean.mp4]
 
@@ -190,14 +190,20 @@ with FaceLandmarker.create_from_options(options) as tracker:
             if hair_keep is not None:
                 mask *= 1 - hair_keep
             skin = np.clip(mask * SKIN_STRENGTH * 255, 0, 255).astype(np.uint8)
-            if CFG["spot_calm"] > 0:
-                # Small dark spots on the skin (freckles) keep only part of their contrast: retouch.txt blends a
-                # median-smoothed copy through this mask. Not the eyes, lips, mouth, brow or its hairs, nor moles.
+            if CFG["spot_calm"] > 0 or CFG["shimmer_calm"] > 0:
+                # Small dark spots (freckles, off by default) and small bright specks (the glitter of a shimmery
+                # eyeshadow or highlighter) keep only part of their contrast: retouch.txt blends a median-smoothed
+                # copy through this mask. Not the eyes, lips, mouth, brow or its hairs, nor moles or real reflections.
                 left_alone = (protect > 0) | (brow_area > 0)
                 if hair_keep is not None:
                     left_alone |= hair_keep > 0.2
-                spot = np.clip(spots.spot_mask(luma, mask, left_alone, face_h, CFG["spot_contrast"])
-                               * CFG["spot_calm"] * 255, 0, 255).astype(np.uint8)
+                calm = np.zeros(shape, np.float32)
+                if CFG["spot_calm"] > 0:
+                    calm = spots.spot_mask(luma, mask, left_alone, face_h, CFG["spot_contrast"]) * CFG["spot_calm"]
+                if CFG["shimmer_calm"] > 0:
+                    calm = np.maximum(calm, spots.spot_mask(luma, mask, left_alone, face_h, CFG["shimmer_contrast"],
+                                                            bright=True) * CFG["shimmer_calm"])
+                spot = np.clip(calm * 255, 0, 255).astype(np.uint8)
             target = min(max((face_h / height - CLOSE_LO) / (CLOSE_HI - CLOSE_LO), 0.0), 1.0)
             weight = weight * 0.85 + target * 0.15
             strong = np.clip(mask * weight * 255, 0, 255).astype(np.uint8)

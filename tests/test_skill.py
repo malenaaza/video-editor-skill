@@ -2312,6 +2312,42 @@ class SkillTest(unittest.TestCase):
         mask = spots.spot_mask(luma, skin, exclude, 600, 14)
         self.assertGreater(float(mask[patch].max()), 0.5)                      # the specks reach the spot pass
 
+    def test_88_shimmer_specks_are_calmed_not_reflections(self):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV or numpy not installed")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import settings
+        import spots
+        rng = np.random.default_rng(7)
+        h, w = 700, 900
+        luma = np.full((h, w), 180, np.float32) + rng.normal(0, 1.0, (h, w)).astype(np.float32)
+        patch = np.zeros((h, w), bool)
+        patch[230:256, 380:450] = True                                          # a shimmery patch under a brow
+        for _ in range(70):
+            cv2.circle(luma, (int(rng.integers(382, 448)), int(rng.integers(232, 254))), int(rng.integers(1, 3)), 205, -1)
+        cv2.circle(luma, (700, 400), 9, 255, -1)                                # a real reflection: much brighter
+        luma[300:340, 100:200] = 215                                            # a broad highlight: not a speck
+        skin = np.ones((h, w), np.float32)
+        none = np.zeros((h, w), bool)
+        bright = spots.spot_mask(luma, skin, none, 700, 8, bright=True)
+        self.assertGreater(float(bright[patch].max()), 0.8)                     # the specks reach the mask
+        self.assertGreater(float(bright[patch].mean()), 0.1)
+        self.assertEqual(float(bright[395:405, 695:705].max()), 0.0)            # a reflection stays as it is
+        self.assertEqual(float(bright[310:330, 120:180].max()), 0.0)            # so does a broad highlight
+        dark = spots.spot_mask(luma, skin, none, 700, 14)                       # the dark pass ignores bright specks
+        self.assertEqual(float(dark[patch].max()), 0.0)
+        self.assertEqual((settings.DEFAULTS["shimmer_calm"], settings.DEFAULTS["shimmer_contrast"]), (0.6, 8))
+        with tempfile.TemporaryDirectory() as tmp:
+            for value, ok in ((0, True), (1, True), (1.5, False), ("a lot", False)):
+                (Path(tmp) / "retouch.json").write_text(json.dumps({"shimmer_calm": value}), "utf-8")
+                result = subprocess.run([sys.executable, "-I", "-c",
+                    f"import sys; sys.path.insert(0, r'{SCRIPTS / 'retouch'}'); import settings; settings.load()"],
+                    cwd=tmp, capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, ok, f"{value}: {result.stderr[-200:]}")
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

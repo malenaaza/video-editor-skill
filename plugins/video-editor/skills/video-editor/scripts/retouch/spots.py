@@ -64,15 +64,16 @@ def brow_hair_keep(luma, brow_area, contrast, face_h=REF_FACE):
     return cv2.GaussianBlur(hair.astype(np.float32) / 255, (0, 0), 1.2 * scale)
 
 
-def spot_mask(luma, skin, exclude, face_h, contrast=14.0):
-    """Float mask 0..1 on small dark compact spots on the skin.
+def spot_mask(luma, skin, exclude, face_h, contrast=14.0, bright=False):
+    """Float mask 0..1 on small compact spots on the skin: dark ones (freckles), or with bright=True light ones
+    (the glitter of a shimmery eyeshadow or highlighter, which a smoothing filter keeps as a patch of grain).
 
     luma: float32; skin: float 0..1 (where skin is softened); exclude: bool, True where a spot must be left alone
-    (eyes, lips, mouth, the brow and its hairs); face_h: the face's height in pixels; contrast: how much darker than
-    the skin around it a pixel must be (settings spot_contrast)."""
+    (eyes, lips, mouth, the brow and its hairs); face_h: the face's height in pixels; contrast: how much darker (or,
+    with bright, lighter) than the skin around it a pixel must be (settings spot_contrast, shimmer_contrast)."""
     face_h = max(float(face_h), 60.0)
     surround = cv2.GaussianBlur(luma, (0, 0), max(3.0, 0.025 * face_h))
-    depth = surround - luma
+    depth = (luma - surround) if bright else (surround - luma)
     candidate = ((depth > contrast) & (skin > 0.5) & ~exclude).astype(np.uint8)
     count, labels, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
     max_side = 0.026 * face_h          # about 18 px on a 700 px face: a big freckle
@@ -83,7 +84,7 @@ def spot_mask(luma, skin, exclude, face_h, contrast=14.0):
             continue                    # a speck, something big, a stroke (hair, lash) or a ragged shape
         patch = labels[y:y + h, x:x + w] == i
         if depth[y:y + h, x:x + w][patch].max() > MOLE_DEPTH:
-            continue                    # a mole stays as it is
+            continue                    # a mole (or, bright, a real reflection) stays as it is
         result[y:y + h, x:x + w][patch] = 255
     result = _grow(result, max(3, int(round(0.006 * face_h))))
     soft = cv2.GaussianBlur(result.astype(np.float32) / 255, (0, 0), max(0.8, 0.003 * face_h))
