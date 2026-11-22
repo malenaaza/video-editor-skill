@@ -168,12 +168,12 @@ class SkillTest(unittest.TestCase):
         self.assertAlmostEqual(b, 5.0, delta=0.05)
 
     def test_09_filter_files_run(self):
-        for name in ("skin", "teeth", "strong", "bg"):
+        for name in ("skin", "teeth", "strong", "spots", "bg"):
             run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color=gray:s=540x960:r={FPS}:d=0.5",
                  "-pix_fmt", "gray", "-c:v", "ffv1", f"{name}.mkv"], cwd=self.dir)
         run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=s=540x960:r={FPS}:d=0.5",
              "-c:v", "libx264", "-preset", "ultrafast", "clean.mp4"], cwd=self.dir)
-        masks = ["-i", "skin.mkv", "-i", "teeth.mkv", "-i", "strong.mkv"]
+        masks = ["-i", "skin.mkv", "-i", "teeth.mkv", "-i", "strong.mkv", "-i", "spots.mkv"]
         for name, extra in (("retouch.txt", []), ("retouch-blur.txt", ["-i", "bg.mkv"])):
             run(["ffmpeg", "-v", "error", "-y", "-i", "clean.mp4", *masks, *extra, filter_flag(),
                  SCRIPTS / "retouch" / name, "-map", "[v]", "-frames:v", "5", "-c:v", "libx264", "-preset", "ultrafast",
@@ -1324,6 +1324,104 @@ class SkillTest(unittest.TestCase):
         self.assertNotEqual(cli("add", "solo", "--file", str(saved)).returncode, 0)          # two words needed
         for name in ("SKILL.md",):
             self.assertIn("wordfixes.py", (ROOT / name).read_text("utf-8"))                  # the instructions mention it
+
+    def test_85_freckles_calmed_not_removed(self):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV or numpy not installed")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import settings
+        import spots
+        h, w = 700, 900
+        luma = np.full((h, w), 190, np.float32) + np.random.default_rng(0).normal(0, 1.5, (h, w)).astype(np.float32)
+        brow = np.zeros((h, w), np.uint8)
+        cv2.ellipse(brow, (450, 200), (150, 22), 0, 0, 360, 255, -1)         # the brow's outline
+        cv2.ellipse(luma, (450, 200), (150, 12), 0, 0, 360, 80, -1)          # its dark hairs
+        for x in (330, 400, 470, 540):
+            cv2.line(luma, (x, 170), (x + 12, 182), 100, 2)                  # single hairs poking out above it
+        for x, y in ((340, 290), (420, 305), (500, 285), (445, 235), (200, 450)):
+            cv2.circle(luma, (x, y), 5, 140, -1)                             # freckles; (445, 235) is just under the brow
+        cv2.circle(luma, (700, 400), 8, 70, -1)                              # a mole: bigger and much darker
+        luma[300:340, 580:700] = 90                                          # an eye
+        near = lambda m, x, y: float(m[y - 2:y + 3, x - 2:x + 3].max())
+        keep = spots.brow_hair_keep(luma, brow, 14, 700)
+        self.assertGreater(near(keep, 450, 200), 0.9)                         # the brow's hairs stay sharp
+        self.assertGreater(near(keep, 336, 176), 0.9)                         # and so do the strays above it
+        self.assertLess(near(keep, 445, 235), 0.1)                            # a freckle under it is skin, not a hair
+        old = cv2.GaussianBlur(luma, (0, 0), 10) - luma > 14                  # the old rule took it for one
+        zone = cv2.dilate(brow, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (21, 21))) > 0
+        old_keep = cv2.dilate(((old & zone).astype(np.uint8)) * 255, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+        self.assertGreater(near(old_keep, 445, 235), 0)
+        skin = np.ones((h, w), np.float32)
+        exclude = np.zeros((h, w), bool)
+        exclude[300:340, 580:700] = True
+        exclude |= (cv2.dilate(brow, np.ones((25, 25), np.uint8)) > 0) | (keep > 0.2)
+        mask = spots.spot_mask(luma, skin, exclude, 700)
+        for x, y in ((340, 290), (420, 305), (500, 285), (445, 235), (200, 450)):
+            self.assertGreater(near(mask, x, y), 0.9, (x, y))                  # every freckle is in the spot mask
+        for x, y, what in ((700, 400, "mole"), (450, 200, "brow"), (640, 320, "eye"), (100, 600, "skin")):
+            self.assertLess(near(mask, x, y), 0.05, what)                      # the mole, brow, eye and plain skin are not
+        far = spots.spot_mask(luma, skin, exclude, 120)                        # a small, distant face: a 10 px dot isn't a freckle
+        self.assertLess(near(far, 340, 290), 0.1)
+        self.assertEqual(spots.spot_mask(np.full((h, w), 190, np.float32), skin, exclude, 700).max(), 0)  # nothing to find
+        # the settings
+        self.assertEqual((settings.DEFAULTS["spot_calm"], settings.DEFAULTS["spot_contrast"]), (0.55, 18))
+        here = os.getcwd()
+        try:
+            os.chdir(self.dir)
+            Path("retouch.json").write_text(json.dumps({"spot_calm": 1.4}), "utf-8")
+            with self.assertRaises(SystemExit):
+                settings.load()
+            Path("retouch.json").write_text(json.dumps({"spot_calm": 0}), "utf-8")
+            self.assertEqual(settings.load()["spot_calm"], 0)
+            Path("retouch.json").unlink()
+        finally:
+            os.chdir(here)
+        # the filter calms a freckle by about half, and leaves a mole alone (the mask says where)
+        work = self.dir / "freckles"
+        work.mkdir()
+        frame = np.full((960, 540, 3), (150, 170, 215), np.uint8)
+        for x, y in ((150, 300), (260, 420)):
+            cv2.circle(frame, (x, y), 6, (95, 120, 170), -1)
+        cv2.circle(frame, (300, 700), 9, (50, 70, 110), -1)
+        ycc = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
+        full = spots.spot_mask(ycc[..., 0].astype(np.float32), np.ones((960, 540), np.float32), np.zeros((960, 540), bool), 700)
+
+        def gray_video(name, plane):
+            p = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "gray", "-s", "540x960", "-r", "25",
+                                  "-i", "-", "-c:v", "ffv1", name], cwd=work, stdin=subprocess.PIPE)
+            for _ in range(3):
+                p.stdin.write(plane.tobytes())
+            p.stdin.close()
+            p.wait()
+        gray_video("skin.mkv", np.full((960, 540), 200, np.uint8))
+        gray_video("teeth.mkv", np.zeros((960, 540), np.uint8))
+        gray_video("strong.mkv", np.zeros((960, 540), np.uint8))
+        gray_video("spots.mkv", (full * 0.55 * 255).astype(np.uint8))
+        raw = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", "540x960", "-r", "25",
+                                "-i", "-", "-c:v", "libx264", "-crf", "0", "-pix_fmt", "yuv444p", "clean.mp4"],
+                               cwd=work, stdin=subprocess.PIPE)
+        for _ in range(3):
+            raw.stdin.write(frame.tobytes())
+        raw.stdin.close()
+        raw.wait()
+        run(["ffmpeg", "-v", "error", "-y", "-i", "clean.mp4", "-i", "skin.mkv", "-i", "teeth.mkv", "-i", "strong.mkv",
+             "-i", "spots.mkv", filter_flag(), SCRIPTS / "retouch" / "retouch.txt", "-map", "[v]", "-frames:v", "1",
+             "-pix_fmt", "yuv444p", "-c:v", "libx264", "-crf", "0", "out.mp4"], cwd=work)
+
+        def contrast(path, x, y):
+            data = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-frames:v", "1", "-vf", "format=gray", "-f",
+                                   "rawvideo", "-"], cwd=work, capture_output=True).stdout
+            a = np.frombuffer(data, np.uint8).reshape(960, 540).astype(float)
+            return a[100:140, 100:140].mean() - a[y, x]
+        before, after = contrast("clean.mp4", 150, 300), contrast("out.mp4", 150, 300)
+        self.assertTrue(0.3 * before < after < 0.7 * before, (before, after))      # about half the contrast, not gone
+        self.assertGreater(contrast("out.mp4", 300, 700), 0.9 * contrast("clean.mp4", 300, 700))  # the mole is untouched
+        text = (SCRIPTS / "retouch" / "retouch-blur.txt").read_text("utf-8")
+        self.assertIn("[4:v]format=gray[pm]", text)                               # spots are input 4 ...
+        self.assertIn("[5:v]format=gray[bm]", text)                               # ... and the background mask moves to 5
 
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]

@@ -11,4 +11,9 @@
 [3:v]format=gray[cm];
 [close0][cm]alphamerge[close];
 [a0][close]overlay=format=yuv444[a2];
-[a2][white]overlay=format=yuv444,format=yuv420p[v]
+[a2]split[m0][m1];
+[m1]median=radius=8:planes=1,format=yuva444p[spot0];
+[4:v]format=gray[pm];
+[spot0][pm]alphamerge[spot];
+[m0][spot]overlay=format=yuv444[a3];
+[a3][white]overlay=format=yuv444,format=yuv420p[v]

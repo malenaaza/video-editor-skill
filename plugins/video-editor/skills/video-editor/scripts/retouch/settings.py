@@ -39,6 +39,11 @@ mask.py (skin and teeth):
   edge_faces      when the tracker finds no face, look for one cut in half by the frame edge
                   (see facetrack.py). On by default.
   edge_pad        share of the frame width mirrored for that search (0.5)
+  spot_calm       how much contrast freckles and other small dark spots on the skin lose: 0 keeps them as they
+                  are, 1 smooths them away, 0.55 (default) roughly halves it. A close-up smooths the skin twice,
+                  and a smoothing filter keeps small dark spots, so without this they were the only texture
+                  left and read as dirt. Moles (bigger and much darker), eyes, lips and brows are never touched.
+  spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 18)
   close_lo, close_hi   face height as a share of the frame height where the extra close-up
                   softening starts and where it reaches full strength
 
@@ -126,6 +131,8 @@ DEFAULTS = {
     "pixel_gap": 1.5,
     "pixel_hold": 0.4,
     "pixel_faces": 6,
+    "spot_calm": 0.55,
+    "spot_contrast": 18,
 }
 CHANNELS = ("lum", "a", "b", "hue", "sat", "val")
 
@@ -156,6 +163,8 @@ def load(path="retouch.json"):
         settings.update(data)
         for key in settings["blur_keys"] + ([settings["blur_skin"]] if settings["blur_skin"] else []):
             check_key(key)
+        if not (isinstance(settings["spot_calm"], (int, float)) and 0 <= settings["spot_calm"] <= 1):
+            sys.exit("retouch.json: spot_calm must be a number from 0 (keep spots as they are) to 1 (smooth them away).")
         crown = settings["crown"]
         if crown is not None and not (isinstance(crown, dict) and len(crown.get("grow", [])) == 2 and "raise" in crown):
             sys.exit('retouch.json: crown must be {"grow": [x, y], "raise": number}, for example '

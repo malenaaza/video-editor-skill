@@ -2,6 +2,18 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.1
+
+### Fixed
+- **Freckles looked like dirt in close-ups.** A close-up smooths the skin twice, and a smoothing filter keeps small
+  dark spots, so the freckles were the only texture left: "little black stains around the eyebrow", worst on the
+  side of the face closer to the camera. Now a freckle keeps about half its contrast (`spot_calm` in `retouch.json`,
+  default 0.55; 0 keeps spots as before, 1 smooths them away): the new mask `spots.mkv` and a last pass in
+  `retouch.txt` do it, and moles, eyes, lips and brows are never touched. The eyebrow rule also stopped mistaking a
+  freckle beside the brow for a brow hair (it kept it sharp and dark), and its distances now scale with the face's
+  height. **Rebuild your masks** (`mask.py`) before the next retouch: the filter files take `spots.mkv` as input 4,
+  and `retouch-blur.txt` takes the background mask as input 5. Guide: `references/retouch.md`, Freckles and spots.
+
 ## 2026-11-22 · version 2.14.0
 
 ### New

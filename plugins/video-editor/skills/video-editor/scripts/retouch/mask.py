@@ -1,5 +1,6 @@
 """Writes per-frame skin and teeth masks as FFV1 grayscale videos (skin.mkv, teeth.mkv), plus
 skin_strong.mkv: extra softening for close-ups, weighted by how big the face is in the frame.
+spots.mkv: where freckles and other small dark spots get less contrast (spots.py, setting spot_calm).
 
 Usage (from the folder with the clean render): python -I mask.py <face_landmarker.task> [clean.mp4]
 
@@ -17,7 +18,8 @@ skin_cr_max keeps very red pixels out (a red top or scarf), which aren't skin.
 Close-ups: when the face is big in the frame, skin texture is magnified and the normal level
 isn't enough. skin_strong.mkv ramps from 0 (face height below close_lo of the frame height) to
 full (above close_hi), smoothed from frame to frame so it doesn't flicker. retouch.txt adds a
-second, stronger softening on top of the normal one where this mask allows.
+second, stronger softening on top of the normal one where this mask allows, then
+a last pass that calms the spots (input 4, spots.mkv).
 """
 import os
 import subprocess
@@ -37,6 +39,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import settings  # noqa: E402
 from facetrack import EdgeFace  # noqa: E402
 import beauty  # noqa: E402
+import spots  # noqa: E402
 
 CFG = settings.load()
 MODEL = sys.argv[1]
@@ -84,6 +87,7 @@ fps = capture.get(cv2.CAP_PROP_FPS) or 24
 skin_out = writer("skin.mkv", width, height, fps)
 teeth_out = writer("teeth.mkv", width, height, fps)
 strong_out = writer("skin_strong.mkv", width, height, fps)
+spots_out = writer("spots.mkv", width, height, fps)
 under_out = writer("undereye.mkv", width, height, fps) if CFG["under_eye"] > 0 else None
 white_out = writer("eyewhite.mkv", width, height, fps) if CFG["eye_white"] > 0 else None
 weight = 0.0  # smoothed close-up weight
@@ -112,6 +116,7 @@ with FaceLandmarker.create_from_options(options) as tracker:
         skin = np.zeros(shape, np.uint8)
         teeth = np.zeros(shape, np.uint8)
         strong = np.zeros(shape, np.uint8)
+        spot = np.zeros(shape, np.uint8)
         under = np.zeros(shape, np.uint8)
         white = np.zeros(shape, np.uint8)
         points = None
@@ -172,11 +177,9 @@ with FaceLandmarker.create_from_options(options) as tracker:
             brow_area = hulls((BROW_L, BROW_R))
             hair_keep = None
             if CFG["brow_mode"] == "hair":
-                # Protect only the dark brow hairs. The skin between and around them is smoothed.
-                zone = grow(brow_area, 21) > 0
-                darker = cv2.GaussianBlur(luma, (0, 0), 10) - luma > CFG["brow_contrast"]
-                hair = grow(((darker & zone).astype(np.uint8)) * 255, 5)
-                hair_keep = cv2.GaussianBlur(hair.astype(np.float32) / 255, (0, 0), 1.2)
+                # Protect only the dark brow hairs (strokes attached to the brow). The skin between and around them
+                # is smoothed, and so is a freckle beside the brow: it is not a hair (spots.py).
+                hair_keep = spots.brow_hair_keep(luma, brow_area, CFG["brow_contrast"], face_h)
             else:
                 protect = cv2.bitwise_or(protect, grow(brow_area, int(CFG["protect_brows"])))
             mask = (region.astype(np.float32) / 255) * tone
@@ -185,6 +188,14 @@ with FaceLandmarker.create_from_options(options) as tracker:
             if hair_keep is not None:
                 mask *= 1 - hair_keep
             skin = np.clip(mask * SKIN_STRENGTH * 255, 0, 255).astype(np.uint8)
+            if CFG["spot_calm"] > 0:
+                # Small dark spots on the skin (freckles) keep only part of their contrast: retouch.txt blends a
+                # median-smoothed copy through this mask. Not the eyes, lips, mouth, brow or its hairs, nor moles.
+                left_alone = (protect > 0) | (grow(brow_area, 9) > 0)
+                if hair_keep is not None:
+                    left_alone |= hair_keep > 0.2
+                spot = np.clip(spots.spot_mask(luma, mask, left_alone, face_h, CFG["spot_contrast"])
+                               * CFG["spot_calm"] * 255, 0, 255).astype(np.uint8)
             target = min(max((face_h / height - CLOSE_LO) / (CLOSE_HI - CLOSE_LO), 0.0), 1.0)
             weight = weight * 0.85 + target * 0.15
             strong = np.clip(mask * weight * 255, 0, 255).astype(np.uint8)
@@ -213,6 +224,7 @@ with FaceLandmarker.create_from_options(options) as tracker:
         skin_out.stdin.write(skin.tobytes())
         teeth_out.stdin.write(teeth.tobytes())
         strong_out.stdin.write(strong.tobytes())
+        spots_out.stdin.write(spot.tobytes())
         if under_out is not None:
             under_out.stdin.write(under.tobytes())
         if white_out is not None:
@@ -223,12 +235,14 @@ capture.release()
 skin_out.stdin.close()
 teeth_out.stdin.close()
 strong_out.stdin.close()
+spots_out.stdin.close()
 for extra in (under_out, white_out):
     if extra is not None:
         extra.stdin.close()
 skin_out.wait()
 teeth_out.wait()
 strong_out.wait()
+spots_out.wait()
 for extra in (under_out, white_out):
     if extra is not None:
         extra.wait()
