@@ -1271,6 +1271,60 @@ class SkillTest(unittest.TestCase):
         png.write_bytes(bytes.fromhex("89504e470d0a1a0a0000000d49484452") + (1440).to_bytes(4, "big") + (2600).to_bytes(4, "big"))
         self.assertEqual(overlays.png_size(str(png)), (1440, 2600))              # a screenshot's size from its header
 
+    def test_84_reusable_word_fixes(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import wordfixes
+        saved = self.dir / "personal-fixes.json"
+        self.assertEqual(wordfixes.read(str(saved)), {})                                  # no list yet: nothing
+        self.assertIsNone(wordfixes.add("cupillon", "goupillon", str(saved)))
+        self.assertIsNone(wordfixes.add("sefora", "Sephora", str(saved)))
+        self.assertEqual(wordfixes.add("Cupillon", "Goupillon", str(saved)), "goupillon")  # replaced, case ignored
+        self.assertEqual(sorted(wordfixes.read(str(saved)).values()), ["Goupillon", "Sephora"])
+        for bad in (("", "x"), ("x", ""), ("Hola", "hola")):                             # nothing to fix: refused
+            with self.assertRaises(ValueError):
+                wordfixes.add(*bad, path=str(saved))
+        self.assertEqual(saved.read_text("utf-8").count("cupillon") + saved.read_text("utf-8").count("Cupillon"), 1)
+        # the video's own pair wins over the saved one
+        merged = wordfixes.load({"sefora": "SEPHORA"}, str(saved))
+        self.assertEqual(merged["sefora"], "SEPHORA")
+        self.assertIn("cupillon", [k.lower() for k in merged])
+        # a vocabulary for Whisper: the right spellings once each, capped; Parakeet gets none
+        words = {"a": "Sephora", "b": "sephora", "c": "Glow Serum|", "d": "goupillon"}
+        self.assertEqual(wordfixes.vocabulary(words), "Sephora, Glow Serum, goupillon")
+        self.assertEqual(len(wordfixes.vocabulary({str(i): f"w{i}" for i in range(100)}, limit=40).split(", ")), 40)
+        self.assertEqual(wordfixes.hint_for("whisper", None, words), "Sephora, Glow Serum, goupillon")
+        self.assertEqual(wordfixes.hint_for("whisper", "mi prompt", words), "mi prompt")   # an explicit prompt wins
+        self.assertIsNone(wordfixes.hint_for("parakeet", None, words))
+        self.assertIsNone(wordfixes.hint_for("whisper", None, {}))
+        self.assertTrue(wordfixes.remove("CUPILLON", str(saved)))
+        self.assertFalse(wordfixes.remove("cupillon", str(saved)))
+        # captions: the saved list is applied to a video with no --fix, and can be left out
+        (self.dir / "tr2.json").write_text(json.dumps({"segments": [{"words": [
+            {"word": " Mi", "start": 0.0, "end": 0.2}, {"word": " cupillon", "start": 0.2, "end": 0.7},
+            {"word": " de", "start": 0.7, "end": 0.8}, {"word": " Sefora.", "start": 0.8, "end": 1.4}]}]}), "utf-8")
+        wordfixes.add("cupillon", "goupillon", str(saved))
+        wordfixes.add("sefora", "Sephora", str(saved))
+        common = ["captions.py", "tr2.json", "--font", "DejaVu Sans", "--width", "540", "--height", "960", "--size", "40",
+                  "--margin-v", "260", "--on-cut", "--length", "2", "--personal-fixes", str(saved), "--out", "p.ass"]
+        out = script(*common, cwd=self.dir)
+        caps = json.loads((self.dir / "p.json").read_text("utf-8"))
+        self.assertEqual(" ".join(c["text"] for c in caps), "Mi goupillon de Sephora.")
+        self.assertIn("saved word fixes", out)
+        self.assertAlmostEqual(caps[0]["words"][1][0], 0.2, places=2)                       # the word keeps its time
+        script(*common, "--no-personal-fixes", cwd=self.dir)
+        caps = json.loads((self.dir / "p.json").read_text("utf-8"))
+        self.assertEqual(" ".join(c["text"] for c in caps), "Mi cupillon de Sefora.")       # switched off
+        (self.dir / "own.json").write_text(json.dumps({"sefora": "SEPHORA"}), "utf-8")
+        script(*common, "--fix", "own.json", cwd=self.dir)
+        caps = json.loads((self.dir / "p.json").read_text("utf-8"))
+        self.assertEqual(" ".join(c["text"] for c in caps), "Mi goupillon de SEPHORA.")      # the video's own wins
+        cli = lambda *a: subprocess.run([sys.executable, "-I", str(SCRIPTS / "wordfixes.py"), *a], cwd=self.dir,
+                                       capture_output=True, text=True, encoding="utf-8")
+        self.assertIn('"cupillon" -> "goupillon"', cli("list", "--file", str(saved)).stdout)
+        self.assertNotEqual(cli("add", "solo", "--file", str(saved)).returncode, 0)          # two words needed
+        for name in ("SKILL.md",):
+            self.assertIn("wordfixes.py", (ROOT / name).read_text("utf-8"))                  # the instructions mention it
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

@@ -16,8 +16,11 @@ Take the look from the brand's `Captions:` line in my-setup.md:
 Colours are hex (#RRGGBB). --margin-v is the distance from the bottom of the frame to the
 bottom of the caption, in pixels of the output video (--width x --height).
 
-Fixing words: Whisper misspells names. --fix fixes.json takes {"glo serum": "Glow Serum",
-"sefora": "Sephora"}; matching ignores case and punctuation and can span several words.
+Fixing words: transcribers misspell names. --fix fixes.json takes {"glo serum": "Glow Serum",
+"sefora": "Sephora"}; matching ignores case and punctuation and can span several words. The user's saved list
+(~/.video-editor/word-fixes.json, made with wordfixes.py add "<as written>" "<right>") is applied to every video
+under it, so a word is corrected once, not in each video; --fix wins when both fix a word, and
+--no-personal-fixes leaves the saved list out.
 --skip skip.json takes a list of [start, end] source ranges (transcript clock) whose words stay
 in the audio but out of the captions (for example a word in the speaker's other language).
 
@@ -56,6 +59,9 @@ import os
 import re
 import sys
 from fractions import Fraction
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import wordfixes  # noqa: E402
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -185,6 +191,9 @@ def main():
     ap.add_argument("--upper", action="store_true", help="ALL CAPS")
     ap.add_argument("--no-punctuation", action="store_true", help="drop commas and full stops (keeps ? and !)")
     ap.add_argument("--fix", help="json with corrections, see above")
+    ap.add_argument("--no-personal-fixes", action="store_true",
+                    help="don't apply the user's saved word fixes (~/.video-editor/word-fixes.json)")
+    ap.add_argument("--personal-fixes", default=wordfixes.PATH, help=argparse.SUPPRESS)
     ap.add_argument("--skip", help="json with source ranges to leave out of the captions")
     ap.add_argument("--remotion-props", help="also write props for WordCaptions.tsx (word highlight) to this file")
     ap.add_argument("--accent-color", default="#FF4F8B", help="with --remotion-props: the box behind the word said")
@@ -228,8 +237,12 @@ def main():
     if not words:
         sys.exit("No words left in the cut.")
     words.sort(key=lambda w: w["start"])
-    if a.fix:
-        words = apply_fixes(words, json.load(open(a.fix, encoding="utf-8")))
+    saved = {} if a.no_personal_fixes else wordfixes.read(a.personal_fixes)
+    if a.fix or saved:
+        words = apply_fixes(words, wordfixes.load(a.fix, a.personal_fixes) if not a.no_personal_fixes
+                            else json.load(open(a.fix, encoding="utf-8")))
+        if saved:
+            print(f"Applied the saved word fixes ({len(saved)} in the list; a video's own --fix wins).")
     if a.drops:
         drops = json.load(open(a.drops, encoding="utf-8"))
         words = remap_drops(words, drops)
