@@ -44,6 +44,11 @@ mask.py (skin and teeth):
                   it. A close-up smooths the skin twice, and a smoothing filter keeps small dark spots, so for
                   someone whose freckles then read as dirt, 0.55 calms them. Moles (bigger and much darker), eyes, lips and brows are never touched.
   spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 14)
+  shimmer_calm    how much contrast the glitter of a shimmery eyeshadow or highlighter loses (small bright specks on
+                  the skin, which the smoothing keeps as a patch of grain next to smooth skin): 0 leaves it as it is,
+                  1 smooths it away, 0.6 (default) calms it and the sparkle stays. Real reflections, eyes, lips and
+                  brows are never touched.
+  shimmer_contrast  how much lighter than the skin around it a pixel must be to count as a speck (default 8)
   forehead_feather  how softly the skin mask fades at its outer edge (the forehead's top, the jaw), as a share of the
                   face's height: 0.04 (default) is about 30 px on a 750 px face; 0 is the old fixed 9 px edge. The
                   tracked face outline ends mid-forehead, and a hard edge there showed as a line between smooth skin
@@ -137,6 +142,8 @@ DEFAULTS = {
     "pixel_faces": 6,
     "spot_calm": 0,
     "spot_contrast": 14,
+    "shimmer_calm": 0.6,
+    "shimmer_contrast": 8,
     "forehead_feather": 0.04,
 }
 CHANNELS = ("lum", "a", "b", "hue", "sat", "val")
@@ -172,6 +179,8 @@ def load(path="retouch.json"):
             sys.exit("retouch.json: spot_calm must be a number from 0 (keep spots as they are) to 1 (smooth them away).")
         if not (isinstance(settings["forehead_feather"], (int, float)) and 0 <= settings["forehead_feather"] <= 0.2):
             sys.exit("retouch.json: forehead_feather must be a number from 0 (a hard edge) to 0.2 (a very soft one).")
+        if not (isinstance(settings["shimmer_calm"], (int, float)) and 0 <= settings["shimmer_calm"] <= 1):
+            sys.exit("retouch.json: shimmer_calm must be a number from 0 (keep the glitter as it is) to 1 (smooth it away).")
         crown = settings["crown"]
         if crown is not None and not (isinstance(crown, dict) and len(crown.get("grow", [])) == 2 and "raise" in crown):
             sys.exit('retouch.json: crown must be {"grow": [x, y], "raise": number}, for example '

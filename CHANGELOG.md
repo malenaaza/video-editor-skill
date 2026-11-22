@@ -2,6 +2,16 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.5
+
+### Fixed
+- **A grainy patch of shimmer under the eyebrow in close-ups.** A shimmery eyeshadow or highlighter is a patch of
+  small bright specks, and the smoothing keeps them, so it stood out next to the smooth skin ("still some texture
+  around the eyebrows"). The spot pass (`spots.mkv`) now also finds small bright specks and calms them
+  (`shimmer_calm` in `retouch.json`, default 0.6; 0 turns it off; `shimmer_contrast`, default 8). Real reflections,
+  eyes, lips and brows are never touched. **Rebuild your masks** (`mask.py`). Guide: `references/retouch.md`,
+  Shimmer and glitter.
+
 ## 2026-11-22 · version 2.14.4
 
 ### Fixed
