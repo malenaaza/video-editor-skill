@@ -938,6 +938,47 @@ class SkillTest(unittest.TestCase):
         self.assertIn("Propose the animated explanations yourself", guide)          # proposed when writing, not asked for
         self.assertIn("name each piece once", guide)                                  # so the voice brings each box in
 
+    def test_77_parakeet_engine(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy not installed")
+        sys.path.insert(0, str(SCRIPTS))
+        import asr
+        import asrcompare
+        # Parakeet's pieces of words: a leading space starts a word, punctuation stays with its word
+        tokens = [" H", "ola", ",", " ho", "y", " os", " en", "se", "ño"]
+        times = [0.0, 0.24, 0.32, 0.48, 0.56, 0.72, 0.96, 1.04, 1.2]
+        words = asr.parakeet_words(tokens, times, offset=10.0, end=2.5)
+        self.assertEqual([w[2] for w in words], ["Hola,", "hoy", "os", "enseño"])
+        self.assertEqual(words[0][0], 10.0)                                       # offset of the piece added
+        self.assertEqual(words[0][1], 10.48)                                      # ends where the next word starts
+        self.assertAlmostEqual(words[-1][1], 11.8)                                # 0.6 s after its last piece: the pause isn't part of it
+        gap = asr.parakeet_words([" a", " b"], [0.0, 5.0])
+        self.assertEqual(gap[0][1], 0.6)                                          # a word before a long pause stops at 0.6 s
+        # long audio is cut at a quiet moment, never inside speech
+        rate = 16000
+        rng = np.random.default_rng(0)
+        audio = (rng.standard_normal(150 * rate) * 0.3).astype(np.float32)
+        audio[52 * rate:int(52.4 * rate)] = 0                                     # a pause at 52 s
+        pieces = asr.quiet_splits(audio, rate, longest=60)
+        self.assertEqual(pieces[0][0], 0)
+        self.assertEqual(pieces[-1][1], len(audio))
+        self.assertTrue(all(b - a <= 60 * rate for a, b in pieces))
+        self.assertTrue(52 * rate <= pieces[0][1] <= 52.4 * rate)                 # the first cut falls in the pause
+        # where speech really starts, measured on the sound, and how far an engine's word starts are from it
+        voice = np.zeros(6 * rate, np.float32)
+        voice[int(0.5 * rate):2 * rate] = 0.3
+        voice[int(3.0 * rate):5 * rate] = 0.3
+        self.assertEqual(asrcompare.speech_starts(voice, rate), [0.5, 3.0])
+        errors = asrcompare.start_error([0.55, 2.9, 4.0], [0.5, 3.0])
+        self.assertEqual([round(e, 2) for e in errors], [0.05, -0.1])
+        self.assertNotIn("este", asrcompare.FILLERS)                              # an ordinary word too
+        for name in ("hear.py", "checkcuts.py", "hunt_fillers.py"):               # every script that picks an engine offers it
+            self.assertIn('"parakeet"', (SCRIPTS / name).read_text("utf-8"))
+        self.assertIn('choices=["whisper", "parakeet"]', (SCRIPTS / "transcribe.py").read_text("utf-8"))
+        self.assertIn("Transcription engine:", (ROOT / "setup-template.md").read_text("utf-8"))
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

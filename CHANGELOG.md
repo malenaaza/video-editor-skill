@@ -2,6 +2,19 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.10.0
+
+### New
+- **Parakeet, a second transcription engine:** NVIDIA's Parakeet v3 (through `onnx-asr`, no NVIDIA software
+  needed) understands Spanish, English and 23 more European languages. On a computer without a graphics card it
+  was about 5 times faster than Whisper in a first test, with the same words but for one. `transcribe.py
+  --engine parakeet` writes the same transcript as Whisper, so the rest of the edit doesn't change; `hear.py`,
+  `checkcuts.py` and `hunt_fillers.py` take it too. Whisper stays the default.
+- **`scripts/asrcompare.py`** compares the two on a piece of your own voice: speed, text, the words where they
+  disagree, the fillers each wrote, and how close each one's word times are to where your speech really starts
+  after a pause (measured on the sound, since cuts are made there). Your choice is saved as `Transcription
+  engine:` in your settings. Guide: `references/setup.md`, Transcription engines.
+
 ## 2026-11-21 · version 2.9.0
 
 ### New

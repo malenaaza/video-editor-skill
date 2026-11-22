@@ -14,6 +14,9 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - Laptop: <yes / no>. If yes: power mode on battery <e.g. Best power efficiency / Best performance, from `detect_setup.py`>; measured slowdown on battery <e.g. 1.5x for transcription, or not measured>. Check with `detect_setup.py power` before long jobs.
 - FFmpeg version: <e.g. 7.1>. Filter files: <`-/filter_complex file.txt` on FFmpeg 7+, `-filter_complex_script file.txt` on older>
 
+## Transcription
+- Transcription engine: <whisper (default) / parakeet: chosen after asrcompare.py on the user's voice, with the date and why>
+
 ## Encoders
 - In-between renders, 8-bit: `<args from detect_setup.py, e.g. -c:v h264_nvenc ...>`
 - In-between renders, 10-bit: `<args from detect_setup.py>`

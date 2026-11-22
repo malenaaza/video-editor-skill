@@ -156,6 +156,12 @@ Transcribe every word with its time, using faster-whisper. It writes the same JS
 <speech python> -I <skill>/scripts/transcribe.py "<audio-or-video>" transcript
 ```
 
+If `my-setup.md` says `Transcription engine: parakeet`, add `--engine parakeet` (NVIDIA Parakeet v3: several times
+faster on a computer without an NVIDIA GPU, same JSON). Choose it only after `scripts/asrcompare.py` has compared it
+with Whisper on a piece of this user's own voice (right words, fillers written, word starts closest to the real
+ones); offer that comparison once when transcription is slow. Keep Whisper for the filler hunts unless the
+comparison showed Parakeet writing the fillers (`references/setup.md`, Transcription engines).
+
 **When the video was filmed from a script** (`script.md`, written as in `references/script.md`), run `python -I <skill>/scripts/scriptcut.py script.md <transcript.json> --cuts cuts.json` after transcribing: it keeps the last good take of every line, removes the other takes and false starts, and writes `script-report.md` (lines not said, talk not in the script) plus `chapters.json` and `shorts.json` from the script's markers. Read the report to the user before building the cut.
 
 If it fails, fall back to `whisper "<audio-or-video>" --model medium --word_timestamps True --output_format json --output_dir transcript` (add `--fp16 False` on CPU). Use `medium` for the main pass, re-checks and the check of the finished video.
