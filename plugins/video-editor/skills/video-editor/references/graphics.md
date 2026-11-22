@@ -134,8 +134,11 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
   without a window: `"<chrome>" --headless --hide-scrollbars --screenshot=<project>/public/pages/<name>.png
   --window-size=1440,2600 <url>` (raise the height for a long page; add `--no-sandbox` only where Chrome refuses to
   start). Never a page behind a login or with someone's private details. Look at the screenshot to place each
-  `highlight` box (in the screenshot's own pixels); a box out of view scrolls the page to it first, so `scroll` is
-  only for moving around without highlighting. Show the user a still with the box before rendering.
+  `highlight` box (in the screenshot's own pixels); a rough box is enough, because it is fitted to the text or
+  picture inside it (run `overlays.py` with a Python that has Pillow, such as the cutout one, or it says the boxes
+  stay as given). It shows as a fine outline with room around the words while the rest of the page dims, like a
+  spotlight. A box out of view scrolls the page to it first, so `scroll` is only for moving around without
+  highlighting. Show the user a still with the box before rendering.
 - **Numbers** (`stats`, template `StatTiles`): two to four numbers that belong together ("un 40 % más rápido, tres
   horas a la semana"), written the Spanish way. Only numbers the speaker says, never one made up or rounded up.
 - **Before and after** (`beforeafter`, template `BeforeAfter`): a weak prompt and a good one, a draft and the AI's

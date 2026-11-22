@@ -83,12 +83,17 @@ export const BrowserPage: React.FC<BrowserPageProps> = (input) => {
             <Img src={staticFile(p.image)} style={{ width: winW, display: "block" }} />
             {p.boxes.map((b, i) => {
               if (frame < b.frame) return null;
-              const pop = spring({ frame: frame - b.frame, fps, config: { damping: 14, stiffness: 160 } });
+              const pop = spring({ frame: frame - b.frame, fps, config: { damping: 20, stiffness: 150 } });
+              // A fine outline with room around the words, and the rest of the page dimmed like a spotlight. A first
+              // version with a thick border and a pink fill hugging the text looked crude.
+              const pad = Math.max(14, b.h * scale * 0.6);
+              const line = Math.max(3, Math.round(s / 18));
               return (
-                <div key={i} style={{ position: "absolute", left: b.x * scale - 6, top: b.y * scale - 6,
-                  width: b.w * scale + 12, height: b.h * scale + 12, borderRadius: s * 0.2,
-                  border: `${Math.max(4, s / 10)}px solid ${p.accentColor}`, backgroundColor: `${p.accentColor}22`,
-                  transform: `scale(${0.9 + 0.1 * pop})`, opacity: pop }} />
+                <div key={i} style={{ position: "absolute", left: b.x * scale - pad, top: b.y * scale - pad,
+                  width: b.w * scale + pad * 2, height: b.h * scale + pad * 2, borderRadius: pad * 0.8,
+                  border: `${line}px solid ${p.accentColor}`,
+                  boxShadow: `0 0 0 4000px rgba(12, 12, 24, ${0.42 * pop}), 0 0 ${s * 0.5}px ${p.accentColor}88`,
+                  transform: `scale(${1.04 - 0.04 * pop})`, opacity: pop }} />
               );
             })}
           </div>

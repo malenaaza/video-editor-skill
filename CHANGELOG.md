@@ -19,7 +19,9 @@ What each update of the video-editor skill brings. Newest first.
   the initial. Guide: `references/graphics.md`, Tool cards.
 - **Web page, numbers, before and after** for educational videos (`scripts/overlays.py`, new templates
   `BrowserPage`, `StatTiles`, `BeforeAfter`): a real web page in a browser window that scrolls to what you mention
-  and highlights it (a box out of view scrolls the page to it first); two to four numbers that count up as you say
+  and highlights it: a fine outline fitted to the words, with the rest of the page dimmed like a spotlight (a first
+  version with a thick, tinted box hugging the text across the whole column looked crude), and a box out of view
+  scrolls the page to it first; two to four numbers that count up as you say
   them, written the Spanish way; and a before and an after, images or texts, with the after sweeping in as you say
   it. Guide: `references/graphics.md`, Web page, numbers, before and after.
 

@@ -16,7 +16,10 @@ browser: a real web page in a browser window, scrolling, with boxes that highlig
    "scroll": [{"to": 0.4, "say": "más abajo"}],                  to: how far down the page, 0 (top) to 1 (bottom)
    "highlight": [{"box": [120, 640, 900, 160], "say": "este titular"}]}   box in the screenshot's own pixels
   A highlight that would be out of view scrolls the page to it first, so "scroll" is only needed for moving
-  around without highlighting; look at the screenshot to find each box.
+  around without highlighting; look at the screenshot to find each box. A rough box is enough: it is fitted to the
+  text or picture inside it (what differs from the page's background there), so the outline sits evenly around the
+  words, not across the whole column ("fit": false keeps a box as given). Fitting needs Pillow (the cutout Python
+  has it); without it the boxes stay as given and it says so.
 stats: two to four numbers that belong together, each counting up as it's said.
   {"title": "Con IA", "start_say": "...", "end_say": "...",
    "tiles": [{"value": 40, "suffix": " %", "label": "más rápido", "say": "un cuarenta"},
@@ -113,6 +116,32 @@ class Timer:
         return round(length, 3)
 
 
+def fit_box(image_path, box, threshold=40):
+    """The box shrunk to what's inside it: the pixels that differ from its own background (the most common colour
+    on its edge) by more than `threshold` in brightness. None when there is nothing inside, or Pillow is missing."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    x, y, w, h = (int(round(v)) for v in box)
+    with Image.open(image_path) as im:
+        region = im.convert("L").crop((x, y, x + w, y + h))
+    px = region.load()
+    rw, rh = region.size
+    edge = [px[i, 0] for i in range(rw)] + [px[i, rh - 1] for i in range(rw)] + \
+           [px[0, j] for j in range(rh)] + [px[rw - 1, j] for j in range(rh)]
+    background = max(set(edge), key=edge.count)
+    xs, ys = [], []
+    for j in range(rh):
+        for i in range(rw):
+            if abs(px[i, j] - background) > threshold:
+                xs.append(i)
+                ys.append(j)
+    if not xs:
+        return None
+    return [x + min(xs), y + min(ys), max(xs) - min(xs) + 1, max(ys) - min(ys) + 1]
+
+
 def browser_view(width, height):
     """(window width, visible page height) of BrowserPage.tsx's window, for this video size: keep in step with it."""
     vertical = height > width
@@ -139,8 +168,19 @@ def browser_props(spec, timer, fps, public=".", width=1920, height=1080):
     win_w, view_h = browser_view(width, height)
     scale = win_w / page_w
     max_scroll = max(0.0, page_h * scale - view_h)
+    fitted_any = missing_pillow = False
     for i, h in enumerate(spec.get("highlight", [])):
         x, y, w, hh = (float(v) for v in h["box"])
+        if h.get("fit", True) and os.path.exists(image_path):
+            fitted = fit_box(image_path, [x, y, w, hh])
+            if fitted:
+                x, y, w, hh = (float(v) for v in fitted)
+                fitted_any = True
+            else:
+                try:
+                    import PIL  # noqa: F401
+                except ImportError:
+                    missing_pillow = True
         if not (0 <= x < page_w and 0 <= y < page_h):
             timer.problems.append(f"highlight {i + 1} is outside the {page_w}x{page_h} screenshot.")
         t = timer.part(h, f"highlight {i + 1}")
@@ -154,6 +194,9 @@ def browser_props(spec, timer, fps, public=".", width=1920, height=1080):
             timeline.append((t, f"scrolls to the box ({round(to * 100)} % of the page)"))
         boxes.append({"frame": f, "x": x, "y": y, "w": w, "h": hh})
         timeline.append((t, f"highlights the box at {int(x)},{int(y)}"))
+    if missing_pillow:
+        timer.problems.append("Pillow isn't installed in this Python: the highlight boxes are as given, not fitted to "
+                              "the text (run it with the cutout Python, or pip install pillow).")
     last = max([s["frame"] for s in scroll] + [b["frame"] for b in boxes]) / fps
     return {"image": spec["image"], "url": spec.get("url", ""), "pageWidth": page_w, "pageHeight": page_h,
             "scroll": sorted(scroll, key=lambda s: s["frame"]), "boxes": boxes}, last, timeline

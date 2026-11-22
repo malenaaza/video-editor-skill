@@ -1251,6 +1251,19 @@ class SkillTest(unittest.TestCase):
             tsx = (SCRIPTS / "remotion" / f"{name}.tsx").read_text("utf-8")
             for key in props:
                 self.assertRegex(tsx, rf"\b{key}\??:", f"{name}: {key}")
+        try:
+            from PIL import Image, ImageDraw
+        except ImportError:
+            Image = None
+        if Image is not None:                                                     # a rough box is fitted to what's inside
+            shot = self.dir / "shot.png"
+            im = Image.new("RGB", (1440, 600), "white")
+            ImageDraw.Draw(im).rectangle([61, 196, 909, 233], fill="black")       # a heading's ink
+            im.save(shot)
+            self.assertEqual(overlays.fit_box(str(shot), [50, 190, 1340, 75]), [61, 196, 849, 38])
+            self.assertIsNone(overlays.fit_box(str(shot), [1000, 400, 300, 100]))  # nothing inside: left as given
+        tsx = (SCRIPTS / "remotion" / "BrowserPage.tsx").read_text("utf-8")
+        self.assertIn("4000px rgba", tsx)                                          # the rest of the page dims
         png = self.dir / "tiny.png"
         png.write_bytes(bytes.fromhex("89504e470d0a1a0a0000000d49484452") + (1440).to_bytes(4, "big") + (2600).to_bytes(4, "big"))
         self.assertEqual(overlays.png_size(str(png)), (1440, 2600))              # a screenshot's size from its header
