@@ -988,6 +988,49 @@ class SkillTest(unittest.TestCase):
         self.assertIn('choices=["whisper", "parakeet"]', (SCRIPTS / "transcribe.py").read_text("utf-8"))
         self.assertIn("Transcription engine:", (ROOT / "setup-template.md").read_text("utf-8"))
 
+    def test_78_export_check(self):
+        try:
+            import numpy  # noqa: F401
+        except ImportError:
+            self.skipTest("numpy not installed")
+        work = self.dir / "chk"
+        work.mkdir()
+        ff = lambda *args: subprocess.run(["ffmpeg", "-v", "error", "-y", *args], cwd=work, check=True)
+        tag = "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709"   # as the final export does
+        tags = ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709"]
+        ff("-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=4", "-f", "lavfi", "-i", "sine=f=300:r=48000:d=4",
+           "-vf", tag, "-c:v", "libx264", "-pix_fmt", "yuv420p", *tags, "-c:a", "aac", "clean.mp4")
+        # a plain jump cut (one picture, then another) is not a flash
+        ff("-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=2", "-f", "lavfi", "-i", "smptebars=s=320x180:r=25:d=2",
+           "-f", "lavfi", "-i", "sine=f=300:r=48000:d=4", "-filter_complex", f"[0:v][1:v]concat=n=2:v=1:a=0,{tag}[v]",
+           "-map", "[v]", "-map", "2:a", "-c:v", "libx264", "-pix_fmt", "yuv420p", *tags, "-c:a", "aac", "jump.mp4")
+        ff("-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=4", "-f", "lavfi", "-i", "sine=f=300:r=48000:d=3.5",
+           "-vf", "drawbox=enable='between(n,40,42)':color=black:t=fill,drawbox=enable='eq(n,70)':color=white:t=fill",
+           "-af", "volume=enable='between(t,2,2.6)':volume=0", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+           "-c:a", "pcm_s16le", "bad.mov")
+        run = lambda *args: subprocess.run([sys.executable, "-I", str(SCRIPTS / "checkexport.py"), *args], cwd=work,
+                                          capture_output=True, text=True, encoding="utf-8")
+        for good in ("clean.mp4", "jump.mp4"):
+            r = run(good)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertNotIn("FAIL", r.stdout)
+            self.assertNotIn("WARN", r.stdout)
+        bad = run("bad.mov")
+        self.assertEqual(bad.returncode, 1)                                       # never delivered
+        self.assertIn("black picture from 0:01.60", bad.stdout)                   # 3 black frames from frame 40
+        self.assertIn("flash at 0:02.80 (frame 70)", bad.stdout)                  # the stray frame
+        self.assertIn("picture 4.00 s but sound 3.50 s", bad.stdout)
+        self.assertIn("digital silence from 0:02.0", bad.stdout)
+        self.assertIn("colour tags missing", bad.stdout)
+        self.assertIn("setparams=color_primaries=bt709", bad.stdout)               # advice that works on every FFmpeg
+        self.assertIn("setparams=color_primaries=bt709", (ROOT / "SKILL.md").read_text("utf-8"))  # the export tags it
+        self.assertTrue((work / "bad-check.txt").exists())
+        sys.path.insert(0, str(SCRIPTS))
+        import checkexport
+        said = lambda words: {"segments": [{"words": [{"start": i * 0.4, "word": " " + w} for i, w in enumerate(words)]}]}
+        lost = checkexport.missing_words(said(["hola", "hoy", "os", "enseño", "algo"]), said(["hola", "os", "enseño", "algo"]))
+        self.assertEqual(lost, [(0.4, "hoy")])                                    # a word clipped at a cut
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

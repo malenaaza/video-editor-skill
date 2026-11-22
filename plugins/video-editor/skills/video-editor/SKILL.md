@@ -243,8 +243,13 @@ When the user wants to borrow the style of creators they admire, borrow the form
 - **Final export** (what the viewer sees), always:
 
 ```
--c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -ac 2 -c:a aac -b:a 320k -movflags +faststart
+-c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 -ac 2 -c:a aac -b:a 320k -movflags +faststart
 ```
+
+  and end the picture's filter chain with `setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709`
+  (after `format=yuv420p`). Without colour tags some players guess, and faces look darker and redder. FFmpeg 7 and
+  later take the tags from the frames and ignore the `-color_*` options, so the filter is what tags the file there;
+  the options cover older versions. `checkexport.py` warns when they're missing.
 
 - **In-between renders** (the clean edit, `retouched.mp4`, test cuts, check renders, anything re-encoded later): use the 8-bit encoder line saved in `my-setup.md`. A hardware encoder is usually several times faster at the same quality. If it fails, use the fallback line there and say so.
 - **10-bit sources** (ProRes, Log, HDR; check `pix_fmt` with `ffprobe`, e.g. `yuv422p10le`) must stay 10-bit in in-between renders until they're converted and graded, or gradients band. Use the 10-bit line in `my-setup.md`. ProRes 4K decodes slowly on the CPU (about real time on a laptop) and uses about 6 GB per minute, so check free disk space first.
@@ -311,6 +316,8 @@ Show before/after frames from the user's own video before a full render of any o
 ## Rule 11: Finish like this
 
 Before reporting, check the export with `ffprobe` (resolution, duration, audio present) and look at a few extracted frames, including one with captions.
+
+**Check the export before saying it's done:** `<speech python> -I <skill>/scripts/checkexport.py <export>`. It fails on black frames in the middle, a single-frame flash (a stray frame a cut left behind) and picture and sound of different lengths, and warns about digital silence (sound cut out) and missing colour tags. On a FAIL, fix it and export again; never deliver a FAIL. For a cut from raw footage, also transcribe the export's sound and add `--expect <the cut voice's transcript> --heard <the export's>`: it lists words clipped at a cut. Tell the user the warnings in one line.
 
 **The edit in numbers:** run `python -I <skill>/scripts/editreport.py <original> <export>` from the build folder (it reads `plan.json`, `cuts.json` and `drops.json` there). It saves `<export name>-report.txt` next to the export and prints the length before and after with how much was removed, the pieces kept, the retakes and fillers removed, the pauses left and the longest, the loudness and true peak, and the picture size, frame rate and frame count. Give the user these numbers in a few lines, in their language: they show what was done better than "it's better now". If a number is off (loudness far from the brand's target, a pause left that should have gone), fix it before reporting.
 
