@@ -44,8 +44,8 @@ mask.py (skin and teeth):
                   it. A close-up smooths the skin twice, and a smoothing filter keeps small dark spots, so for
                   someone whose freckles then read as dirt, 0.55 calms them. Moles (bigger and much darker), eyes, lips and brows are never touched.
   spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 14)
-  shimmer_calm    how much contrast the glitter of a shimmery eyeshadow or highlighter loses (small bright specks on
-                  the skin, which the smoothing keeps as a patch of grain next to smooth skin): 0 leaves it as it is,
+  shimmer_calm    how much contrast small bright specks on the skin lose (the glitter of a shimmery eyeshadow or
+                  highlighter, or a dry or bumpy patch of skin), which the smoothing keeps as a patch of grain next to smooth skin: 0 leaves it as it is,
                   1 smooths it away, 0.6 (default) calms it and the sparkle stays. Real reflections, eyes, lips and
                   brows are never touched.
   shimmer_contrast  how much lighter than the skin around it a pixel must be to count as a speck (default 8)
