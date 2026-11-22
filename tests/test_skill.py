@@ -1193,6 +1193,68 @@ class SkillTest(unittest.TestCase):
         with wave.open(str(wav)) as w:
             self.assertAlmostEqual(w.getnframes() / w.getframerate(), 2.0, delta=0.01)
 
+    def test_83_web_page_numbers_before_after(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import overlays
+        said = ("Mirad esta noticia . Bajamos un poco . Y aquí está el titular . Con IA voy un cuarenta por ciento más "
+                "rápido , ahorro tres horas y tengo el doble de ideas . Antes escribía esto y ahora lo pido así . Y fin").split()
+        t, words = 1.0, []
+        for w in said:
+            if w in (".", ","):
+                t += 0.5
+                continue
+            words.append([round(t, 2), round(t + 0.25, 2), w])
+            t += 0.3
+        caps = [{"start": 0, "end": 1, "words": words}]
+        when = lambda word: next(w[0] for w in words if w[2] == word)
+        # a web page: a box far down the page scrolls it into view first
+        page = {"image": "pages/p.png", "imageWidth": 1440, "imageHeight": 2600, "url": "x.example",
+                "start_say": "Mirad", "scroll": [{"to": 0.1, "say": "Bajamos"}],
+                "highlight": [{"box": [50, 1490, 1340, 75], "say": "el titular"}]}
+        timer = overlays.Timer(page, caps)
+        body, last, timeline = overlays.browser_props(page, timer, 25, public=str(self.dir), width=1920, height=1080)
+        box = body["boxes"][0]
+        self.assertEqual(box["frame"], round((when("el") - timer.start - overlays.LEAD) * 25))
+        stop = next(s for s in body["scroll"] if s["frame"] == box["frame"])     # the page scrolls to the box
+        win_w, view_h = overlays.browser_view(1920, 1080)
+        scale = win_w / 1440
+        seen = stop["to"] * (2600 * scale - view_h)
+        self.assertTrue(seen <= 1490 * scale and (1490 + 75) * scale <= seen + view_h)  # the box is in view
+        plain = dict(page, highlight=[{"box": [50, 100, 600, 60], "say": "el titular"}], scroll=[])
+        body2, _, _ = overlays.browser_props(plain, overlays.Timer(plain, caps), 25, public=str(self.dir))
+        self.assertEqual(len(body2["scroll"]), 1)                                  # already in view: no extra scroll
+        tsx = (SCRIPTS / "remotion" / "BrowserPage.tsx").read_text("utf-8")
+        self.assertIn("p.width * 0.8", tsx)                                       # the window sizes overlays.py assumes
+        self.assertIn("p.height * 0.84", tsx)
+        self.assertIn("s * 1.4", tsx)
+        # numbers: each tile on its own phrase, Spanish formatting, 2 to 4 tiles
+        stats = {"start_say": "Con IA", "tiles": [{"value": 40, "suffix": " %", "label": "más rápido", "say": "un cuarenta"},
+                                                  {"value": 1250.5, "decimals": 1, "label": "palabras", "say": "tres horas"}]}
+        st_timer = overlays.Timer(stats, caps)
+        body, _, timeline = overlays.stats_props(stats, st_timer, 25)
+        self.assertLess(body["tiles"][0]["frame"], body["tiles"][1]["frame"])
+        self.assertEqual(overlays.number_text(1250.5, 1), "1.250,5")
+        self.assertEqual(overlays.number_text(40, 0, "", " %"), "40 %")
+        with self.assertRaises(ValueError):
+            overlays.stats_props(dict(stats, tiles=stats["tiles"][:1]), overlays.Timer(stats, caps), 25)
+        # before and after: the sweep on its phrase
+        ba = {"start_say": "Antes escribía", "reveal_say": "ahora lo pido", "before": {"label": "Antes", "text": "Escribe un post"},
+              "after": {"label": "Después", "text": "Escribe un post de 150 palabras"}}
+        ba_timer = overlays.Timer(ba, caps)
+        body, _, _ = overlays.beforeafter_props(ba, ba_timer, 25)
+        self.assertEqual(body["reveal"], round((when("ahora") - ba_timer.start - overlays.LEAD) * 25))
+        with self.assertRaises(ValueError):
+            overlays.beforeafter_props(dict(ba, after={}), overlays.Timer(ba, caps), 25)
+        for name, props in (("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
+                            ("BeforeAfter", ("before", "after", "reveal", "revealFrames", "label", "text", "image")),
+                            ("BrowserPage", ("image", "url", "pageWidth", "pageHeight", "scroll", "boxes", "to"))):
+            tsx = (SCRIPTS / "remotion" / f"{name}.tsx").read_text("utf-8")
+            for key in props:
+                self.assertRegex(tsx, rf"\b{key}\??:", f"{name}: {key}")
+        png = self.dir / "tiny.png"
+        png.write_bytes(bytes.fromhex("89504e470d0a1a0a0000000d49484452") + (1440).to_bytes(4, "big") + (2600).to_bytes(4, "big"))
+        self.assertEqual(overlays.png_size(str(png)), (1440, 2600))              # a screenshot's size from its header
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

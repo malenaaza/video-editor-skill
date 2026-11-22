@@ -32,6 +32,9 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `Explainer` | An animated explanation in an educational video: boxes, arrows and a moving dot showing how something works, each piece appearing as the speaker names it (see Animated explanations below) | written by `explainer.py` | the stretch it explains |
 | `ChatWindow` | An AI chat in a video about AI: the prompt types, is sent, the assistant thinks and answers word by word (see AI chat window below) | written by `chatwindow.py` | the stretch it shows |
 | `ToolCard` | A tool's logo and name when the speaker names it, in videos about AI; tools named in a row stack (see Tool cards below) | written by `toolcards.py` | about 2.5 s a group |
+| `BrowserPage` | A real web page in a browser window, scrolling, with boxes on what's mentioned (see Web page, numbers, before and after below) | written by `overlays.py browser` | the stretch it shows |
+| `StatTiles` | Two to four numbers that belong together, counting up as they're said | written by `overlays.py stats` | the stretch it shows |
+| `BeforeAfter` | A before and an after (images or texts: a weak prompt and a good one), the after sweeping in | written by `overlays.py beforeafter` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
@@ -117,6 +120,26 @@ named one after another stack into one group, each appearing on its own word.
    thin. It writes one props file per group and `toolcards-sfx.wav`, and prints each group's time.
 3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
 4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
+
+## Web page, numbers, before and after
+
+Three graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter>
+<spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
+`--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
+phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
+`<skill>/scripts/overlays.py`. They make no sound: nothing on screen would.
+
+- **Web page** (`browser`, template `BrowserPage`): when the speaker talks about a page (a tool's site, an article,
+  a post). Take a full-page screenshot of a public page into the Remotion project's `public/pages/`, with Chrome
+  without a window: `"<chrome>" --headless --hide-scrollbars --screenshot=<project>/public/pages/<name>.png
+  --window-size=1440,2600 <url>` (raise the height for a long page; add `--no-sandbox` only where Chrome refuses to
+  start). Never a page behind a login or with someone's private details. Look at the screenshot to place each
+  `highlight` box (in the screenshot's own pixels); a box out of view scrolls the page to it first, so `scroll` is
+  only for moving around without highlighting. Show the user a still with the box before rendering.
+- **Numbers** (`stats`, template `StatTiles`): two to four numbers that belong together ("un 40 % más rápido, tres
+  horas a la semana"), written the Spanish way. Only numbers the speaker says, never one made up or rounded up.
+- **Before and after** (`beforeafter`, template `BeforeAfter`): a weak prompt and a good one, a draft and the AI's
+  version, a photo before and after. Each side is a `text` or an `image`; the after sweeps in at `reveal_say`.
 
 ## Product pop-in from B-roll
 

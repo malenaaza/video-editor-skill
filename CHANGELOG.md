@@ -17,6 +17,11 @@ What each update of the video-editor skill brings. Newest first.
   in the last 20 seconds isn't shown again. `scripts/toolcards.py` finds the names in your captions; the new
   Remotion template `ToolCard.tsx` draws them. Logos come from each brand's press kit; without one, a badge with
   the initial. Guide: `references/graphics.md`, Tool cards.
+- **Web page, numbers, before and after** for educational videos (`scripts/overlays.py`, new templates
+  `BrowserPage`, `StatTiles`, `BeforeAfter`): a real web page in a browser window that scrolls to what you mention
+  and highlights it (a box out of view scrolls the page to it first); two to four numbers that count up as you say
+  them, written the Spanish way; and a before and an after, images or texts, with the after sweeping in as you say
+  it. Guide: `references/graphics.md`, Web page, numbers, before and after.
 
 ## 2026-11-22 · version 2.12.0
 
