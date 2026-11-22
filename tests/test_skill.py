@@ -1106,6 +1106,171 @@ class SkillTest(unittest.TestCase):
         mix.write_text("[1:a]adelay=2350|2350,volume=0.4[s0];[2:a]adelay=120|120[s1]", "utf-8")
         self.assertEqual(hookcheck.sfx_times(str(mix)), [0.12, 2.35])
 
+    def test_81_ai_chat_window(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import chatwindow
+        said = "Mirad esto . Le pido a Claude que me resuma este correo . Y me dice lo importante . Así de rápido".split()
+        t, words = 10.0, []
+        for w in said:
+            if w == ".":
+                t += 0.6
+                continue
+            words.append([round(t, 2), round(t + 0.3, 2), w])
+            t += 0.32
+        captions = [{"start": words[0][0], "end": words[-1][1], "words": words}]
+        when = lambda word: next(w[0] for w in words if w[2] == word)
+        spec = {"app": "Claude", "start_say": "Le pido a Claude", "end_say": "Así de rápido",
+                "messages": [{"role": "user", "text": "Resume este correo en tres puntos", "say": "me resuma"},
+                             {"role": "assistant", "text": "Lo importante:\n- Reunión el lunes\n- Falta tu firma", "say": "me dice"},
+                             {"role": "user", "text": "Gracias"}]}                       # no phrase: follows the answer
+        style = {"theme": "light", "font": "sans-serif", "fontFile": "", "accentColor": "#FF4F8B",
+                 "background": "#1B1033", "background2": "#0E2A47"}
+        props, start, timeline, problems = chatwindow.build_props(spec, captions, 1920, 1080, 25, style)
+        self.assertAlmostEqual(start, when("Le") - chatwindow.LEAD, places=3)
+        user, answer, thanks = props["messages"]
+        self.assertEqual(user["typeFrom"], round((when("me") - start - chatwindow.LEAD) * 25))   # a beat before it's said
+        self.assertAlmostEqual(user["typeTo"] - user["typeFrom"], len(user["text"]) / 22 * 25, delta=1)  # 22 letters a second
+        self.assertGreater(user["sent"], user["typeTo"])                                 # sent after the last letter
+        self.assertGreaterEqual(answer["from"], user["sent"])                            # never answers before it's asked
+        self.assertEqual(answer["answer"] - answer["from"], round(0.8 * 25))             # thinks, then answers
+        self.assertGreater(thanks["typeFrom"], answer["answer"])                         # the next prompt follows the answer
+        self.assertGreater(props["seconds"], (thanks["sent"] - 0) / 25)                  # long enough to read everything
+        self.assertTrue(any("made longer" in p for p in problems))
+        clicks = chatwindow.click_times(props)
+        first, last = user["typeFrom"] / 25, user["sent"] / 25
+        self.assertTrue(first <= clicks[0] and any(abs(c - last) < 0.001 for c in clicks))  # typing, then "enter"
+        self.assertTrue(all(not (answer["answer"] / 25 < c < answer["answer"] / 25 + 1) for c in clicks))  # answers are silent
+        with self.assertRaises(ValueError):
+            chatwindow.build_props(dict(spec, messages=[{"role": "bot", "text": "x"}]), captions, 1920, 1080, 25, style)
+        tsx = (SCRIPTS / "remotion" / "ChatWindow.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("messages: []", default_props)                                    # no sample chat leaks in
+        self.assertIn('warm: {', tsx)                                                   # the Claude-like theme exists
+        self.assertIn('"warm"', (SCRIPTS / "chatwindow.py").read_text("utf-8"))           # and can be chosen
+        self.assertIn("really answered", (SCRIPTS / "chatwindow.py").read_text("utf-8"))  # the answer is the real one
+        for key in list(props) + list(user) + list(answer):
+            self.assertRegex(tsx, rf"\b{key}\??:", key)                                # every prop is one it reads
+        wav = self.dir / "chat-sfx.wav"
+        chatwindow.write_clicks(props, str(wav))
+        import wave
+        with wave.open(str(wav)) as w:
+            self.assertAlmostEqual(w.getnframes() / w.getframerate(), props["seconds"], delta=0.05)
+
+    def test_82_tool_cards(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import toolcards
+        said = ("Hoy uso Claude con Gmail y noción para organizarme . " + "bla " * 20 + ". Claude me ayuda mucho . "
+                + "bla " * 50 + ". Y vuelvo a Claude").split()
+        t, words = 2.0, []
+        for w in said:
+            if w == ".":
+                t += 0.5
+                continue
+            words.append([round(t, 2), round(t + 0.25, 2), w])
+            t += 0.3
+        flat = toolcards.flat_words([{"start": 0, "end": 1, "words": words}])
+        tools = [{"name": "Claude", "logo": "logos/claude.png"}, {"name": "Gmail"}, {"name": "Notion", "say": ["noción"]}]
+        groups = toolcards.plan_groups(tools, flat)
+        self.assertEqual(len(groups), 2)
+        first, second = groups
+        self.assertEqual([i for _, i in first["cards"]], [0, 1, 2])                # named in a row: one stacked group
+        claude = next(w[0] for w in words if w[2] == "Claude")
+        self.assertAlmostEqual(first["cards"][0][0], claude - toolcards.LEAD, places=3)  # a beat before the word
+        self.assertGreater(second["start"], first["start"] + 20)                  # the repeat 8 s later is skipped
+        self.assertEqual([i for _, i in second["cards"]], [0])
+        props = toolcards.group_props(first, tools, 1080, 1920, 25, {"accentColor": "#FF4F8B", "font": "x", "fontFile": ""})
+        self.assertEqual(props["cards"][0]["logo"], "logos/claude.png")
+        self.assertEqual(props["cards"][0]["frame"], 0)
+        self.assertGreater(props["cards"][2]["frame"], props["cards"][1]["frame"])   # each on its own word
+        # a card due while the group before is still showing waits for it to leave
+        crowded = toolcards.plan_groups([{"name": "A"}, {"name": "B"}],
+                                        [(1.0, "a"), (3.0, "b")], stack=1.5, hold=2.5)
+        self.assertGreaterEqual(crowded[1]["start"], crowded[0]["end"] + toolcards.EXIT)
+        tsx = (SCRIPTS / "remotion" / "ToolCard.tsx").read_text("utf-8")
+        self.assertIn("cards: []", next(l for l in tsx.splitlines() if "defaultProps=" in l))
+        for key in list(props) + list(props["cards"][0]):
+            self.assertRegex(tsx, rf"\b{key}\??:", key)
+        wav = self.dir / "pops.wav"
+        toolcards.write_pops([0.5, 1.0], 2.0, str(wav))
+        import wave
+        with wave.open(str(wav)) as w:
+            self.assertAlmostEqual(w.getnframes() / w.getframerate(), 2.0, delta=0.01)
+
+    def test_83_web_page_numbers_before_after(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import overlays
+        said = ("Mirad esta noticia . Bajamos un poco . Y aquí está el titular . Con IA voy un cuarenta por ciento más "
+                "rápido , ahorro tres horas y tengo el doble de ideas . Antes escribía esto y ahora lo pido así . Y fin").split()
+        t, words = 1.0, []
+        for w in said:
+            if w in (".", ","):
+                t += 0.5
+                continue
+            words.append([round(t, 2), round(t + 0.25, 2), w])
+            t += 0.3
+        caps = [{"start": 0, "end": 1, "words": words}]
+        when = lambda word: next(w[0] for w in words if w[2] == word)
+        # a web page: a box far down the page scrolls it into view first
+        page = {"image": "pages/p.png", "imageWidth": 1440, "imageHeight": 2600, "url": "x.example",
+                "start_say": "Mirad", "scroll": [{"to": 0.1, "say": "Bajamos"}],
+                "highlight": [{"box": [50, 1490, 1340, 75], "say": "el titular"}]}
+        timer = overlays.Timer(page, caps)
+        body, last, timeline = overlays.browser_props(page, timer, 25, public=str(self.dir), width=1920, height=1080)
+        box = body["boxes"][0]
+        self.assertEqual(box["frame"], round((when("el") - timer.start - overlays.LEAD) * 25))
+        stop = next(s for s in body["scroll"] if s["frame"] == box["frame"])     # the page scrolls to the box
+        win_w, view_h = overlays.browser_view(1920, 1080)
+        scale = win_w / 1440
+        seen = stop["to"] * (2600 * scale - view_h)
+        self.assertTrue(seen <= 1490 * scale and (1490 + 75) * scale <= seen + view_h)  # the box is in view
+        plain = dict(page, highlight=[{"box": [50, 100, 600, 60], "say": "el titular"}], scroll=[])
+        body2, _, _ = overlays.browser_props(plain, overlays.Timer(plain, caps), 25, public=str(self.dir))
+        self.assertEqual(len(body2["scroll"]), 1)                                  # already in view: no extra scroll
+        tsx = (SCRIPTS / "remotion" / "BrowserPage.tsx").read_text("utf-8")
+        self.assertIn("p.width * 0.8", tsx)                                       # the window sizes overlays.py assumes
+        self.assertIn("p.height * 0.84", tsx)
+        self.assertIn("s * 1.4", tsx)
+        # numbers: each tile on its own phrase, Spanish formatting, 2 to 4 tiles
+        stats = {"start_say": "Con IA", "tiles": [{"value": 40, "suffix": " %", "label": "más rápido", "say": "un cuarenta"},
+                                                  {"value": 1250.5, "decimals": 1, "label": "palabras", "say": "tres horas"}]}
+        st_timer = overlays.Timer(stats, caps)
+        body, _, timeline = overlays.stats_props(stats, st_timer, 25)
+        self.assertLess(body["tiles"][0]["frame"], body["tiles"][1]["frame"])
+        self.assertEqual(overlays.number_text(1250.5, 1), "1.250,5")
+        self.assertEqual(overlays.number_text(40, 0, "", " %"), "40 %")
+        with self.assertRaises(ValueError):
+            overlays.stats_props(dict(stats, tiles=stats["tiles"][:1]), overlays.Timer(stats, caps), 25)
+        # before and after: the sweep on its phrase
+        ba = {"start_say": "Antes escribía", "reveal_say": "ahora lo pido", "before": {"label": "Antes", "text": "Escribe un post"},
+              "after": {"label": "Después", "text": "Escribe un post de 150 palabras"}}
+        ba_timer = overlays.Timer(ba, caps)
+        body, _, _ = overlays.beforeafter_props(ba, ba_timer, 25)
+        self.assertEqual(body["reveal"], round((when("ahora") - ba_timer.start - overlays.LEAD) * 25))
+        with self.assertRaises(ValueError):
+            overlays.beforeafter_props(dict(ba, after={}), overlays.Timer(ba, caps), 25)
+        for name, props in (("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
+                            ("BeforeAfter", ("before", "after", "reveal", "revealFrames", "label", "text", "image")),
+                            ("BrowserPage", ("image", "url", "pageWidth", "pageHeight", "scroll", "boxes", "to"))):
+            tsx = (SCRIPTS / "remotion" / f"{name}.tsx").read_text("utf-8")
+            for key in props:
+                self.assertRegex(tsx, rf"\b{key}\??:", f"{name}: {key}")
+        try:
+            from PIL import Image, ImageDraw
+        except ImportError:
+            Image = None
+        if Image is not None:                                                     # a rough box is fitted to what's inside
+            shot = self.dir / "shot.png"
+            im = Image.new("RGB", (1440, 600), "white")
+            ImageDraw.Draw(im).rectangle([61, 196, 909, 233], fill="black")       # a heading's ink
+            im.save(shot)
+            self.assertEqual(overlays.fit_box(str(shot), [50, 190, 1340, 75]), [61, 196, 849, 38])
+            self.assertIsNone(overlays.fit_box(str(shot), [1000, 400, 300, 100]))  # nothing inside: left as given
+        tsx = (SCRIPTS / "remotion" / "BrowserPage.tsx").read_text("utf-8")
+        self.assertIn("4000px rgba", tsx)                                          # the rest of the page dims
+        png = self.dir / "tiny.png"
+        png.write_bytes(bytes.fromhex("89504e470d0a1a0a0000000d49484452") + (1440).to_bytes(4, "big") + (2600).to_bytes(4, "big"))
+        self.assertEqual(overlays.png_size(str(png)), (1440, 2600))              # a screenshot's size from its header
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

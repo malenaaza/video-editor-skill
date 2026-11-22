@@ -30,6 +30,11 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `Thumbnail` | YouTube thumbnail, 1280x720: the face big on one side, a few huge words on the other (see `references/cover.md`) | `background`, `bgWidth`/`bgHeight`, `faceX`/`faceY`/`faceSize`, `lines` | a still: `npx remotion still` |
 | `WordCaptions` | Word highlight captions: a box in the accent colour behind each word as it's said (see below) | written by `captions.py --remotion-props` | the whole video |
 | `Explainer` | An animated explanation in an educational video: boxes, arrows and a moving dot showing how something works, each piece appearing as the speaker names it (see Animated explanations below) | written by `explainer.py` | the stretch it explains |
+| `ChatWindow` | An AI chat in a video about AI: the prompt types, is sent, the assistant thinks and answers word by word (see AI chat window below) | written by `chatwindow.py` | the stretch it shows |
+| `ToolCard` | A tool's logo and name when the speaker names it, in videos about AI; tools named in a row stack (see Tool cards below) | written by `toolcards.py` | about 2.5 s a group |
+| `BrowserPage` | A real web page in a browser window, scrolling, with boxes on what's mentioned (see Web page, numbers, before and after below) | written by `overlays.py browser` | the stretch it shows |
+| `StatTiles` | Two to four numbers that belong together, counting up as they're said | written by `overlays.py stats` | the stretch it shows |
+| `BeforeAfter` | A before and an after (images or texts: a weak prompt and a good one), the after sweeping in | written by `overlays.py beforeafter` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
@@ -77,6 +82,71 @@ explain better as an animation, in one line each, and make them only if the user
 The template only draws what `explainer.py` computed, so a different diagram never needs a change to
 `Explainer.tsx`. For something it can't show (a chart, a screen, a photo), use the other templates or a screen
 recording.
+
+## AI chat window
+
+For videos about AI, when the speaker says what they asked an assistant and what it answered: a clean chat window in
+the brand's colours. The prompt types into the box with key clicks, it's sent, three dots "think", and the answer
+appears word by word (lines starting with `- ` show as a list). Cleaner than a screen recording of a real chat, and
+the same every time. For a real tool's real interface, use a screen recording instead (`screen.py`, Rule 6).
+
+1. **Write `chat.json`** in the build folder: `app` (the name in the top bar), an optional `logo` (from the brand's
+   press kit, copied into the Remotion project's `public` folder), `start_say`/`end_say` (or seconds), the
+   `placeholder` in the video's language, and the `messages` in order, each with `role` (`user` or `assistant`),
+   `text` and the phrase that starts it (`say`). Keep prompts to one line and answers short (two to five lines):
+   it's read in seconds. The full format is at the top of `<skill>/scripts/chatwindow.py`.
+2. **Make the props:** `python -I <skill>/scripts/chatwindow.py chat.json --captions captions.json --size <video
+   size> --fps <video fps>` with the brand's `--accent`, `--font`, `--font-file`, `--theme light`, `dark` or `warm` (for Claude:
+   a cream page, the prompt in a light bubble, the answer as serif text, a coral send button), and the
+   background (`--background transparent` lays the window over the speaker). It prints when each prompt types and
+   each answer finishes, and makes the window longer if an answer couldn't be read before it goes.
+3. **Render a still** of the finished answer, then the clip, and place it with the FFmpeg line it prints. Mix
+   `chat-sfx.wav` (key clicks while the prompt types, nothing for the answer) from the window's start.
+4. **Don't imitate a company's interface, and show the real answer:** the window is a generic chat design with the
+   app's name (`warm` evokes Claude's look without its logo or exact layout). Say what it shows in the voice ("le
+   pregunté a Claude…"), and use a logo only from the brand's press kit. The answer must be what the assistant
+   really answered, copied (shortened with "…" if needed), never written for it: the closer it looks to the real
+   app, the more viewers take it as a screenshot.
+
+## Tool cards
+
+For videos about AI: when the speaker names a tool (Claude, ChatGPT, Gmail, Notion...), a white card with its logo
+and name slides in from the side a beat before the word and leaves on its own, with a soft pop as it lands. Tools
+named one after another stack into one group, each appearing on its own word.
+
+1. **Write `tools.json`**: the video's tools from the transcript, each with its `name` and, when the user has it,
+   a `logo` from the brand's own press kit, copied into the Remotion project's `public/logos/` (never a logo
+   downloaded from an image search). Add `say` for other ways the transcript spells a name ("noción" for Notion).
+   Without a logo the card shows a badge with the initial in the brand's colour.
+2. **Make the cards:** `python -I <skill>/scripts/toolcards.py tools.json --captions captions.json --size <video
+   size> --fps <video fps>` with the brand's `--accent`, `--font`, `--font-file`, and `--side` away from the
+   speaker's face. A tool shown in the last 20 s isn't shown again (`--repeat`): a logo every time it's said wears
+   thin. It writes one props file per group and `toolcards-sfx.wav`, and prints each group's time.
+3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
+4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
+
+## Web page, numbers, before and after
+
+Three graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter>
+<spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
+`--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
+phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
+`<skill>/scripts/overlays.py`. They make no sound: nothing on screen would.
+
+- **Web page** (`browser`, template `BrowserPage`): when the speaker talks about a page (a tool's site, an article,
+  a post). Take a full-page screenshot of a public page into the Remotion project's `public/pages/`, with Chrome
+  without a window: `"<chrome>" --headless --hide-scrollbars --screenshot=<project>/public/pages/<name>.png
+  --window-size=1440,2600 <url>` (raise the height for a long page; add `--no-sandbox` only where Chrome refuses to
+  start). Never a page behind a login or with someone's private details. Look at the screenshot to place each
+  `highlight` box (in the screenshot's own pixels); a rough box is enough, because it is fitted to the text or
+  picture inside it (run `overlays.py` with a Python that has Pillow, such as the cutout one, or it says the boxes
+  stay as given). It shows as a fine outline with room around the words while the rest of the page dims, like a
+  spotlight. A box out of view scrolls the page to it first, so `scroll` is only for moving around without
+  highlighting. Show the user a still with the box before rendering.
+- **Numbers** (`stats`, template `StatTiles`): two to four numbers that belong together ("un 40 % más rápido, tres
+  horas a la semana"), written the Spanish way. Only numbers the speaker says, never one made up or rounded up.
+- **Before and after** (`beforeafter`, template `BeforeAfter`): a weak prompt and a good one, a draft and the AI's
+  version, a photo before and after. Each side is a `text` or an `image`; the after sweeps in at `reveal_say`.
 
 ## Product pop-in from B-roll
 
