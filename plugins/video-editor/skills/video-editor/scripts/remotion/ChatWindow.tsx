@@ -3,7 +3,9 @@
 // "- " show as a list). Every time comes from scripts/chatwindow.py, which reads chat.json and the captions, so this
 // file only draws: never edit it for one video.
 // It is a clean, generic chat design in the brand's colours with the app's name (and its press-kit logo, if given),
-// not a copy of any company's real interface.
+// not a copy of any company's real interface. theme "warm" evokes Claude's look (a cream page, the prompt in a light
+// bubble, the answer as serif text with no bubble, a coral send button) without its logo or exact interface; the
+// answer shown must be the one the assistant really gave.
 // background "transparent" lays the window over the speaker (render as ProRes 4444); any colour makes a full-screen part.
 //
 // Copy this file and brandFont.ts into the Remotion project's src folder, then register it in src/Root.tsx:
@@ -24,7 +26,7 @@ export type ChatWindowProps = {
   app?: string;
   logo?: string; // inside public/, from the brand's press kit
   placeholder?: string;
-  theme?: "light" | "dark";
+  theme?: "light" | "dark" | "warm";
   fontSize?: number;
   font?: string;
   fontFile?: string;
@@ -41,7 +43,7 @@ const defaults = {
   app: "Assistant",
   logo: "",
   placeholder: "Escribe un mensaje…",
-  theme: "light" as "light" | "dark",
+  theme: "light" as "light" | "dark" | "warm",
   fontSize: 36,
   font: "sans-serif",
   fontFile: "",
@@ -54,9 +56,19 @@ const defaults = {
   height: 1080,
 };
 
-const THEMES = {
-  light: { window: "#FFFFFF", text: "#1A1A1A", soft: "#6B6B76", bar: "#F4F4F7", input: "#F1F1F5", line: "#E4E4EA" },
-  dark: { window: "#1E1E24", text: "#F2F2F5", soft: "#9A9AA6", bar: "#26262E", input: "#2C2C35", line: "#34343E" },
+type Theme = {
+  window: string; text: string; soft: string; bar: string; input: string; line: string;
+  userBg?: string; userText: string; send?: string; answerFont?: string; inputBorder?: string; avatars: boolean;
+};
+// userBg and send fall back to the brand's accent colour.
+const THEMES: Record<"light" | "dark" | "warm", Theme> = {
+  light: { window: "#FFFFFF", text: "#1A1A1A", soft: "#6B6B76", bar: "#F4F4F7", input: "#F1F1F5", line: "#E4E4EA",
+    userText: "#FFFFFF", avatars: true },
+  dark: { window: "#1E1E24", text: "#F2F2F5", soft: "#9A9AA6", bar: "#26262E", input: "#2C2C35", line: "#34343E",
+    userText: "#FFFFFF", avatars: true },
+  warm: { window: "#FAF9F5", text: "#1F1E1D", soft: "#8A8780", bar: "#FAF9F5", input: "#FFFFFF", line: "#ECEAE3",
+    userBg: "#EFEBE3", userText: "#1F1E1D", send: "#D97757", answerFont: 'Georgia, "Times New Roman", serif',
+    inputBorder: "#E3E0D7", avatars: false },
 };
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -99,7 +111,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = (input) => {
   useBrandFont(p.font, p.fontFile || undefined);
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
-  const t = THEMES[p.theme];
+  const t = THEMES[p.theme] ?? THEMES.light;
+  const send = t.send ?? p.accentColor;
   const s = p.fontSize;
   const vertical = p.height > p.width;
   // Wide: a broad window, so a prompt fits on one line and a short answer doesn't push it out of view.
@@ -130,8 +143,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = (input) => {
       >
         <div style={{ display: "flex", alignItems: "center", gap: s * 0.5, padding: `${s * 0.55}px ${s * 0.8}px`,
           backgroundColor: t.bar, borderBottom: `2px solid ${t.line}` }}>
-          <Avatar logo={p.logo} app={p.app} accent={p.accentColor} size={s * 1.3} />
-          <div style={{ fontWeight: 800 }}>{p.app}</div>
+          {t.avatars || p.logo ? <Avatar logo={p.logo} app={p.app} accent={send} size={s * 1.3} /> : null}
+          <div style={{ fontWeight: t.avatars ? 800 : 600, color: t.avatars ? t.text : t.soft }}>{p.app}</div>
           <div style={{ flex: 1 }} />
           {[0, 1, 2].map((i) => (
             <div key={i} style={{ width: s * 0.32, height: s * 0.32, borderRadius: s, backgroundColor: t.line, marginLeft: s * 0.2 }} />
@@ -145,7 +158,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = (input) => {
               if (frame < m.sent) return null;
               const pop = spring({ frame: frame - m.sent, fps, config: { damping: 16, stiffness: 180 } });
               return (
-                <div key={i} style={{ alignSelf: "flex-end", maxWidth: "78%", backgroundColor: p.accentColor, color: "#FFFFFF",
+                <div key={i} style={{ alignSelf: "flex-end", maxWidth: "78%", backgroundColor: t.userBg ?? p.accentColor, color: t.userText,
                   padding: `${s * 0.45}px ${s * 0.7}px`, borderRadius: s * 0.7, borderBottomRightRadius: s * 0.2,
                   transform: `translateY(${(1 - pop) * s}px)`, opacity: pop, lineHeight: 1.3 }}>
                   {m.text}
@@ -157,7 +170,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = (input) => {
             const words = Math.floor((frame - m.answer) / m.framesPerWord) + 1;
             return (
               <div key={i} style={{ display: "flex", gap: s * 0.5, alignItems: "flex-start", maxWidth: "92%", lineHeight: 1.35 }}>
-                <Avatar logo={p.logo} app={p.app} accent={p.accentColor} size={s * 1.1} />
+                {t.avatars || p.logo ? <Avatar logo={p.logo} app={p.app} accent={send} size={s * 1.1} /> : null}
                 {thinking ? (
                   <div style={{ display: "flex", gap: s * 0.25, paddingTop: s * 0.35 }}>
                     {[0, 1, 2].map((d) => (
@@ -166,7 +179,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = (input) => {
                     ))}
                   </div>
                 ) : (
-                  <AnswerText text={m.text} count={words} accent={p.accentColor} size={s} />
+                  <div style={{ fontFamily: t.answerFont ?? p.font, fontSize: t.answerFont ? s * 1.05 : s }}>
+                    <AnswerText text={m.text} count={words} accent={send} size={s} />
+                  </div>
                 )}
               </div>
             );
@@ -175,12 +190,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = (input) => {
 
         <div style={{ padding: `${s * 0.6}px ${s * 0.8}px`, borderTop: `2px solid ${t.line}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: s * 0.5, backgroundColor: t.input,
-            borderRadius: s * 0.9, padding: `${s * 0.45}px ${s * 0.5}px ${s * 0.45}px ${s * 0.8}px` }}>
+            borderRadius: s * 0.9, padding: `${s * 0.45}px ${s * 0.5}px ${s * 0.45}px ${s * 0.8}px`,
+            border: t.inputBorder ? `2px solid ${t.inputBorder}` : "none",
+            boxShadow: t.inputBorder ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}>
             <div style={{ flex: 1, color: typing ? t.text : t.soft, whiteSpace: "nowrap", overflow: "hidden" }}>
               {typing ? typing.text.slice(0, typedChars) : p.placeholder}
-              {typing ? <span style={{ opacity: caretOn ? 1 : 0, color: p.accentColor, fontWeight: 300 }}>|</span> : null}
+              {typing ? <span style={{ opacity: caretOn ? 1 : 0, color: send, fontWeight: 300 }}>|</span> : null}
             </div>
-            <div style={{ width: s * 1.4, height: s * 1.4, borderRadius: s, backgroundColor: p.accentColor, color: "#FFFFFF",
+            <div style={{ width: s * 1.4, height: s * 1.4, borderRadius: t.inputBorder ? s * 0.35 : s, backgroundColor: send, color: "#FFFFFF",
               display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800,
               transform: `scale(${justSent ? 0.85 : 1})`, opacity: typing || justSent ? 1 : 0.45 }}>
               ↑

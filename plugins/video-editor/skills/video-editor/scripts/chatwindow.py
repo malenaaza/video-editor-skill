@@ -23,7 +23,10 @@ explanations do), or "at" seconds after the window appears, or right after the m
 before the prompt it answers is sent.
 
 The window is a clean, generic chat design in the brand's colours with the app's name, not a copy of any company's
-real interface: say what it shows ("I asked Claude…") and use the app's logo only from its press kit, as its
+real interface (--theme warm evokes Claude's: a cream page, the prompt in a light bubble, the answer as serif text, a
+coral send button, without its logo or exact layout). The answer shown must be what the assistant really answered,
+copied and shortened with "…" if needed, never written for it: the closer it looks to the real app, the more
+viewers take it as a screenshot. In short: say what it shows ("I asked Claude…") and use the app's logo only from its press kit, as its
 guidelines allow. Writes the props for scripts/remotion/ChatWindow.tsx and chat-sfx.wav (key clicks while the prompt
 types, nothing for the answer: it makes no sound on screen). Standard library only.
 """
@@ -170,7 +173,8 @@ def main():
     ap.add_argument("--lps", type=float, default=22.0, help="letters a second while a prompt types")
     ap.add_argument("--wps", type=float, default=12.0, help="words a second as an answer appears")
     ap.add_argument("--think", type=float, default=0.8, help="seconds of 'thinking' dots before an answer")
-    ap.add_argument("--theme", choices=("light", "dark"), default="light", help="the window's own colours")
+    ap.add_argument("--theme", choices=("light", "dark", "warm"), default="light",
+                    help="the window's own colours; warm evokes Claude's look (cream, serif answers, a coral send button)")
     ap.add_argument("--font", default="sans-serif")
     ap.add_argument("--font-file", default="")
     ap.add_argument("--accent", default="#FF4F8B", help="the user's bubbles and the send button (the brand's colour)")

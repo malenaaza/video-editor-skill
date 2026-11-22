@@ -1145,6 +1145,9 @@ class SkillTest(unittest.TestCase):
         tsx = (SCRIPTS / "remotion" / "ChatWindow.tsx").read_text("utf-8")
         default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
         self.assertIn("messages: []", default_props)                                    # no sample chat leaks in
+        self.assertIn('warm: {', tsx)                                                   # the Claude-like theme exists
+        self.assertIn('"warm"', (SCRIPTS / "chatwindow.py").read_text("utf-8"))           # and can be chosen
+        self.assertIn("really answered", (SCRIPTS / "chatwindow.py").read_text("utf-8"))  # the answer is the real one
         for key in list(props) + list(user) + list(answer):
             self.assertRegex(tsx, rf"\b{key}\??:", key)                                # every prop is one it reads
         wav = self.dir / "chat-sfx.wav"

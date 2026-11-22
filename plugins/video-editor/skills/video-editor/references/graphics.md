@@ -96,13 +96,17 @@ the same every time. For a real tool's real interface, use a screen recording in
    `text` and the phrase that starts it (`say`). Keep prompts to one line and answers short (two to five lines):
    it's read in seconds. The full format is at the top of `<skill>/scripts/chatwindow.py`.
 2. **Make the props:** `python -I <skill>/scripts/chatwindow.py chat.json --captions captions.json --size <video
-   size> --fps <video fps>` with the brand's `--accent`, `--font`, `--font-file`, `--theme light` or `dark`, and the
+   size> --fps <video fps>` with the brand's `--accent`, `--font`, `--font-file`, `--theme light`, `dark` or `warm` (for Claude:
+   a cream page, the prompt in a light bubble, the answer as serif text, a coral send button), and the
    background (`--background transparent` lays the window over the speaker). It prints when each prompt types and
    each answer finishes, and makes the window longer if an answer couldn't be read before it goes.
 3. **Render a still** of the finished answer, then the clip, and place it with the FFmpeg line it prints. Mix
    `chat-sfx.wav` (key clicks while the prompt types, nothing for the answer) from the window's start.
-4. **Don't imitate a company's interface:** the window is a generic chat design with the app's name. Say what it
-   shows in the voice ("le pregunté a Claude…"), and use a logo only from the brand's press kit.
+4. **Don't imitate a company's interface, and show the real answer:** the window is a generic chat design with the
+   app's name (`warm` evokes Claude's look without its logo or exact layout). Say what it shows in the voice ("le
+   pregunté a Claude…"), and use a logo only from the brand's press kit. The answer must be what the assistant
+   really answered, copied (shortened with "…" if needed), never written for it: the closer it looks to the real
+   app, the more viewers take it as a screenshot.
 
 ## Tool cards
 
