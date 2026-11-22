@@ -45,11 +45,16 @@ def under_eye(pts, shape):
 
 
 def eye_whites(frame, luma, pts, shape):
-    """The white of each eye: the brighter pixels inside the eye opening, minus the iris and its reflection."""
+    """The white of each eye, all of it: the eye opening minus the iris and its reflection, kept away from the lashes.
+
+    It used to be only the brighter half of the white, so a white with veins, spots or a shadow was lifted in patches
+    and the rest stayed grey, which looked blotchy. Now the whole white is covered, so beautify.py can even it out
+    (a median that removes veins and small spots) and whiten it in one piece; only pixels far darker than the white
+    itself (lashes, the core of a shadow) are left out."""
     out = np.zeros(shape, np.float32)
     for eye, outline in zip(EYES, EYE_OUTLINE):
         opening = _eye_polygon(pts, outline, shape)
-        opening = cv2.erode(opening, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+        opening = cv2.erode(opening, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
         inside = opening > 0
         if inside.sum() < 30:
             continue
@@ -60,7 +65,7 @@ def eye_whites(frame, luma, pts, shape):
         white = inside & (iris == 0)
         if white.sum() < 20:
             continue
-        threshold = np.percentile(luma[white], 45)
-        gate = np.clip((luma - threshold) / 18, 0, 1) * white
+        typical = float(np.median(luma[white]))
+        gate = np.clip((luma - 0.5 * typical) / max(1.0, 0.12 * typical), 0, 1) * white
         out = np.maximum(out, cv2.GaussianBlur(gate.astype(np.float32), (0, 0), 1.2))
     return np.clip(out * 255, 0, 255).astype(np.uint8)

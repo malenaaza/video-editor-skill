@@ -492,6 +492,20 @@ class SkillTest(unittest.TestCase):
         white = beauty.eye_whites(frame, luma, pts, shape)
         self.assertEqual(white.shape, shape)
         self.assertEqual(int(white[60, 60]), 0)                # the iris is never whitened
+        big = pts.copy()                                       # a close-up: an eye 24 px high, as real whites are
+        for k in range(2):
+            for j, i in enumerate(beauty.EYE_OUTLINE[k]):
+                angle = 2 * np.pi * j / len(beauty.EYE_OUTLINE[k])
+                big[i] = (60.0 + 100 * k + 20 * np.cos(angle), 60 + 12 * np.sin(angle))
+        luma = np.full(shape, 200, np.float32)
+        luma[56:64, 50:70] = 40
+        luma[58:62, 72:76] = 150                               # a grey spot in the white (3/4 as bright): evened, not skipped
+        luma[55:57, 78:84] = 40                                # a lash lying over the white: left alone
+        white = beauty.eye_whites(frame, luma, big, shape)
+        self.assertGreater(int(white[60, 74]), 200)            # the whole white is covered, spots and shadows too
+        self.assertGreater(int(white[64, 72]), 200)
+        self.assertEqual(int(white[56, 81]), 0)                # but not a lash
+        self.assertEqual(int(white[60, 60]), 0)                # still never the iris
 
     # ---- updating the skill for people who don't use Git ------------------------------------
 
