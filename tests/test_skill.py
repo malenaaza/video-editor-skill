@@ -2220,6 +2220,47 @@ class SkillTest(unittest.TestCase):
         src = (PUPPET / "scripts" / "dialogue.py").read_text("utf-8")
         self.assertRegex(src, r'"skin": c\["skin"\],\s*"hair": c\["hair"\]')        # and the props carry them
 
+    def test_86_forehead_edge_is_gradual(self):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV or numpy not installed")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import feather
+        import settings
+        h, w, face_h = 1000, 600, 750.0
+        base = np.zeros((h, w), np.float32)
+        base[300:, :] = 1.0                                   # the face area: its top edge is at row 300
+        tone = np.ones((h, w), np.float32)
+        tone[:150, :] = 0.0                                   # hair and background above the forehead: not skin-coloured
+        keep = np.ones((h, w), np.float32)
+        keep[600:640, 200:400] = 0.0                          # something protected (an eye) inside the face
+
+        def edge_width(m):
+            col = m[:420, 100]                                # the top edge only (the protected eye is elsewhere)
+            rows = np.nonzero((col > 0.1) & (col < 0.9))[0]
+            return int(rows.max() - rows.min() + 1) if len(rows) else 0
+
+        old = feather.soft_skin(base, tone, keep, face_h, 0)
+        new = feather.soft_skin(base, tone, keep, face_h, 0.04)
+        self.assertLess(edge_width(old), 30)                                  # the old edge: a few pixels wide
+        self.assertGreater(edge_width(new), 2 * edge_width(old))              # now a forehead's worth
+        self.assertGreaterEqual(edge_width(new), 0.5 * 0.04 * face_h * 2)
+        self.assertTrue(0.0 <= new.min() and new.max() <= 1.0)
+        self.assertEqual(float(new[:150, :].max()), 0.0)                      # hair and background aren't smoothed
+        self.assertLess(float(new[620, 300]), 0.05)                           # the protected part stays untouched
+        self.assertGreater(float(new[800, 300]), 0.99)                        # deep inside the face: full strength
+        self.assertEqual(float(np.abs(old - cv2.GaussianBlur(base * keep, (0, 0), 9)).max()), 0.0)   # 0 = as before
+        self.assertEqual(settings.DEFAULTS["forehead_feather"], 0.04)
+        with tempfile.TemporaryDirectory() as tmp:
+            for value, ok in ((0, True), (0.07, True), (-0.1, False), (0.5, False), ("soft", False)):
+                (Path(tmp) / "retouch.json").write_text(json.dumps({"forehead_feather": value}), "utf-8")
+                result = subprocess.run([sys.executable, "-I", "-c",
+                    f"import sys; sys.path.insert(0, r'{SCRIPTS / 'retouch'}'); import settings; settings.load()"],
+                    cwd=tmp, capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, ok, f"{value}: {result.stderr[-200:]}")
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

@@ -150,7 +150,8 @@ plugins/video-editor/
       hunt_fillers.py      short-window pass for fillers glued onto words
       retouch/             skin and teeth masks, beautify extras, background blur (and blurcheck.py, which notices a
                            background your camera already blurred), mouth check, pixelfaces.py (pixelates other people's faces);
-                           spots.py (freckles keep half their contrast in close-ups, and the brow rule tells a freckle from a hair);
+                           spots.py (freckles keep half their contrast in close-ups, and the brow rule tells a freckle from a hair); feather.py (the skin mask fades out gradually
+                           over the forehead, with no line near the hairline);
                            settings.py reads each video's retouch.json
       sfx/                 four small sound effects, generated with FFmpeg, and typing.py (key clicks
                            for a typewriter title)

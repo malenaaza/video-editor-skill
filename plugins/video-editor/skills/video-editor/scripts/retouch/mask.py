@@ -40,6 +40,7 @@ import settings  # noqa: E402
 from facetrack import EdgeFace  # noqa: E402
 import beauty  # noqa: E402
 import spots  # noqa: E402
+import feather  # noqa: E402
 
 CFG = settings.load()
 MODEL = sys.argv[1]
@@ -182,9 +183,10 @@ with FaceLandmarker.create_from_options(options) as tracker:
                 hair_keep = spots.brow_hair_keep(luma, brow_area, CFG["brow_contrast"], face_h)
             else:
                 protect = cv2.bitwise_or(protect, grow(brow_area, int(CFG["protect_brows"])))
-            mask = (region.astype(np.float32) / 255) * tone
-            mask *= 1 - protect.astype(np.float32) / 255
-            mask = cv2.GaussianBlur(mask, (0, 0), 9)
+            # The outer edge fades over a share of the face's height (feather.py), so on a close-up the smoothing
+            # doesn't stop at a line across the forehead; the eyes, lips and mouth keep their own 9 px edges.
+            mask = feather.soft_skin((region.astype(np.float32) / 255) * tone, tone,
+                                     1 - protect.astype(np.float32) / 255, face_h, CFG["forehead_feather"])
             if hair_keep is not None:
                 mask *= 1 - hair_keep
             skin = np.clip(mask * SKIN_STRENGTH * 255, 0, 255).astype(np.uint8)

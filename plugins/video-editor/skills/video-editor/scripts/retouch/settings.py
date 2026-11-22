@@ -44,6 +44,10 @@ mask.py (skin and teeth):
                   and a smoothing filter keeps small dark spots, so without this they were the only texture
                   left and read as dirt. Moles (bigger and much darker), eyes, lips and brows are never touched.
   spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 18)
+  forehead_feather  how softly the skin mask fades at its outer edge (the forehead's top, the jaw), as a share of the
+                  face's height: 0.04 (default) is about 30 px on a 750 px face; 0 is the old fixed 9 px edge. The
+                  tracked face outline ends mid-forehead, and a hard edge there showed as a line between smooth skin
+                  and textured skin that crawled as the head moved. Raise it to 0.07 if a line is still visible.
   close_lo, close_hi   face height as a share of the frame height where the extra close-up
                   softening starts and where it reaches full strength
 
@@ -133,6 +137,7 @@ DEFAULTS = {
     "pixel_faces": 6,
     "spot_calm": 0.55,
     "spot_contrast": 18,
+    "forehead_feather": 0.04,
 }
 CHANNELS = ("lum", "a", "b", "hue", "sat", "val")
 
@@ -165,6 +170,8 @@ def load(path="retouch.json"):
             check_key(key)
         if not (isinstance(settings["spot_calm"], (int, float)) and 0 <= settings["spot_calm"] <= 1):
             sys.exit("retouch.json: spot_calm must be a number from 0 (keep spots as they are) to 1 (smooth them away).")
+        if not (isinstance(settings["forehead_feather"], (int, float)) and 0 <= settings["forehead_feather"] <= 0.2):
+            sys.exit("retouch.json: forehead_feather must be a number from 0 (a hard edge) to 0.2 (a very soft one).")
         crown = settings["crown"]
         if crown is not None and not (isinstance(crown, dict) and len(crown.get("grow", [])) == 2 and "raise" in crown):
             sys.exit('retouch.json: crown must be {"grow": [x, y], "raise": number}, for example '

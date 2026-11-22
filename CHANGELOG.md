@@ -2,6 +2,16 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.2
+
+### Fixed
+- **A line across the forehead in close-ups.** The face outline the retouch follows ends in the middle of the
+  forehead, and the skin mask faded out there over a fixed 9 px, so on a close-up the skin below was smooth and the skin
+  above kept its fine texture and baby hairs, with a visible line between them that crawled as the head moved. Now the
+  mask's outer edge fades over a share of the face's height (`forehead_feather` in `retouch.json`, default 0.04; 0 is
+  the old edge), only into skin-coloured pixels, so hair and background aren't smoothed. **Rebuild your masks**
+  (`mask.py`) for the fix to show. Guide: `references/retouch.md`, Hairline and forehead.
+
 ## 2026-11-22 · version 2.14.1
 
 ### Fixed
