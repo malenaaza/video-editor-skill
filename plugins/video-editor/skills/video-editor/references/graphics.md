@@ -31,6 +31,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `WordCaptions` | Word highlight captions: a box in the accent colour behind each word as it's said (see below) | written by `captions.py --remotion-props` | the whole video |
 | `Explainer` | An animated explanation in an educational video: boxes, arrows and a moving dot showing how something works, each piece appearing as the speaker names it (see Animated explanations below) | written by `explainer.py` | the stretch it explains |
 | `ChatWindow` | An AI chat in a video about AI: the prompt types, is sent, the assistant thinks and answers word by word (see AI chat window below) | written by `chatwindow.py` | the stretch it shows |
+| `ToolCard` | A tool's logo and name when the speaker names it, in videos about AI; tools named in a row stack (see Tool cards below) | written by `toolcards.py` | about 2.5 s a group |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
@@ -99,6 +100,23 @@ the same every time. For a real tool's real interface, use a screen recording in
    `chat-sfx.wav` (key clicks while the prompt types, nothing for the answer) from the window's start.
 4. **Don't imitate a company's interface:** the window is a generic chat design with the app's name. Say what it
    shows in the voice ("le pregunté a Claude…"), and use a logo only from the brand's press kit.
+
+## Tool cards
+
+For videos about AI: when the speaker names a tool (Claude, ChatGPT, Gmail, Notion...), a white card with its logo
+and name slides in from the side a beat before the word and leaves on its own, with a soft pop as it lands. Tools
+named one after another stack into one group, each appearing on its own word.
+
+1. **Write `tools.json`**: the video's tools from the transcript, each with its `name` and, when the user has it,
+   a `logo` from the brand's own press kit, copied into the Remotion project's `public/logos/` (never a logo
+   downloaded from an image search). Add `say` for other ways the transcript spells a name ("noción" for Notion).
+   Without a logo the card shows a badge with the initial in the brand's colour.
+2. **Make the cards:** `python -I <skill>/scripts/toolcards.py tools.json --captions captions.json --size <video
+   size> --fps <video fps>` with the brand's `--accent`, `--font`, `--font-file`, and `--side` away from the
+   speaker's face. A tool shown in the last 20 s isn't shown again (`--repeat`): a logo every time it's said wears
+   thin. It writes one props file per group and `toolcards-sfx.wav`, and prints each group's time.
+3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
+4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
 
 ## Product pop-in from B-roll
 

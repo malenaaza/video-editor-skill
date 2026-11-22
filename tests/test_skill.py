@@ -1153,6 +1153,46 @@ class SkillTest(unittest.TestCase):
         with wave.open(str(wav)) as w:
             self.assertAlmostEqual(w.getnframes() / w.getframerate(), props["seconds"], delta=0.05)
 
+    def test_82_tool_cards(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import toolcards
+        said = ("Hoy uso Claude con Gmail y noción para organizarme . " + "bla " * 20 + ". Claude me ayuda mucho . "
+                + "bla " * 50 + ". Y vuelvo a Claude").split()
+        t, words = 2.0, []
+        for w in said:
+            if w == ".":
+                t += 0.5
+                continue
+            words.append([round(t, 2), round(t + 0.25, 2), w])
+            t += 0.3
+        flat = toolcards.flat_words([{"start": 0, "end": 1, "words": words}])
+        tools = [{"name": "Claude", "logo": "logos/claude.png"}, {"name": "Gmail"}, {"name": "Notion", "say": ["noción"]}]
+        groups = toolcards.plan_groups(tools, flat)
+        self.assertEqual(len(groups), 2)
+        first, second = groups
+        self.assertEqual([i for _, i in first["cards"]], [0, 1, 2])                # named in a row: one stacked group
+        claude = next(w[0] for w in words if w[2] == "Claude")
+        self.assertAlmostEqual(first["cards"][0][0], claude - toolcards.LEAD, places=3)  # a beat before the word
+        self.assertGreater(second["start"], first["start"] + 20)                  # the repeat 8 s later is skipped
+        self.assertEqual([i for _, i in second["cards"]], [0])
+        props = toolcards.group_props(first, tools, 1080, 1920, 25, {"accentColor": "#FF4F8B", "font": "x", "fontFile": ""})
+        self.assertEqual(props["cards"][0]["logo"], "logos/claude.png")
+        self.assertEqual(props["cards"][0]["frame"], 0)
+        self.assertGreater(props["cards"][2]["frame"], props["cards"][1]["frame"])   # each on its own word
+        # a card due while the group before is still showing waits for it to leave
+        crowded = toolcards.plan_groups([{"name": "A"}, {"name": "B"}],
+                                        [(1.0, "a"), (3.0, "b")], stack=1.5, hold=2.5)
+        self.assertGreaterEqual(crowded[1]["start"], crowded[0]["end"] + toolcards.EXIT)
+        tsx = (SCRIPTS / "remotion" / "ToolCard.tsx").read_text("utf-8")
+        self.assertIn("cards: []", next(l for l in tsx.splitlines() if "defaultProps=" in l))
+        for key in list(props) + list(props["cards"][0]):
+            self.assertRegex(tsx, rf"\b{key}\??:", key)
+        wav = self.dir / "pops.wav"
+        toolcards.write_pops([0.5, 1.0], 2.0, str(wav))
+        import wave
+        with wave.open(str(wav)) as w:
+            self.assertAlmostEqual(w.getnframes() / w.getframerate(), 2.0, delta=0.01)
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()

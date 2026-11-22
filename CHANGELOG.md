@@ -12,6 +12,11 @@ What each update of the video-editor skill brings. Newest first.
   dark, wide or vertical, full screen or over you. It's a generic chat design with the app's name (and its
   press-kit logo, if you have one), not a copy of any company's interface. Scripts mark prompts for it. Guide:
   `references/graphics.md`, AI chat window. The key clicks come from the same sound as the typewriter title.
+- **Tool cards** for videos about AI: when you name a tool (Claude, Gmail, Notion...), a card with its logo and name
+  slides in a beat before the word and leaves on its own, with a soft pop. Tools named in a row stack; a tool shown
+  in the last 20 seconds isn't shown again. `scripts/toolcards.py` finds the names in your captions; the new
+  Remotion template `ToolCard.tsx` draws them. Logos come from each brand's press kit; without one, a badge with
+  the initial. Guide: `references/graphics.md`, Tool cards.
 
 ## 2026-11-22 · version 2.12.0
 
