@@ -2,6 +2,19 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.3
+
+### Fixed
+- **Texture left under the eyebrows in close-ups.** The rule that keeps the brow's own hairs sharp also protected
+  the skin next to them, and the band it protected grew with the face's size, so on a big close-up a strip of skin
+  right under the brow (a shimmery lid, stubble, pores) stayed unsmoothed next to smooth skin. Now only a dark patch
+  that is mostly inside the brow outline, or that is as thin as a hair, is kept; wider patches and round specks
+  outside it are skin and are smoothed. The brow's hairs stay as sharp as before. The freckle pass from 2.14.1
+  is now **off by default** (`spot_calm` 0, was 0.55): that diagnosis was wrong for the reporter, whose freckles
+  never looked like dirt, and the skill shouldn't change a face's natural features unasked; set `spot_calm` to 0.55
+  to turn it on (`spot_contrast` is now 14, was 18). **Rebuild your masks** (`mask.py`). If a band is still visible:
+  `"brow_mode": "margin", "protect_brows": 10` in `retouch.json`. Guide: `references/retouch.md`, Grain under the brow.
+
 ## 2026-11-22 · version 2.14.2
 
 ### Fixed

@@ -193,7 +193,7 @@ with FaceLandmarker.create_from_options(options) as tracker:
             if CFG["spot_calm"] > 0:
                 # Small dark spots on the skin (freckles) keep only part of their contrast: retouch.txt blends a
                 # median-smoothed copy through this mask. Not the eyes, lips, mouth, brow or its hairs, nor moles.
-                left_alone = (protect > 0) | (grow(brow_area, 9) > 0)
+                left_alone = (protect > 0) | (brow_area > 0)
                 if hair_keep is not None:
                     left_alone |= hair_keep > 0.2
                 spot = np.clip(spots.spot_mask(luma, mask, left_alone, face_h, CFG["spot_contrast"])

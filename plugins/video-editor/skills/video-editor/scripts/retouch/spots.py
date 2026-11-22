@@ -9,8 +9,8 @@ less skin, so it looked fine. Two things follow:
     hair. A hair is a dark stroke attached to the brow, or a long thin one; a small round blob apart from it is skin.
     The distances scale with the face's height, so a close-up is judged at its own size.
   - spot_mask: small, compact, dark spots on the skin (not moles, brows, eyes or lips) get a mask, and retouch.txt
-    blends a median-smoothed copy through it, `spot_calm` (default 0.55) deep: the freckle stays, with about half its
-    contrast, so the skin looks natural instead of plastic with dirt. 0 keeps spots as they are, 1 smooths them away.
+    blends a median-smoothed copy through it, `spot_calm` deep (0.55 roughly halves a freckle's contrast): the freckle stays, so the skin looks natural instead
+    of plastic with dirt. Off by default (0): freckles are left as they are; 1 smooths them away.
 
 Numpy and OpenCV only; mask.py calls these once per frame.
 """
@@ -35,25 +35,36 @@ def brow_hair_keep(luma, brow_area, contrast, face_h=REF_FACE):
 
     luma: float32 brightness; brow_area: uint8 (255 inside the brow outline); contrast: how much darker than its
     surroundings a pixel must be (settings brow_contrast); face_h: the face's height in pixels.
-    Dark pixels in a band around the brow are candidates; a candidate patch is a hair only if it touches the brow
-    outline or is a long thin stroke. Isolated compact blobs (freckles) are not kept."""
+    Dark pixels in a band around the brow are candidates; a candidate patch is a hair only if it lies mostly inside the
+    brow outline, is a long thin stroke (a hair poking out, or stubble), or is an elongated stroke touching the
+    outline. Compact blobs outside the outline, such as freckles or the grain of a shimmery lid right under the brow,
+    are skin however close they are, and however big the face (the touching distance is not scaled: on a close-up it
+    used to protect a band of skin 14-20 px wide under the brow)."""
     scale = max(1.0, face_h / REF_FACE)
     zone = _grow(brow_area, int(round(21 * scale))) > 0
     darker = (cv2.GaussianBlur(luma, (0, 0), 10 * scale) - luma > contrast) & zone
     count, labels, stats, _ = cv2.connectedComponentsWithStats(darker.astype(np.uint8), connectivity=8)
-    attached = _grow(brow_area, int(round(7 * scale))) > 0
+    inside = brow_area > 0
+    attached = _grow(brow_area, 7) > 0
     keep = np.zeros(luma.shape, np.uint8)
     for i in range(1, count):
-        x, y, w, h, _area = stats[i]
+        x, y, w, h, area = stats[i]
         patch = labels[y:y + h, x:x + w] == i
-        long_thin = max(w, h) >= 6 * scale and max(w, h) / max(1, min(w, h)) > 2.5
-        if long_thin or attached[y:y + h, x:x + w][patch].any():
+        aspect = max(w, h) / max(1, min(w, h))
+        # a hair is thin: about 2 px wide at the reference size. A wide faint band (the grain of a shimmery lid under the
+        # brow) can be as long and as elongated as a hair, but it is several times thicker.
+        thin = area / float(max(w, h)) <= 2.0 * scale + 2
+        stroke = thin and (aspect > 1.8 or area / float(w * h) < 0.6)   # elongated, or a thin diagonal line (a low fill)
+        long_thin = thin and max(w, h) >= 6 * scale and aspect > 2.5
+        in_brow = inside[y:y + h, x:x + w][patch].mean() >= 0.3
+        touching = stroke and attached[y:y + h, x:x + w][patch].any()
+        if long_thin or in_brow or touching:
             keep[y:y + h, x:x + w][patch] = 255
     hair = _grow(keep, int(round(5 * scale)))
     return cv2.GaussianBlur(hair.astype(np.float32) / 255, (0, 0), 1.2 * scale)
 
 
-def spot_mask(luma, skin, exclude, face_h, contrast=18.0):
+def spot_mask(luma, skin, exclude, face_h, contrast=14.0):
     """Float mask 0..1 on small dark compact spots on the skin.
 
     luma: float32; skin: float 0..1 (where skin is softened); exclude: bool, True where a spot must be left alone
@@ -62,8 +73,8 @@ def spot_mask(luma, skin, exclude, face_h, contrast=18.0):
     face_h = max(float(face_h), 60.0)
     surround = cv2.GaussianBlur(luma, (0, 0), max(3.0, 0.025 * face_h))
     depth = surround - luma
-    candidate = (depth > contrast) & (skin > 0.5) & ~exclude
-    count, labels, stats, _ = cv2.connectedComponentsWithStats(candidate.astype(np.uint8), connectivity=8)
+    candidate = ((depth > contrast) & (skin > 0.5) & ~exclude).astype(np.uint8)
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
     max_side = 0.026 * face_h          # about 18 px on a 700 px face: a big freckle
     result = np.zeros(luma.shape, np.uint8)
     for i in range(1, count):

@@ -1367,7 +1367,7 @@ class SkillTest(unittest.TestCase):
         self.assertLess(near(far, 340, 290), 0.1)
         self.assertEqual(spots.spot_mask(np.full((h, w), 190, np.float32), skin, exclude, 700).max(), 0)  # nothing to find
         # the settings
-        self.assertEqual((settings.DEFAULTS["spot_calm"], settings.DEFAULTS["spot_contrast"]), (0.55, 18))
+        self.assertEqual((settings.DEFAULTS["spot_calm"], settings.DEFAULTS["spot_contrast"]), (0, 14))
         here = os.getcwd()
         try:
             os.chdir(self.dir)
@@ -2260,6 +2260,43 @@ class SkillTest(unittest.TestCase):
                     f"import sys; sys.path.insert(0, r'{SCRIPTS / 'retouch'}'); import settings; settings.load()"],
                     cwd=tmp, capture_output=True, text=True)
                 self.assertEqual(result.returncode == 0, ok, f"{value}: {result.stderr[-200:]}")
+
+    def test_87_grain_under_brow_is_smoothed_not_kept_as_hair(self):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV or numpy not installed")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import spots
+        rng = np.random.default_rng(5)
+        h, w = 700, 900
+        luma = np.full((h, w), 190, np.float32) + rng.normal(0, 1.5, (h, w)).astype(np.float32)
+        brow = np.zeros((h, w), np.uint8)
+        cv2.ellipse(brow, (450, 200), (150, 22), 0, 0, 360, 255, -1)
+        cv2.ellipse(luma, (450, 200), (150, 12), 0, 0, 360, 80, -1)            # the brow's dark hairs
+        for x in (330, 400, 470, 540):
+            cv2.line(luma, (x, 170), (x + 12, 182), 100, 2)                    # hairs poking out above it
+        patch = np.zeros((h, w), bool)
+        patch[224:246, 380:450] = True                                          # a grainy, shimmery patch right under it
+        for _ in range(60):
+            x, y = int(rng.integers(382, 448)), int(rng.integers(226, 244))
+            cv2.circle(luma, (x, y), int(rng.integers(1, 3)), 150, -1)          # specks 2-5 px wide, 40 levels darker
+        for face_h in (600, 1200):                                              # the bigger the face, the wider the old band
+            keep = spots.brow_hair_keep(luma, brow, 14, face_h)
+            self.assertGreater(float(keep[150:215, 320:580].max()), 0.9, face_h)          # the brow's own hairs stay sharp
+            self.assertGreater(float(keep[170:182, 334:344].max()), 0.9, face_h)         # and so do the strays above it
+            self.assertLess(float(keep[patch].mean()), 0.2, face_h)             # the grain is skin: it gets smoothed
+        old = cv2.GaussianBlur(luma, (0, 0), 20) - luma > 14                     # the 2.14.1 rule at face_h 1200
+        zone = cv2.dilate(brow, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (43, 43))) > 0
+        _, labels, stats, _ = cv2.connectedComponentsWithStats((old & zone).astype(np.uint8), connectivity=8)
+        grown = cv2.dilate(brow, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (14, 14))) > 0
+        touching = {i for i in np.unique(labels[grown]) if i}
+        self.assertTrue(any((labels == i)[patch].any() for i in touching))      # that rule did attach it to the brow
+        skin = np.ones((h, w), np.float32)
+        exclude = (brow > 0) | (spots.brow_hair_keep(luma, brow, 14, 600) > 0.2)
+        mask = spots.spot_mask(luma, skin, exclude, 600, 14)
+        self.assertGreater(float(mask[patch].max()), 0.5)                      # the specks reach the spot pass
 
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")

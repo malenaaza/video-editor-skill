@@ -40,10 +40,10 @@ mask.py (skin and teeth):
                   (see facetrack.py). On by default.
   edge_pad        share of the frame width mirrored for that search (0.5)
   spot_calm       how much contrast freckles and other small dark spots on the skin lose: 0 keeps them as they
-                  are, 1 smooths them away, 0.55 (default) roughly halves it. A close-up smooths the skin twice,
-                  and a smoothing filter keeps small dark spots, so without this they were the only texture
-                  left and read as dirt. Moles (bigger and much darker), eyes, lips and brows are never touched.
-  spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 18)
+                  are (default: freckles are part of a face and the skill leaves them), 1 smooths them away, 0.55 roughly halves
+                  it. A close-up smooths the skin twice, and a smoothing filter keeps small dark spots, so for
+                  someone whose freckles then read as dirt, 0.55 calms them. Moles (bigger and much darker), eyes, lips and brows are never touched.
+  spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 14)
   forehead_feather  how softly the skin mask fades at its outer edge (the forehead's top, the jaw), as a share of the
                   face's height: 0.04 (default) is about 30 px on a 750 px face; 0 is the old fixed 9 px edge. The
                   tracked face outline ends mid-forehead, and a hard edge there showed as a line between smooth skin
@@ -135,8 +135,8 @@ DEFAULTS = {
     "pixel_gap": 1.5,
     "pixel_hold": 0.4,
     "pixel_faces": 6,
-    "spot_calm": 0.55,
-    "spot_contrast": 18,
+    "spot_calm": 0,
+    "spot_contrast": 14,
     "forehead_feather": 0.04,
 }
 CHANNELS = ("lum", "a", "b", "hue", "sat", "val")
