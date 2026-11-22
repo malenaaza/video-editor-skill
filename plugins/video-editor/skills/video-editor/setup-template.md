@@ -15,6 +15,7 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - FFmpeg version: <e.g. 7.1>. Filter files: <`-/filter_complex file.txt` on FFmpeg 7+, `-filter_complex_script file.txt` on older>
 
 ## Transcription
+- Word fixes: your saved list of corrections is in `~/.video-editor/word-fixes.json` (made with `wordfixes.py add`; it isn't part of this file)
 - Transcription engine: <whisper (default) / parakeet: chosen after asrcompare.py on the user's voice, with the date and why>
 
 ## Encoders

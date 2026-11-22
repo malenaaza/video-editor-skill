@@ -34,6 +34,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Tool cards for videos about AI: when you name a tool, its logo and name slide in, tools named in a row stack, and a tool isn't shown again for a while
 - An AI chat window for videos about AI: your prompt types with key clicks, it's sent, the assistant thinks and answers word by word, in your brand's colours, wide or vertical
 - Animated explanations for educational videos: boxes, arrows and a moving dot that show how something works (how an MCP connects Claude to your Gmail, how a request travels), each appearing as you name it, in your brand's colours, wide or vertical, with pops and whooshes timed to the picture
+- A list of word corrections that's saved once and applied to every video: brand names, products and foreign words that a transcriber always misspells are fixed in your captions (and, with Whisper, given to the transcriber as a hint)
 - A choice of transcription engine: Whisper, or NVIDIA Parakeet (several times faster on a computer without a graphics card), with a tool that compares both on your own voice before you switch
 - Checks every cut by its sound before rendering (a word clipped in half, a scrap of a removed word, a cut that flashes by) and fixes it, keeping or dropping the word whole
 - Checks the opening of every video: a black first frame, a clipped first word, silence before you speak, a sound effect on your first word, nothing to read with the sound off, and what the first 3 seconds say
@@ -133,6 +134,7 @@ plugins/video-editor/
       cutedges.py          checks every cut edge by its sound (clipped words, fragments, slivers) and fixes the plan
       hookcheck.py         checks the first seconds of a finished video: first frame, first word, silence, text on screen
       checkexport.py       checks a finished export for black frames, stray frames, sound that ends early or cuts out, and clipped words
+      wordfixes.py         keeps your list of word corrections (brands, products, foreign words) and applies it to every video
       asrcompare.py        compares Whisper and Parakeet on a piece of your own voice: speed, words, fillers, timing
       overlays.py          times the web page, numbers and before-and-after graphics from your captions
       toolcards.py         finds where each tool is named and times its card, with a pop per logo

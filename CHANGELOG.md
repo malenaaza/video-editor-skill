@@ -2,6 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.0
+
+### New
+- **A saved list of word fixes** (`scripts/wordfixes.py`). Transcribers misspell brand names, products and foreign
+  words the same way in every video ("sefora" for Sephora, "cupillon" for the French "goupillon"), and fixing them
+  per video meant fixing them again every time. Now the fix is saved once, in `~/.video-editor/word-fixes.json`
+  (your settings, outside the skill, so an update never touches it) and `captions.py` applies it to every video; a
+  video's own `--fix` file wins, and `--no-personal-fixes` leaves it out. The skill asks once, "remember it for every
+  video?", when you correct a word. With Whisper the right spellings also go to the model as a hint
+  (`transcribe.py`); Parakeet takes no hints, so for it the list is the only fix. Guide: `references/setup.md`, Word fixes.
+
 ## 2026-11-22 · version 2.13.0
 
 ### New

@@ -8,6 +8,9 @@
 #
 # whisper (default): faster-whisper. On the CPU it was about 2.5x faster than openai-whisper medium, with the same
 # words and word times within 20 ms. With an NVIDIA GPU (--device auto finds it) it is much faster again.
+# Word fixes: with whisper and no --initial_prompt, the right spellings in the user's saved list (wordfixes.py) are
+# given to the model as a hint, so names it knows come out right; Parakeet ignores hints, so there the list only
+# corrects the captions afterwards.
 # parakeet: NVIDIA Parakeet v3 through onnx-asr (see asr.py): about 5x faster than faster-whisper medium on the CPU
 # in a first test, and it finds the language itself (--language, --initial_prompt and --model are ignored). Use it
 # only after asrcompare.py has shown it hears this user's voice as well; its segments are its sentences.
@@ -15,6 +18,7 @@ import argparse, json, os, subprocess, sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import wordfixes
 sys.stdout.reconfigure(encoding="utf-8")
 p = argparse.ArgumentParser()
 p.add_argument("input"); p.add_argument("output_dir")
@@ -23,6 +27,13 @@ p.add_argument("--model", default="medium"); p.add_argument("--language", defaul
 p.add_argument("--initial_prompt", default=None)
 p.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
 a = p.parse_args()
+
+saved = wordfixes.read()
+a.initial_prompt = wordfixes.hint_for(a.engine, a.initial_prompt, saved)
+if a.engine == "parakeet" and saved:
+    print(f"Parakeet takes no vocabulary hint: your {len(saved)} saved word fixes will correct the captions instead.")
+elif a.initial_prompt and saved and a.initial_prompt == wordfixes.vocabulary(saved):
+    print(f"Whisper hint from your saved word fixes: {a.initial_prompt[:80]}")
 
 # Decode with ffmpeg like openai-whisper does (some PyAV versions break faster-whisper's own decoder).
 pcm = subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", a.input, "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],

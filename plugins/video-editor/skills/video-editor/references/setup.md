@@ -61,6 +61,24 @@ On a laptop, run `python <skill>/scripts/detect_setup.py power` before long jobs
 
 The first time a long job runs on battery in a power-saving mode, time it against the same job plugged in if the user agrees, and save the result on the `Laptop:` line in `my-setup.md` (for example "transcription took 1.5x longer on battery in Best power efficiency").
 
+## Word fixes
+
+Every transcriber misspells brand names, product names and foreign words, the same way each time ("sefora" for
+Sephora, "cupillon" for the French "goupillon"). Instead of correcting them in each video, the corrections live in
+the user's own list, `~/.video-editor/word-fixes.json`, kept outside the skill so an
+update never touches it:
+
+```
+python -I <skill>/scripts/wordfixes.py add "cupillon" "goupillon"
+python -I <skill>/scripts/wordfixes.py list
+python -I <skill>/scripts/wordfixes.py remove "cupillon"
+```
+
+`captions.py` applies it to every video. With Whisper, `transcribe.py` also gives the right spellings to the model as
+a hint, so it often writes them correctly the first time; Parakeet takes no hints, so with Parakeet the list is what
+corrects the captions. Count the corrections over the first two or three videos: if they become a chore with
+Parakeet, Whisper with the hint is the alternative (set `Transcription engine: whisper`).
+
 ## Transcription engines
 
 Whisper (faster-whisper `medium`) is the default and the one every step was tuned with. **Parakeet**
