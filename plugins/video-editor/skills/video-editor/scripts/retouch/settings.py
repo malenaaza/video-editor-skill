@@ -43,7 +43,7 @@ mask.py (skin and teeth):
                   are, 1 smooths them away, 0.55 (default) roughly halves it. A close-up smooths the skin twice,
                   and a smoothing filter keeps small dark spots, so without this they were the only texture
                   left and read as dirt. Moles (bigger and much darker), eyes, lips and brows are never touched.
-  spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 18)
+  spot_contrast   how much darker than the skin around it a pixel must be to count as a spot (default 14)
   forehead_feather  how softly the skin mask fades at its outer edge (the forehead's top, the jaw), as a share of the
                   face's height: 0.04 (default) is about 30 px on a 750 px face; 0 is the old fixed 9 px edge. The
                   tracked face outline ends mid-forehead, and a hard edge there showed as a line between smooth skin
@@ -136,7 +136,7 @@ DEFAULTS = {
     "pixel_hold": 0.4,
     "pixel_faces": 6,
     "spot_calm": 0.55,
-    "spot_contrast": 18,
+    "spot_contrast": 14,
     "forehead_feather": 0.04,
 }
 CHANNELS = ("lum", "a", "b", "hue", "sat", "val")

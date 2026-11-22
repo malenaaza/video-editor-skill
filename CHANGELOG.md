@@ -2,6 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.3
+
+### Fixed
+- **Texture left under the eyebrows in close-ups.** The rule that keeps the brow's own hairs sharp also protected
+  the skin next to them, and the band it protected grew with the face's size, so on a big close-up a strip of skin
+  right under the brow (a shimmery lid, stubble, pores) stayed unsmoothed next to smooth skin. Now only a dark patch
+  that is mostly inside the brow outline, or that is as thin as a hair, is kept; wider patches and round specks
+  outside it are skin and are smoothed, and the spot pass calms their darkest specks (`spot_contrast` now 14, was
+  18). The brow's hairs stay as sharp as before. **Rebuild your masks** (`mask.py`). If a band is still visible:
+  `"brow_mode": "margin", "protect_brows": 10` in `retouch.json`. Guide: `references/retouch.md`, Grain under the brow.
+
 ## 2026-11-22 · version 2.14.2
 
 ### Fixed
