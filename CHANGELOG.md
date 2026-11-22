@@ -2,6 +2,15 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.11.0
+
+### Changed
+- **Calmer sound effects on animated explanations:** a soft pop as each box appears and one sparkle when the dot gets
+  home, nothing on the arrows. The first version made 10 sounds in 17 seconds, which was too busy; it's still there
+  as `--sounds-style lively`. Each sound now lands with its loudest moment on its cause (the sparkle used to sound
+  0.16 s late), and each piece appears 0.2 s before you name it, which reads as in time. `references/sound.md` has
+  the rule for every effect: a sound needs a cause on screen, never a whoosh under text.
+
 ## 2026-11-22 · version 2.10.0
 
 ### New

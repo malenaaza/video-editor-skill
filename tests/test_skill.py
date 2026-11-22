@@ -864,7 +864,7 @@ class SkillTest(unittest.TestCase):
         props, start, timeline, problems, mode = explainer.build_props(spec, captions, 1920, 1080, 25, style)
         self.assertEqual((start, mode), (when("os"), "row"))
         frames = {n["id"]: n["frame"] for n in props["nodes"]}
-        self.assertEqual(frames["claude"], round((when("está") - start) * 25))       # appears as it's named
+        self.assertEqual(frames["claude"], round((when("está") - start - explainer.LEAD) * 25))  # a beat before it's named
         self.assertEqual(frames["drive"], frames["gmail"] + round(explainer.GAP * 25))  # not said: just after the one before
         self.assertTrue(any("tu Drive" in p for p in problems))
         link = props["links"][1]
@@ -923,13 +923,22 @@ class SkillTest(unittest.TestCase):
         flow = props["flows"][0]
         arrive = next(t for t, k in events if k == "arrive")
         self.assertAlmostEqual(arrive, (flow["frame"] + flow["frames"]) / 25, places=3)  # when the dot gets home
+        subtle_count = sum(1 for _, k in events if k in explainer.SOUND_STYLES["subtle"])
+        self.assertEqual(subtle_count, len(props["nodes"]) + 1)                       # subtle: a pop per box, one sparkle
+        self.assertNotIn("arrow", explainer.SOUND_STYLES["subtle"])                   # never a whoosh under the arrows
+        import wave
+        import array
+        whoosh_wav = self.dir / "whoosh-test.wav"
+        explainer.write_sounds([(1.0, "arrow")], 2.0, str(whoosh_wav), style="lively")
+        with wave.open(str(whoosh_wav)) as w:
+            mixed = array.array("h", w.readframes(w.getnframes()))
+        loudest = max(range(len(mixed)), key=lambda i: abs(mixed[i])) // 2 / 48000
+        self.assertAlmostEqual(loudest, 1.0, delta=0.005)                             # its loudest moment on its cause
         wav = self.dir / "ex-sfx.wav"
         self.assertTrue(wav.exists())                                                 # written by the run above
-        import wave
         with wave.open(str(wav)) as w:
             self.assertEqual(w.getframerate(), 48000)
             self.assertAlmostEqual(w.getnframes() / 48000, props["seconds"], delta=0.05)  # as long as the graphic
-            import array
             samples = array.array("h", w.readframes(w.getnframes()))
         loud = lambda sec: max(abs(v) for v in samples[int(sec * 48000) * 2:int((sec + 0.1) * 48000) * 2])
         self.assertGreater(loud(pop), 1000)                                           # a pop where the box appears
