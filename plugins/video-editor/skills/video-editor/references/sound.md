@@ -28,6 +28,12 @@ It measures each clip, adjusts the whole-voice gain up to four times until the r
 
 ## Sound effects
 
+**A sound needs a cause on screen.** Silence is the default: a pop when something appears, a click when a cursor
+clicks, typing when someone types, the cash sound for money. Never a whoosh under text, and no more than one or two
+effects in a 10-second stretch: more reads as busy, not lively. Place each effect so its loudest moment, not the
+start of its file, lands on what causes it (`whoosh.wav` peaks 0.2 s in, `sparkle.wav` 0.16 s): delay it by its
+time minus that, in milliseconds.
+
 Add these when the user asks; don't ask them to supply sounds.
 
 - **Source:** `<skill>/scripts/sfx/`: `pop.wav`, `whoosh.wav`, `sparkle.wav`, `cash.wav`. They were generated with FFmpeg and are free to use. Don't download music or effects unless the user asks and the license allows it.

@@ -32,6 +32,9 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Puppet videos, with no one on camera: one or two illustrated adult characters or a robot (drawn in code, all original, with your brand's colours and the skin tones and hair you choose) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
 - Animated explanations for educational videos: boxes, arrows and a moving dot that show how something works (how an MCP connects Claude to your Gmail, how a request travels), each appearing as you name it, in your brand's colours, wide or vertical, with pops and whooshes timed to the picture
 - A choice of transcription engine: Whisper, or NVIDIA Parakeet (several times faster on a computer without a graphics card), with a tool that compares both on your own voice before you switch
+- Checks every cut by its sound before rendering (a word clipped in half, a scrap of a removed word, a cut that flashes by) and fixes it, keeping or dropping the word whole
+- Checks the opening of every video: a black first frame, a clipped first word, silence before you speak, a sound effect on your first word, nothing to read with the sound off, and what the first 3 seconds say
+- Checks every export before it's delivered: black frames, a stray single frame left by a cut, picture and sound that end apart, sound that cuts out, missing colour tags, and words clipped at a cut
 - Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked, plus a clean text for your teleprompter if you use one (it asks once); after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
 
 You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
@@ -124,6 +127,9 @@ plugins/video-editor/
       chapters.py          YouTube chapters for the description, checked against YouTube's rules
       footcheck.py         reads how a video was recorded (camera, app, settings) and says what to change next time
       conform.py           makes a clip from a second camera (an iPhone) match the main camera before the edit
+      cutedges.py          checks every cut edge by its sound (clipped words, fragments, slivers) and fixes the plan
+      hookcheck.py         checks the first seconds of a finished video: first frame, first word, silence, text on screen
+      checkexport.py       checks a finished export for black frames, stray frames, sound that ends early or cuts out, and clipped words
       asrcompare.py        compares Whisper and Parakeet on a piece of your own voice: speed, words, fillers, timing
       explainer.py         turns a described diagram and the captions into an animated explanation's layout and timing
       syncclip.py          syncs a second camera filmed at the same time by its sound and puts its picture into the main recording

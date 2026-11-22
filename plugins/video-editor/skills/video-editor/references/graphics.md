@@ -65,10 +65,12 @@ explain better as an animation, in one line each, and make them only if the user
 3. **Show the user** the timeline in one short message, then render a few stills before the whole clip
    (`npx remotion still src/index.ts Explainer out/f.png --props=explainer-props.json --frame=<n>`): one with
    every box, one with the dot halfway. Then render it and place it with the FFmpeg line it prints.
-   It also writes `explainer-sfx.wav`, the graphic's sound effects timed to its frames (a pop per box, a soft
-   whoosh per arrow, a whoosh as the dot sets off, a tick at each box it reaches, a sparkle when it arrives): mix
-   it under the voice from the graphic's start with the other effects (`references/sound.md`). `--no-sounds` if
-   the brand doesn't use sound effects.
+   It also writes `explainer-sfx.wav`, the graphic's sound effects timed to its frames: by default a soft pop per
+   box and one sparkle when the dot gets home, each placed so its loudest moment lands on its cause. Mix it under
+   the voice from the graphic's start with the other effects (`references/sound.md`). A sound needs a cause on
+   screen: a whoosh per arrow and a tick per box the dot passed made 10 sounds in 17 s, which was too busy, so
+   those are only in `--sounds-style lively`, when the user asks for more. `--sounds-style none` for a brand
+   without sound effects. Each piece appears 0.2 s before the phrase that names it, which reads as in time.
 4. **Check** on the real video: every piece appears as it's named, nothing covers the captions (put the captions
    over the explanation, or raise them), and the text is readable on a phone.
 

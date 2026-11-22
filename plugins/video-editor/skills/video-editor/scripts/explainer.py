@@ -23,10 +23,16 @@ after the one before it. A link never appears before its two boxes, nor a flow b
 found is said, and that piece is timed like one with neither. layout: "row" (left to right), "column" (top to
 bottom) or "auto" (a row in a wide video, a column in a vertical one). Up to 6 boxes.
 
-It also writes explainer-sfx.wav (unless --no-sounds), the graphic's sound effects timed to its frames, from the free
-sounds in scripts/sfx/: a pop as each box appears, a soft whoosh as each arrow draws, a whoosh as the dot sets off, a
-light tick each time it reaches a box and a sparkle when it arrives. It is as long as the graphic: mix it under the
-voice from the graphic's start, like the other sound effects (references/sound.md).
+A piece named by a phrase appears 0.2 s before the phrase starts (LEAD): landing a beat ahead of the word reads as
+in time, landing on it reads as late.
+
+It also writes explainer-sfx.wav, the graphic's sound effects timed to its frames, from the free sounds in scripts/sfx/.
+--sounds-style subtle (the default): a soft pop as each box appears and one sparkle when the dot gets home, nothing on
+the arrows. A sound has to have a cause on screen, and a whoosh under text reads as noise: a first version with a
+whoosh per arrow and a tick per box the dot passed made 10 sounds in 17 s, too busy. lively keeps those; none writes
+nothing (--no-sounds too). Each sound is placed so its loudest moment, not the start of its file, lands on its cause
+(the whoosh peaks 0.2 s in, the sparkle 0.16 s). It is as long as the graphic: mix it under the voice from the
+graphic's start, like the other sound effects (references/sound.md).
 
 Writes the props for scripts/remotion/Explainer.tsx: every position in pixels and every time in frames from the
 graphic's start, so the template only draws. Each box takes the next colour of --palette (the brand's colours, or a
@@ -47,6 +53,7 @@ from chapters import find_phrase, flat_words  # noqa: E402
 sys.stdout.reconfigure(encoding="utf-8")
 
 GAP = 0.6         # seconds between pieces with no time of their own
+LEAD = 0.2        # seconds a piece appears before the phrase that names it
 TAIL = 2.5        # seconds the finished diagram stays when no end is given
 DRAW = 0.5        # seconds an arrow takes to draw
 FLOW = 1.8        # seconds the dot takes along a flow's whole path
@@ -136,14 +143,19 @@ def resolve_time(item, flat, start, problems, name):
         if t is None:
             problems.append(f'"{item["say"]}" ({name}) is not said after the graphic starts: timed after the piece before.')
             return None
-        return t - start
+        return max(0.0, t - start - LEAD)
     return None
 
 
 SFX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sfx")
-# (sound, volume): loud enough to notice, well under the voice (the mix scales them all again)
-SOUNDS = {"box": ("pop", 0.8), "arrow": ("whoosh", 0.45), "flow": ("whoosh", 0.6), "reach": ("pop", 0.35),
-          "arrive": ("sparkle", 0.6)}
+# Per style, (sound, volume) for each kind of moment; a kind missing from a style makes no sound.
+SOUND_STYLES = {
+    "subtle": {"box": ("pop", 0.5), "arrive": ("sparkle", 0.45)},
+    "lively": {"box": ("pop", 0.8), "arrow": ("whoosh", 0.45), "flow": ("whoosh", 0.6), "reach": ("pop", 0.35),
+               "arrive": ("sparkle", 0.6)},
+    "none": {},
+}
+SOUNDS = SOUND_STYLES["lively"]  # every kind sound_events can return
 
 
 def ease_inverse(y):
@@ -179,16 +191,27 @@ def read_sound(name):
         return array.array("h", w.readframes(w.getnframes()))
 
 
-def write_sounds(events, seconds, path, rate=48000):
-    """Mixes the events into one stereo wav as long as the graphic, with a limiter so pops on top of each other
-    never clip."""
+def peak_offset(sound):
+    """Samples per channel from the start of a stereo sound to its loudest moment."""
+    loudest = max(range(len(sound)), key=lambda i: abs(sound[i])) if len(sound) else 0
+    return loudest // 2
+
+
+def write_sounds(events, seconds, path, rate=48000, style="subtle"):
+    """Mixes the events into one stereo wav as long as the graphic, each sound's loudest moment on its cause, with
+    a limiter so sounds on top of each other never clip. Returns how many sounds went in."""
+    sounds = SOUND_STYLES[style]
     total = int(round(seconds * rate)) * 2
     mix = [0.0] * total
-    cache = {}
+    cache, used = {}, 0
     for t, kind in events:
-        name, gain = SOUNDS[kind]
+        if kind not in sounds:
+            continue
+        name, gain = sounds[kind]
         sound = cache.setdefault(name, read_sound(name))
-        start = int(round(t * rate)) * 2
+        used += 1
+        lead_in = peak_offset(sound)
+        start = max(0, int(round(t * rate)) - lead_in) * 2
         for i in range(min(len(sound), total - start)):
             mix[start + i] += sound[i] * gain
     peak = max((abs(v) for v in mix), default=0)
@@ -199,6 +222,7 @@ def write_sounds(events, seconds, path, rate=48000):
         w.setsampwidth(2)
         w.setframerate(rate)
         w.writeframes(out.tobytes())
+    return used
 
 
 def build_props(spec, captions, width, height, fps, style, palette=PALETTE.split(",")):
@@ -306,7 +330,9 @@ def main():
     ap.add_argument("--line", default="#FFFFFF")
     ap.add_argument("--out", default="explainer-props.json")
     ap.add_argument("--sounds", default="explainer-sfx.wav", help="the sound effects track to write")
-    ap.add_argument("--no-sounds", action="store_true", help="don't write the sound effects")
+    ap.add_argument("--sounds-style", choices=sorted(SOUND_STYLES), default="subtle",
+                    help="subtle (default): a pop per box and a sparkle when the dot arrives; lively: also arrows and the trip")
+    ap.add_argument("--no-sounds", action="store_true", help="don't write the sound effects (the same as --sounds-style none)")
     a = ap.parse_args()
     with open(a.spec, encoding="utf-8") as f:
         spec = json.load(f)
@@ -337,10 +363,9 @@ def main():
     for p in problems:
         print("  NOTE: " + p)
     print(f"Wrote {a.out}.")
-    if not a.no_sounds:
-        events = sound_events(props)
-        write_sounds(events, props["seconds"], a.sounds)
-        print(f"Wrote {a.sounds}: {len(events)} sound effects (pops, whooshes, a sparkle), {props['seconds']:.1f} s. Mix it "
+    if not a.no_sounds and a.sounds_style != "none":
+        used = write_sounds(sound_events(props), props["seconds"], a.sounds, style=a.sounds_style)
+        print(f"Wrote {a.sounds}: {used} sound effects ({a.sounds_style}), {props['seconds']:.1f} s. Mix it "
               f"under the voice from {start:.2f} s (adelay={int(round(start * 1000))}|{int(round(start * 1000))}), at about "
               "0.4 to 0.5 like the other effects (references/sound.md); quieter if the explanation is long.")
     print("Render it (from the Remotion project):")

@@ -2,6 +2,40 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.12.0
+
+### New
+- **Every cut checked by its sound** (`scripts/cutedges.py`), before the cut is rendered. Word times from a transcript
+  are often 50 to 100 ms off, so a cut can land inside a word. It looks at the recording around every edge and lists
+  cuts that start or end in the middle of a sound, scraps of removed words left at an edge, and pieces too short to
+  see. `--fix` writes a corrected plan: a word cut in two is kept whole when most of it was kept and dropped whole
+  otherwise (moving to "the quietest moment nearby" left half a word in a first test).
+- **The opening checked** (`scripts/hookcheck.py`) on every finished video: a black or blank first frame, a clipped
+  first word, more than half a second of silence before you speak, a sound effect on your first word, nothing
+  written on screen in the first 1.5 seconds (most people start muted), and the words of the first 3 seconds, to
+  judge whether they're the promise or the question.
+
+## 2026-11-22 · version 2.11.0
+
+### New
+- **Every export is checked before it's delivered** (`scripts/checkexport.py`): black frames in the middle of the
+  video, a single stray frame left by a cut (one frame unlike both its neighbours, which no contact sheet shows),
+  picture and sound that end apart, sound that drops to digital silence, missing colour tags (some players then show
+  faces darker and redder), and, with a transcript of the export, words clipped at a cut. A failure means fix and
+  export again. The idea of checking the file itself came from comparing with another editing skill.
+
+### Fixed
+- **The final export now tags its colours as Rec.709.** It had no colour tags, so some players guessed and showed
+  faces darker and redder. On FFmpeg 7 and later the tags have to be set on the frames (`setparams` at the end of
+  the filter chain), because those versions ignore `-color_primaries` and the like; both are now in the export line.
+
+### Changed
+- **Calmer sound effects on animated explanations:** a soft pop as each box appears and one sparkle when the dot gets
+  home, nothing on the arrows. The first version made 10 sounds in 17 seconds, which was too busy; it's still there
+  as `--sounds-style lively`. Each sound now lands with its loudest moment on its cause (the sparkle used to sound
+  0.16 s late), and each piece appears 0.2 s before you name it, which reads as in time. `references/sound.md` has
+  the rule for every effect: a sound needs a cause on screen, never a whoosh under text.
+
 ## 2026-11-22 · version 2.10.0
 
 ### New

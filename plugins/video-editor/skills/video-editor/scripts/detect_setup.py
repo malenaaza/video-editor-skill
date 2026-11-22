@@ -56,7 +56,10 @@ CANDIDATES = {
         "hevc10": ["-c:v", "libx265", "-preset", "medium", "-crf", "12", "-pix_fmt", "yuv420p10le"],
     },
 }
+# Rec.709 tags, or players guess and faces look darker and redder. FFmpeg 7+ ignores these options and takes the
+# tags from the frames: end the filter chain with setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709.
 FINAL_EXPORT = ["-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p",
+                "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709",
                 "-ac", "2", "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart"]
 
 

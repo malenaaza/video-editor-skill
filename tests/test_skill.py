@@ -864,7 +864,7 @@ class SkillTest(unittest.TestCase):
         props, start, timeline, problems, mode = explainer.build_props(spec, captions, 1920, 1080, 25, style)
         self.assertEqual((start, mode), (when("os"), "row"))
         frames = {n["id"]: n["frame"] for n in props["nodes"]}
-        self.assertEqual(frames["claude"], round((when("está") - start) * 25))       # appears as it's named
+        self.assertEqual(frames["claude"], round((when("está") - start - explainer.LEAD) * 25))  # a beat before it's named
         self.assertEqual(frames["drive"], frames["gmail"] + round(explainer.GAP * 25))  # not said: just after the one before
         self.assertTrue(any("tu Drive" in p for p in problems))
         link = props["links"][1]
@@ -923,13 +923,22 @@ class SkillTest(unittest.TestCase):
         flow = props["flows"][0]
         arrive = next(t for t, k in events if k == "arrive")
         self.assertAlmostEqual(arrive, (flow["frame"] + flow["frames"]) / 25, places=3)  # when the dot gets home
+        subtle_count = sum(1 for _, k in events if k in explainer.SOUND_STYLES["subtle"])
+        self.assertEqual(subtle_count, len(props["nodes"]) + 1)                       # subtle: a pop per box, one sparkle
+        self.assertNotIn("arrow", explainer.SOUND_STYLES["subtle"])                   # never a whoosh under the arrows
+        import wave
+        import array
+        whoosh_wav = self.dir / "whoosh-test.wav"
+        explainer.write_sounds([(1.0, "arrow")], 2.0, str(whoosh_wav), style="lively")
+        with wave.open(str(whoosh_wav)) as w:
+            mixed = array.array("h", w.readframes(w.getnframes()))
+        loudest = max(range(len(mixed)), key=lambda i: abs(mixed[i])) // 2 / 48000
+        self.assertAlmostEqual(loudest, 1.0, delta=0.005)                             # its loudest moment on its cause
         wav = self.dir / "ex-sfx.wav"
         self.assertTrue(wav.exists())                                                 # written by the run above
-        import wave
         with wave.open(str(wav)) as w:
             self.assertEqual(w.getframerate(), 48000)
             self.assertAlmostEqual(w.getnframes() / 48000, props["seconds"], delta=0.05)  # as long as the graphic
-            import array
             samples = array.array("h", w.readframes(w.getnframes()))
         loud = lambda sec: max(abs(v) for v in samples[int(sec * 48000) * 2:int((sec + 0.1) * 48000) * 2])
         self.assertGreater(loud(pop), 1000)                                           # a pop where the box appears
@@ -978,6 +987,124 @@ class SkillTest(unittest.TestCase):
             self.assertIn('"parakeet"', (SCRIPTS / name).read_text("utf-8"))
         self.assertIn('choices=["whisper", "parakeet"]', (SCRIPTS / "transcribe.py").read_text("utf-8"))
         self.assertIn("Transcription engine:", (ROOT / "setup-template.md").read_text("utf-8"))
+
+    def test_78_export_check(self):
+        try:
+            import numpy  # noqa: F401
+        except ImportError:
+            self.skipTest("numpy not installed")
+        work = self.dir / "chk"
+        work.mkdir()
+        ff = lambda *args: subprocess.run(["ffmpeg", "-v", "error", "-y", *args], cwd=work, check=True)
+        tag = "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709"   # as the final export does
+        tags = ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709"]
+        ff("-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=4", "-f", "lavfi", "-i", "sine=f=300:r=48000:d=4",
+           "-vf", tag, "-c:v", "libx264", "-pix_fmt", "yuv420p", *tags, "-c:a", "aac", "clean.mp4")
+        # a plain jump cut (one picture, then another) is not a flash
+        ff("-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=2", "-f", "lavfi", "-i", "smptebars=s=320x180:r=25:d=2",
+           "-f", "lavfi", "-i", "sine=f=300:r=48000:d=4", "-filter_complex", f"[0:v][1:v]concat=n=2:v=1:a=0,{tag}[v]",
+           "-map", "[v]", "-map", "2:a", "-c:v", "libx264", "-pix_fmt", "yuv420p", *tags, "-c:a", "aac", "jump.mp4")
+        ff("-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=4", "-f", "lavfi", "-i", "sine=f=300:r=48000:d=3.5",
+           "-vf", "drawbox=enable='between(n,40,42)':color=black:t=fill,drawbox=enable='eq(n,70)':color=white:t=fill",
+           "-af", "volume=enable='between(t,2,2.6)':volume=0", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+           "-c:a", "pcm_s16le", "bad.mov")
+        run = lambda *args: subprocess.run([sys.executable, "-I", str(SCRIPTS / "checkexport.py"), *args], cwd=work,
+                                          capture_output=True, text=True, encoding="utf-8")
+        for good in ("clean.mp4", "jump.mp4"):
+            r = run(good)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertNotIn("FAIL", r.stdout)
+            self.assertNotIn("WARN", r.stdout)
+        bad = run("bad.mov")
+        self.assertEqual(bad.returncode, 1)                                       # never delivered
+        self.assertIn("black picture from 0:01.60", bad.stdout)                   # 3 black frames from frame 40
+        self.assertIn("flash at 0:02.80 (frame 70)", bad.stdout)                  # the stray frame
+        self.assertIn("picture 4.00 s but sound 3.50 s", bad.stdout)
+        self.assertIn("digital silence from 0:02.0", bad.stdout)
+        self.assertIn("colour tags missing", bad.stdout)
+        self.assertIn("setparams=color_primaries=bt709", bad.stdout)               # advice that works on every FFmpeg
+        self.assertIn("setparams=color_primaries=bt709", (ROOT / "SKILL.md").read_text("utf-8"))  # the export tags it
+        self.assertTrue((work / "bad-check.txt").exists())
+        sys.path.insert(0, str(SCRIPTS))
+        import checkexport
+        said = lambda words: {"segments": [{"words": [{"start": i * 0.4, "word": " " + w} for i, w in enumerate(words)]}]}
+        lost = checkexport.missing_words(said(["hola", "hoy", "os", "enseño", "algo"]), said(["hola", "os", "enseño", "algo"]))
+        self.assertEqual(lost, [(0.4, "hoy")])                                    # a word clipped at a cut
+
+    def test_79_cut_edges_by_their_sound(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy not installed")
+        sys.path.insert(0, str(SCRIPTS))
+        import cutedges
+        rate = cutedges.RATE
+        x = np.random.default_rng(1).standard_normal(10 * rate).astype(np.float32) * 0.001     # room noise
+
+        def word(a, b):
+            n = int((b - a) * rate)
+            x[int(a * rate):int(a * rate) + n] += 0.3 * np.sin(2 * np.pi * 220 * np.arange(n) / rate) * np.hanning(n) ** 0.3
+        for a in (0.5, 1.1, 1.7, 3.2, 4.1, 5.0, 6.0):
+            word(a, a + 0.3)
+        word(3.0, 3.06)                                                           # a fragment of a removed word
+        sound = cutedges.Sound(x)
+
+        def plan_of(pieces):
+            offsets, total = [], 0
+            for a, b in pieces:
+                offsets.append(total)
+                total += b - a
+            return {"fps": "25", "frames": pieces, "offsets": offsets, "total_frames": total}
+        # 0-1.24 ends inside the word 1.1-1.4 (mostly outside); 3.00-3.64 opens on the fragment; 4.04-4.60 is clean;
+        # 4.84-5.24 starts in silence and ends inside 5.0-5.3, mostly inside; 7.0-7.04 is a sliver
+        plan = plan_of([[0, 31], [75, 91], [101, 115], [121, 131], [175, 176]])
+        problems = cutedges.check(plan, sound)
+        found = {(p["piece"], p["edge"]): p for p in problems}
+        self.assertEqual(found[(0, "end")]["kind"], "ends mid-sound")
+        self.assertLess(found[(0, "end")]["fix"], 1.1)                            # most of the word is outside: dropped whole
+        self.assertEqual(found[(1, "start")]["kind"], "fragment")
+        self.assertTrue(3.06 <= found[(1, "start")]["fix"] <= 3.2)                # the start moves into the gap after it
+        self.assertNotIn((2, "start"), found)                                     # clean edges are left alone
+        self.assertNotIn((2, "end"), found)
+        self.assertGreater(found[(3, "end")]["fix"], 5.3)                         # mostly inside: kept whole
+        self.assertEqual(found[(4, "both")]["kind"], "sliver")
+        fixed = cutedges.apply_fixes(plan, problems)
+        self.assertEqual(len(fixed["frames"]), 4)                                 # the sliver is gone
+        self.assertEqual(fixed["offsets"][1], fixed["frames"][0][1] - fixed["frames"][0][0])  # offsets recounted
+        self.assertEqual(fixed["total_frames"], sum(b - a for a, b in fixed["frames"]))
+        self.assertEqual(cutedges.check(fixed, sound), [])                        # nothing left to fix
+
+    def test_80_hook_check(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy not installed")
+        sys.path.insert(0, str(SCRIPTS))
+        import hookcheck
+        rate = 16000
+        picture = np.full(96 * 54, 120.0) + np.random.default_rng(0).standard_normal(96 * 54) * 30
+        black = np.zeros(96 * 54)
+        quiet_then_speech = np.concatenate([np.zeros(int(0.2 * rate)), 0.3 * np.ones(int(0.3 * rate))])
+        speech_at_once = 0.3 * np.ones(int(0.5 * rate))
+        caps = lambda start, words: [{"start": start, "end": start + 1, "words": words}]
+        good_words = [(0.2, 0.5, "Tres"), (0.5, 0.8, "errores"), (0.8, 1.2, "que"), (3.5, 3.8, "luego")]
+        fails, warns, opening = hookcheck.check(picture, quiet_then_speech, good_words, caps(0.2, good_words), sfx=[2.0])
+        self.assertEqual((fails, warns), ([], []))
+        self.assertEqual(opening, "Tres errores que")                              # the first 3 seconds, to judge
+        late = [(1.2, 1.5, "Hola")]
+        fails, warns, _ = hookcheck.check(picture, np.zeros(rate), late, caps(2.0, late))
+        self.assertTrue(any("before the first word" in w for w in warns))           # silence before speaking
+        self.assertTrue(any("nothing written on screen" in w for w in warns))       # nothing to read with the sound off
+        _, warns, _ = hookcheck.check(picture, np.zeros(rate), late, caps(2.0, late), title_at=0.3)
+        self.assertFalse(any("nothing written" in w for w in warns))                # a title counts
+        bad = [(0.0, 0.3, "Hola")]
+        fails, warns, _ = hookcheck.check(black, speech_at_once, bad, caps(0.0, bad), sfx=[0.1])
+        self.assertTrue(any("first frame is black" in f for f in fails))
+        self.assertTrue(any("clipped" in f for f in fails))
+        self.assertTrue(any("lands on the first word" in w for w in warns))
+        mix = self.dir / "sfx-mix.txt"
+        mix.write_text("[1:a]adelay=2350|2350,volume=0.4[s0];[2:a]adelay=120|120[s1]", "utf-8")
+        self.assertEqual(hookcheck.sfx_times(str(mix)), [0.12, 2.35])
 
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
