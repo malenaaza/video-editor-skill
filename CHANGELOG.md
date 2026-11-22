@@ -2,6 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.13.0
+
+### New
+- **AI chat window** for videos about AI: when you say what you asked an assistant, a clean chat window shows it.
+  Your prompt types into the box with soft key clicks, it's sent, three dots "think", and the answer appears word
+  by word, with lists as bullet points. Each turn starts as you say it. `scripts/chatwindow.py` works out the timing
+  from your captions, and the new Remotion template `ChatWindow.tsx` draws it in your brand's colours, light or
+  dark, wide or vertical, full screen or over you. It's a generic chat design with the app's name (and its
+  press-kit logo, if you have one), not a copy of any company's interface. Scripts mark prompts for it. Guide:
+  `references/graphics.md`, AI chat window. The key clicks come from the same sound as the typewriter title.
+
 ## 2026-11-22 · version 2.12.0
 
 ### New

@@ -30,6 +30,25 @@ def click_times(lines, lps, start, every):
     return times, start + index / lps
 
 
+def render_clicks(times, seconds, volume=0.5, rate=48000):
+    """Mono samples (floats, -1 to 1), `seconds` long, with a soft key click at each time. Also used by the AI chat
+    window (chatwindow.py), so its typing sounds the same as a typewriter title's."""
+    samples = [0.0] * int(seconds * rate)
+    rng = random.Random(7)
+    length = int(0.018 * rate)
+    for t in times:
+        begin = int(t * rate)
+        gain = volume * (0.8 + 0.4 * rng.random())
+        previous = 0.0
+        for k in range(length):
+            if begin + k >= len(samples):
+                break
+            noise = rng.gauss(0, 1) * math.exp(-9 * k / length)
+            samples[begin + k] += gain * 0.36 * (noise - previous)  # a difference: bright tick, no low thump
+            previous = noise
+    return samples
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--line", action="append", required=True, help="one line of the title; repeat for each line")
@@ -41,19 +60,7 @@ def main():
     a = ap.parse_args()
     times, end = click_times(a.line, a.lps, a.start, max(1, a.every))
     rate = 48000
-    samples = [0.0] * int((end + 0.3) * rate)
-    rng = random.Random(7)
-    length = int(0.018 * rate)
-    for t in times:
-        begin = int(t * rate)
-        gain = a.volume * (0.8 + 0.4 * rng.random())
-        previous = 0.0
-        for k in range(length):
-            if begin + k >= len(samples):
-                break
-            noise = rng.gauss(0, 1) * math.exp(-9 * k / length)
-            samples[begin + k] += gain * 0.36 * (noise - previous)  # a difference: bright tick, no low thump
-            previous = noise
+    samples = render_clicks(times, end + 0.3, a.volume, rate)
     out = wave.open(a.out, "wb")
     out.setnchannels(1)
     out.setsampwidth(2)

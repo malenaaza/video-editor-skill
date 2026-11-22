@@ -30,6 +30,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `Thumbnail` | YouTube thumbnail, 1280x720: the face big on one side, a few huge words on the other (see `references/cover.md`) | `background`, `bgWidth`/`bgHeight`, `faceX`/`faceY`/`faceSize`, `lines` | a still: `npx remotion still` |
 | `WordCaptions` | Word highlight captions: a box in the accent colour behind each word as it's said (see below) | written by `captions.py --remotion-props` | the whole video |
 | `Explainer` | An animated explanation in an educational video: boxes, arrows and a moving dot showing how something works, each piece appearing as the speaker names it (see Animated explanations below) | written by `explainer.py` | the stretch it explains |
+| `ChatWindow` | An AI chat in a video about AI: the prompt types, is sent, the assistant thinks and answers word by word (see AI chat window below) | written by `chatwindow.py` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
@@ -77,6 +78,27 @@ explain better as an animation, in one line each, and make them only if the user
 The template only draws what `explainer.py` computed, so a different diagram never needs a change to
 `Explainer.tsx`. For something it can't show (a chart, a screen, a photo), use the other templates or a screen
 recording.
+
+## AI chat window
+
+For videos about AI, when the speaker says what they asked an assistant and what it answered: a clean chat window in
+the brand's colours. The prompt types into the box with key clicks, it's sent, three dots "think", and the answer
+appears word by word (lines starting with `- ` show as a list). Cleaner than a screen recording of a real chat, and
+the same every time. For a real tool's real interface, use a screen recording instead (`screen.py`, Rule 6).
+
+1. **Write `chat.json`** in the build folder: `app` (the name in the top bar), an optional `logo` (from the brand's
+   press kit, copied into the Remotion project's `public` folder), `start_say`/`end_say` (or seconds), the
+   `placeholder` in the video's language, and the `messages` in order, each with `role` (`user` or `assistant`),
+   `text` and the phrase that starts it (`say`). Keep prompts to one line and answers short (two to five lines):
+   it's read in seconds. The full format is at the top of `<skill>/scripts/chatwindow.py`.
+2. **Make the props:** `python -I <skill>/scripts/chatwindow.py chat.json --captions captions.json --size <video
+   size> --fps <video fps>` with the brand's `--accent`, `--font`, `--font-file`, `--theme light` or `dark`, and the
+   background (`--background transparent` lays the window over the speaker). It prints when each prompt types and
+   each answer finishes, and makes the window longer if an answer couldn't be read before it goes.
+3. **Render a still** of the finished answer, then the clip, and place it with the FFmpeg line it prints. Mix
+   `chat-sfx.wav` (key clicks while the prompt types, nothing for the answer) from the window's start.
+4. **Don't imitate a company's interface:** the window is a generic chat design with the app's name. Say what it
+   shows in the voice ("le pregunté a Claude…"), and use a logo only from the brand's press kit.
 
 ## Product pop-in from B-roll
 

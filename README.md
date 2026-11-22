@@ -30,6 +30,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
 - Puppet videos, with no one on camera: one or two illustrated adult characters or a robot (drawn in code, all original, with your brand's colours and the skin tones and hair you choose) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
+- An AI chat window for videos about AI: your prompt types with key clicks, it's sent, the assistant thinks and answers word by word, in your brand's colours, wide or vertical
 - Animated explanations for educational videos: boxes, arrows and a moving dot that show how something works (how an MCP connects Claude to your Gmail, how a request travels), each appearing as you name it, in your brand's colours, wide or vertical, with pops and whooshes timed to the picture
 - A choice of transcription engine: Whisper, or NVIDIA Parakeet (several times faster on a computer without a graphics card), with a tool that compares both on your own voice before you switch
 - Checks every cut by its sound before rendering (a word clipped in half, a scrap of a removed word, a cut that flashes by) and fixes it, keeping or dropping the word whole
@@ -131,6 +132,7 @@ plugins/video-editor/
       hookcheck.py         checks the first seconds of a finished video: first frame, first word, silence, text on screen
       checkexport.py       checks a finished export for black frames, stray frames, sound that ends early or cuts out, and clipped words
       asrcompare.py        compares Whisper and Parakeet on a piece of your own voice: speed, words, fillers, timing
+      chatwindow.py        turns a described AI chat and the captions into the chat window's timing and key clicks
       explainer.py         turns a described diagram and the captions into an animated explanation's layout and timing
       syncclip.py          syncs a second camera filmed at the same time by its sound and puts its picture into the main recording
       screen.py            screen recordings: smooth zooms onto the action, and screen-above-speaker Shorts
@@ -150,6 +152,7 @@ plugins/video-editor/
       remotion/ProductTag.tsx product name and price lower third for Remotion
       remotion/ProductPop.tsx the product's photo or clip popping in beside you when you name it
       remotion/WordCaptions.tsx captions with each word lit up in your accent colour as you say it
+      remotion/ChatWindow.tsx an AI chat: the prompt types, is sent, the answer appears word by word, from chatwindow.py
       remotion/Explainer.tsx  animated explanation: boxes, arrows and a moving dot, from explainer.py
       remotion/CoverCard.tsx  cover image with products around the speaker's face
       remotion/Thumbnail.tsx  YouTube thumbnail: your face big on one side, a few huge words on the other

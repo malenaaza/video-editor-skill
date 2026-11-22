@@ -46,6 +46,9 @@ Este es el resultado final. ¿Qué os parece?
 - **Screen recordings and graphics:** a `[SCREEN]` line before the line it illustrates, saying exactly what to show;
   a `[GRAPHIC]` line for a diagram or a list to animate. Switch between the speaker and screen or graphics every 20
   to 40 seconds, so the video keeps moving.
+- **In a video about AI, show the prompts:** when the speaker says what they ask an assistant, mark it
+  `[GRAPHIC] chat: <app>; prompt "..."; answer "..."` so it becomes an AI chat window (`references/graphics.md`),
+  and write the line so it names the asking and the answer ("le pido a Claude que…", "y me dice…").
 - **Propose the animated explanations yourself:** don't wait to be asked. In an educational video, look for the
   passages where the speaker explains how something works that can't be filmed: how parts connect (Claude, an MCP
   server and Gmail), how a request goes and comes back, the steps of a process, what talks to what. Mark one to

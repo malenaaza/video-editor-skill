@@ -1106,6 +1106,53 @@ class SkillTest(unittest.TestCase):
         mix.write_text("[1:a]adelay=2350|2350,volume=0.4[s0];[2:a]adelay=120|120[s1]", "utf-8")
         self.assertEqual(hookcheck.sfx_times(str(mix)), [0.12, 2.35])
 
+    def test_81_ai_chat_window(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import chatwindow
+        said = "Mirad esto . Le pido a Claude que me resuma este correo . Y me dice lo importante . Así de rápido".split()
+        t, words = 10.0, []
+        for w in said:
+            if w == ".":
+                t += 0.6
+                continue
+            words.append([round(t, 2), round(t + 0.3, 2), w])
+            t += 0.32
+        captions = [{"start": words[0][0], "end": words[-1][1], "words": words}]
+        when = lambda word: next(w[0] for w in words if w[2] == word)
+        spec = {"app": "Claude", "start_say": "Le pido a Claude", "end_say": "Así de rápido",
+                "messages": [{"role": "user", "text": "Resume este correo en tres puntos", "say": "me resuma"},
+                             {"role": "assistant", "text": "Lo importante:\n- Reunión el lunes\n- Falta tu firma", "say": "me dice"},
+                             {"role": "user", "text": "Gracias"}]}                       # no phrase: follows the answer
+        style = {"theme": "light", "font": "sans-serif", "fontFile": "", "accentColor": "#FF4F8B",
+                 "background": "#1B1033", "background2": "#0E2A47"}
+        props, start, timeline, problems = chatwindow.build_props(spec, captions, 1920, 1080, 25, style)
+        self.assertAlmostEqual(start, when("Le") - chatwindow.LEAD, places=3)
+        user, answer, thanks = props["messages"]
+        self.assertEqual(user["typeFrom"], round((when("me") - start - chatwindow.LEAD) * 25))   # a beat before it's said
+        self.assertAlmostEqual(user["typeTo"] - user["typeFrom"], len(user["text"]) / 22 * 25, delta=1)  # 22 letters a second
+        self.assertGreater(user["sent"], user["typeTo"])                                 # sent after the last letter
+        self.assertGreaterEqual(answer["from"], user["sent"])                            # never answers before it's asked
+        self.assertEqual(answer["answer"] - answer["from"], round(0.8 * 25))             # thinks, then answers
+        self.assertGreater(thanks["typeFrom"], answer["answer"])                         # the next prompt follows the answer
+        self.assertGreater(props["seconds"], (thanks["sent"] - 0) / 25)                  # long enough to read everything
+        self.assertTrue(any("made longer" in p for p in problems))
+        clicks = chatwindow.click_times(props)
+        first, last = user["typeFrom"] / 25, user["sent"] / 25
+        self.assertTrue(first <= clicks[0] and any(abs(c - last) < 0.001 for c in clicks))  # typing, then "enter"
+        self.assertTrue(all(not (answer["answer"] / 25 < c < answer["answer"] / 25 + 1) for c in clicks))  # answers are silent
+        with self.assertRaises(ValueError):
+            chatwindow.build_props(dict(spec, messages=[{"role": "bot", "text": "x"}]), captions, 1920, 1080, 25, style)
+        tsx = (SCRIPTS / "remotion" / "ChatWindow.tsx").read_text("utf-8")
+        default_props = next(l for l in tsx.splitlines() if "defaultProps=" in l)
+        self.assertIn("messages: []", default_props)                                    # no sample chat leaks in
+        for key in list(props) + list(user) + list(answer):
+            self.assertRegex(tsx, rf"\b{key}\??:", key)                                # every prop is one it reads
+        wav = self.dir / "chat-sfx.wav"
+        chatwindow.write_clicks(props, str(wav))
+        import wave
+        with wave.open(str(wav)) as w:
+            self.assertAlmostEqual(w.getnframes() / w.getframerate(), props["seconds"], delta=0.05)
+
     def test_38_the_skill_loads_when_asked_to_update_it(self):
         head = (ROOT / "SKILL.md").read_text("utf-8").split("---")[1]
         description = head.split("description:", 1)[1].lower()
