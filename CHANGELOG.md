@@ -2,6 +2,16 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-22 · version 2.14.4
+
+### Fixed
+- **Eye whites looked grey and blotchy after Beautify.** The whites step lifted only the brighter half of each eye
+  white and took the colour out of it, so a white with veins, spots, a shadow or a yellow tint came out in patches.
+  Now the whole white is covered (not the iris or the lashes), a median takes out veins and small spots inside it,
+  and it is lifted and de-coloured in one piece (`eye_white` still sets how much: 0.05, 0.09, 0.13 in the
+  presets; 0 turns it off). **Rebuild your masks** (`mask.py`): `eyewhite.mkv` changed. Guide:
+  `references/retouch.md`, Beautify.
+
 ## 2026-11-22 · version 2.14.3
 
 ### Fixed

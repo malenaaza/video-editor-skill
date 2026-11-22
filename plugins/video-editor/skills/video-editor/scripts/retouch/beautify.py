@@ -46,7 +46,10 @@ def main():
         parts.append(("under", "undereye.mkv", f"eq=brightness={u:.4f}:saturation=0.96"))
     if cfg["eye_white"] > 0:
         w = cfg["eye_white"]
-        parts.append(("white", "eyewhite.mkv", f"eq=brightness={w:.4f}:saturation=0.70"))
+        # Even first (a median takes out veins and small spots inside the white; the mask keeps it off the iris and
+        # lashes), then lift and take out some colour, more of it as the level rises: a white that is yellowish or pink
+        # comes out clean, not grey.
+        parts.append(("white", "eyewhite.mkv", f"median=radius=3,eq=brightness={w:.4f}:saturation={max(0.45, 0.85 - 2.5 * w):.2f}"))
     if not parts:
         print('Nothing to add: set "beautify" to light, medium or strong in retouch.json (or glow, under_eye, eye_white).')
         return
