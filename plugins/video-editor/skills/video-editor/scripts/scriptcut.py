@@ -8,6 +8,7 @@ lines, in English or Spanish:
   ## [CHAPTER] Title      (or [CAPÍTULO])  the next line starts a chapter
   [SHORT "Title"] ... [/SHORT]            the lines between make a Short (also [SHORT: Title])
   [SCREEN] what to record (or [PANTALLA]), [GRAPHIC] what to show (or [GRÁFICO])   notes for the edit
+  [CLIP] file name: prompt                 an AI-generated clip (Flow or another generator), a note for the edit
 Lines starting with "#" (the title), ">" (directions to the speaker) and empty lines are not spoken.
 
 For each spoken line it finds every take in the transcript (words compared without accents, case or punctuation,
@@ -25,7 +26,7 @@ It writes:
                       times come from captions.json after the cut. An "Intro" chapter is added when the first
                       chapter doesn't start at the first line.
   shorts.json         for shorts.py: each Short's title, first words and last words as said.
-  edit-notes.json     the [SCREEN] and [GRAPHIC] notes, each with the first words of the line it comes before.
+  edit-notes.json     the [SCREEN], [GRAPHIC] and [CLIP] notes, each with the first words of the line it comes before.
 Standard library only.
 """
 import argparse
@@ -42,7 +43,7 @@ MIN_SHARE = 0.6       # less than this is not a take of the line
 PHRASE_WORDS = 4      # words used to find a line again in captions.json
 
 MARKERS = {"chapter": ("chapter", "capítulo", "capitulo"), "screen": ("screen", "pantalla"),
-           "graphic": ("graphic", "gráfico", "grafico")}
+           "graphic": ("graphic", "gráfico", "grafico"), "clip": ("clip",)}
 
 
 def norm(word):
@@ -83,8 +84,8 @@ def parse(text):
                     open_short = (title or f"Short {len(shorts) + 1}", len(lines))
             elif name in MARKERS["chapter"]:
                 chapters.append({"title": title, "line": len(lines)})
-            elif name in MARKERS["screen"] or name in MARKERS["graphic"]:
-                kind = "screen" if name in MARKERS["screen"] else "graphic"
+            elif name in MARKERS["screen"] or name in MARKERS["graphic"] or name in MARKERS["clip"]:
+                kind = next(k for k in ("screen", "graphic", "clip") if name in MARKERS[k])
                 notes.append({"kind": kind, "text": title, "line": len(lines)})
             continue
         if not s or s.startswith("#") or s.startswith(">"):

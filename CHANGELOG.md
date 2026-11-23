@@ -2,6 +2,32 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-23 · version 2.16.0
+
+### Changed
+- **Graphics always start from your Remotion templates.** The guide used to say to use HyperFrames first whenever its
+  skills were installed, so installing them for something else could make Claude build graphics from scratch instead
+  of using the tested templates. Now Remotion and the templates come first; another tool such as HyperFrames is only
+  used when you ask for it, for a graphic no template covers. Remotion's own Agent Skills, if you install them, help
+  write new Remotion code.
+
+### New
+- **Letters behind you.** Big words in the background with you in front of them, partly covering them (the
+  "text behind subject" effect), for a hook word or a title: `scripts/behindtext.py` draws them in the brand's font
+  and colour, times them from the phrase that names them, and uses the background-blur mask (`bgmask.mkv`) to keep
+  you, and anything you hold, in front. Guide: `references/graphics.md`, Letters behind you.
+- **AI clips in scripts.** For educational videos, the script can now mark one to three clips made with an AI video
+  generator (Google Flow by default, which has free daily credits) as `[CLIP] <file-name>: <prompt>`: visual metaphors,
+  an intro scene, a break in a long talking-head stretch, never text, diagrams, app screens or real people (those stay
+  screen recordings and animated graphics, which are exact). The prompts are written in English, end with the shape,
+  "no text" and the brand's `AI clip style:` look, so the clips match. The shot list gets an "AI clips to generate"
+  list ready to paste; after filming, `scriptcut.py` puts the clips in `edit-notes.json`, and the edit matches each one
+  to the camera with `conform.py` and places it under the voice. It asks once which generator you use (`AI clips:`
+  in `my-setup.md`) and reminds you about YouTube's label for realistic AI footage and about commercial use.
+  When your computer is connected (the desktop app's built-in browser or Claude in Chrome), it makes the clips in
+  Flow itself, keeps the best version of each and saves it in `clips/`; you only sign in to Google yourself, once.
+  Guide: `references/script.md`.
+
 ## 2026-11-23 · version 2.15.0
 
 ### New

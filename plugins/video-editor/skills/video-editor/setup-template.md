@@ -35,6 +35,7 @@ Checked on: <date>, with `scripts/detect_setup.py`
 - Noise removal: `<path to deep-filter, or not installed>`; RNNoise model `<path to cb.rnnn, or not installed>`
 - Remotion project: `<folder, or not installed>`
 - Remotion license: <not asked yet / free (individual or up to 3 employees) / company license held>
+- AI clips: <not asked yet / Google Flow / another generator, by name>: asked once, the first time a script has an AI clip (`references/script.md`)
 
 ## Camera and footage
 - Cameras / phones: <e.g. iPhone 16 Pro with the Blackmagic Camera app, Sony ZV-E10>
@@ -78,6 +79,7 @@ Copy this block for each brand or channel the user makes videos for.
 - Who it's for: <a business, a personal account...>
 - Brand sheet: <not asked yet / path to index.html, and the sources used / not wanted (date)>
 - Zooms: <none / alternate 1.00 and a punch-in such as 1.08, only where the head has room>; slow push-ins on key lines <yes / only when asked>
+- AI clip style: <not asked yet / none / the look words ending every AI clip prompt, e.g. "soft blue and teal light, dark background, cinematic">
 - Look, color: <natural / gentle boost eq=contrast=1.06:saturation=1.15:gamma=1.02 / not asked yet> (Log footage always gets only its LUT)
 - Look, skin softening: <never / only when asked / every video>, level <default from Style defaults, or this brand's own>
 - Look, beautify: <off / light / medium / strong>: a soft glow, brighter under-eyes and eye whites, with the matching skin softening (retouch.json `beautify`). No makeup, no reshaping. Keep it off or light for base-product and skincare reviews.

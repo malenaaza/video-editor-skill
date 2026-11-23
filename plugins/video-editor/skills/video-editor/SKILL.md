@@ -19,8 +19,8 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 | Log footage (flat, grey picture; Apple Log, S-Log...) | `references/log.md` |
 | Noise removal, voice polish, two voices, joining clips to one loudness, sound effects | `references/sound.md` |
 | Skin softening, teeth whitening, background blur | `references/retouch.md` |
-| Animated title, product tag, emojis, any Remotion or HyperFrames graphic | `references/graphics.md` |
-| The user asks for a script, or brings one, for a video they'll film; Shorts cut from a long video | `references/script.md` |
+| Animated title, product tag, emojis, letters behind the speaker, any Remotion graphic | `references/graphics.md` |
+| The user asks for a script, or brings one, for a video they'll film; Shorts cut from a long video; AI-generated clips (Google Flow or another generator) | `references/script.md` |
 | The first video from a camera, phone or app not in `my-setup.md` yet; the user asks what settings to film with | `references/cameras.md` |
 | A cover with pictures of the products | `references/cover.md` |
 | A brand sheet, or a brand setting changed and the brand has a sheet | `references/brand-sheet.md` |
@@ -34,7 +34,7 @@ Each step works on the result of the one before. Skip the steps a video doesn't 
 3. Decide the cuts: retakes, pauses, fillers. Build `plan.json` with `cutplan.py` (Rule 3).
 4. Render the clean edit `clean.mp4`: cuts, speed-up, reframing, white balance if the user wants it (Rule 8), grade, zooms. No text yet. (If the grade changes later, build masks on the render the colour keys were sampled on: `references/retouch.md`.)
 5. Retouch and background blur on `clean.mp4`, giving `retouched.mp4`; then, if the brand uses beautify, `beautify.py` on it (Rule 9). If anyone but the speaker is recognisable in the footage, pixelate their faces on the result, before anything that crops, zooms or adds a layer (Rule 9, `references/retouch.md`).
-6. A push in on the face or black and white for a part, if wanted (`pushin.py`, `mono.py`, Rule 8), first in this render's picture chain. Then text and graphics, in this layer order: title, product tags, emojis, captions and handle, end card.
+6. Letters behind the speaker, if wanted (`behindtext.py`, `references/graphics.md`), rendered first on `retouched.mp4` as `behind.mp4`. A push in on the face or black and white for a part, if wanted (`pushin.py`, `mono.py`, Rule 8), first in this render's picture chain. Then text and graphics, in this layer order: title, product tags, emojis, captions and handle, end card.
 7. Sound: clean the cut voice, level it, mix in sound effects (Rule 7).
 8. Second pass, if fillers or held sounds were found in the joined voice: `drops.py`, which cuts picture and voice together with no mask rebuild (`references/fillers.md`).
 9. Final export, checks, and the ready-to-post pack (Rules 6, 10, 11).
@@ -95,17 +95,17 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 
 **On a laptop,** run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export), and follow the Power section of `references/setup.md` for what to tell the user.
 
-**Animated graphics** (title, product tag, emojis, intros, lower thirds) are made with HyperFrames or Remotion and placed with FFmpeg: read `references/graphics.md` first. Cuts, captions and export stay in FFmpeg.
+**Animated graphics** (title, product tag, emojis, intros, lower thirds) are made with Remotion (the templates in `scripts/remotion/`) and placed with FFmpeg: read `references/graphics.md` first. Cuts, captions and export stay in FFmpeg.
 
 ## What I can do
 
 New users don't know what's possible, so tell them. Show this menu at the end of first setup (Rule 0), and whenever the user asks what you can do, what the options are, or which effects exist. Show it in the user's language, as a short list like this, not a wall of text:
 
 - **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · 2 or 3 openings and endings to choose from · speed up delivery slightly · split one long recording into several videos
-- **Text and graphics:** captions in your brand's style, or with each word lit up as you say it · animated title (pop-in or typewriter) · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
+- **Text and graphics:** captions in your brand's style, or with each word lit up as you say it · animated title (pop-in or typewriter) · big letters behind you, with you in front of them · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · white balance measured and corrected · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · pixelated faces of other people in the shot · a part in black and white (a "before", a flashback), fading back to colour · a slow push in on your face at a key line · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)
-- **Script first:** I write the script for your video, with chapters, screen recordings and Shorts marked; after you film it, I keep the right take of each line and cut the chapters and Shorts from it
+- **Script first:** I write the script for your video, with chapters, screen recordings, Shorts and AI clips marked (prompts ready to paste into Google Flow or another generator, all in one look); after you film it, I keep the right take of each line and cut the chapters and Shorts from it
 - **YouTube:** Shorts cut from your horizontal video, following your face · screen recordings with smooth zooms onto the action, and a screen-above-you layout for Shorts · chapters for the description · thumbnails with your face and a few big words
 - **Camera check:** reads how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android, Sony, GoPro, DJI...) and tells you, once, what to change for the next recordings: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - **Ready to post:** vertical and wide versions · a report of the edit in numbers · caption, hashtags and cover image · cover with pictures of your products · a brand sheet with your fonts and colors
@@ -296,6 +296,7 @@ All of these run when the brand's settings in `my-setup.md` say "every video", o
 - **Tool cards** in videos about AI (a tool's logo and name when it's named): `scripts/toolcards.py` and the `ToolCard` template, `references/graphics.md`.
 - **AI chat window** in videos about AI (the prompt types, is sent, the answer appears word by word): `scripts/chatwindow.py` and the `ChatWindow` template, `references/graphics.md`.
 - **Animated explanations** in educational videos (how something works: boxes, arrows and a moving dot, each appearing as it's named): `scripts/explainer.py` and the `Explainer` template, `references/graphics.md`.
+- **Letters behind you** (big words in the background with the speaker in front of them): `scripts/behindtext.py`, with the background-blur mask, `references/graphics.md`.
 - **Animated title, product tag, emojis:** `references/graphics.md`. Never guess a price, and don't ask the user for emoji files.
 - **Sound effects:** `references/sound.md`. Don't ask the user for sound files.
 

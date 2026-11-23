@@ -2,7 +2,7 @@
 
 Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rule numbers refer to SKILL.md.
 
-HyperFrames skills (`hyperframes`, `hyperframes-cli`) make animated graphics if they're installed. Remotion, run through `npx`, also does; use it when the user asks for it or when HyperFrames isn't available. If neither works, build graphics with FFmpeg and say so.
+Graphics are made with Remotion, run through `npx`, and the ready-made templates below: use a template whenever one fits, because each is tested with this skill's scripts. Other motion-graphics tools the user may have installed (HyperFrames, for example) are only for a graphic no template covers, and only when the user asks for that tool. If Remotion doesn't work, build the graphic with FFmpeg and say so. Remotion's own Agent Skills (`/remotion-best-practices` and others), when installed, help write new Remotion code; this file still decides which template is used and how it's placed.
 
 Remotion builds motion graphics from React code: intros, outros, lower thirds, animated titles and charts, not cutting footage. Cuts, captions and export stay in FFmpeg. Add each graphic as a new composition in `src/Root.tsx`, and don't change or remove existing ones unless asked. Copy logos and images into its `public` folder first.
 
@@ -147,6 +147,33 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
   horas a la semana"), written the Spanish way. Only numbers the speaker says, never one made up or rounded up.
 - **Before and after** (`beforeafter`, template `BeforeAfter`): a weak prompt and a good one, a draft and the AI's
   version, a photo before and after. Each side is a `text` or an `image`; the after sweeps in at `reveal_say`.
+
+## Letters behind you
+
+Big words in the background with the speaker in front of them, partly covering them (the "text behind subject"
+effect): the hook word of a YouTube intro ("IA", "3 ERRORES"), a Short's title, a key term as it's said. Use it
+once or twice per video at most, on a word that matters; suggest it for a strong one- to three-word hook. It needs
+the speaker's mask, `bgmask.mkv`, from the background blur (`references/retouch.md`, Background blur): build it on
+`clean.mp4` even when the video gets no blur, and check a frame of it first (`bg/blurtest.png`), because a hand or
+hair the mask misses shows the letters through it. With a held product, use `blurmask_hands.py`, so the product
+stays in front too.
+
+1. **Pick the words and the moment** with the user: one to three words, short lines ("|" starts a new line), in
+   capitals usually, the brand's heading font and its accent colour or white. The letters show from the phrase
+   that names them to the end of that caption, or to `--until`.
+2. **Build:** `python -I <skill>/scripts/behindtext.py "NO USES|CHATGPT ASÍ" --say "no uses chatgpt" --font
+   <brand font file> --color "<accent>" --encoder "<in-between encoder from my-setup.md>"` from the build folder
+   (with `retouched.mp4`, `bgmask.mkv` and `captions.json`; `--at` and `--until-at` take seconds instead). The
+   letters fill `--width 0.88` of the frame, with their top at `--top 0.06` of its height, so they sit behind the
+   head and shoulders; they fade in over 0.35 s while rising a little, and fade out. `--edge 2` firms up the
+   mask's soft edge so the letters don't show through the speaker's outline. It writes `behindtext.png` and
+   `behindtext.txt` and prints the FFmpeg command, which renders `behind.mp4`, the sound copied.
+3. **Look at a frame from the middle** of it, with the user: the speaker in front, the letters readable around
+   them. If the head covers most of a word, lower `--top`, use fewer words, or a smaller `--width`; if the letters
+   show through the hair, rebuild the mask with a bigger head area (`crown` in `retouch.json`).
+4. **Then the rest of step 6 on `behind.mp4`:** a push in or black and white (they take the letters with the
+   picture, which looks right: the letters are in the scene), then title, captions and end card on top. Keep a
+   title off the same seconds, since the letters already are the title there.
 
 ## Product pop-in from B-roll
 

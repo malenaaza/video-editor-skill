@@ -36,7 +36,7 @@ Este es el resultado final. ¿Qué os parece?
 - **One paragraph per spoken line,** with a blank line between. Short sentences, said the way the speaker talks, not
   written prose: if a line is hard to say in one breath, split it.
 - **Markers on their own lines,** in English or Spanish (`[CHAPTER]`/`[CAPÍTULO]`, `[SCREEN]`/`[PANTALLA]`,
-  `[GRAPHIC]`/`[GRÁFICO]`, `[SHORT "Title"]`/`[/SHORT]`). `>` lines are directions to the speaker, never spoken.
+  `[GRAPHIC]`/`[GRÁFICO]`, `[CLIP]` (the same in both), `[SHORT "Title"]`/`[/SHORT]`). `>` lines are directions to the speaker, never spoken.
 - **The opening:** the first line is the hook, said within 5 seconds: the promise or the question, not a greeting.
   The intro (before the first chapter) stays under 30 seconds.
 - **Chapters:** 3 to 8, each covering one idea, with short titles (under 40 characters) that viewers would search for.
@@ -60,11 +60,30 @@ Este es el resultado final. ¿Qué os parece?
   servidor, y este habla con tu Gmail..."): those words are what bring each box in (`say` in `explainer.json`,
   `references/graphics.md`, Animated explanations), so the animation follows the voice with no extra work. Keep a
   passage like that to 10 to 30 seconds and up to 6 boxes.
+- **Propose AI clips for atmosphere, never for facts.** A clip made with an AI video generator (Google Flow by
+  default, or the `AI clips:` tool in `my-setup.md`) suits what can't be filmed and doesn't need to be exact: a
+  visual metaphor (data flowing, a brain made of light, a city of servers), the channel's intro scene, a short
+  break in a long talking-head stretch. Never use one for anything the viewer has to read or trust: text, a
+  diagram, an app's screen, a real product, a real person, numbers. Those are a `[SCREEN]`, an animated
+  explanation, a chat window or a tool card, which are always exact. Mark one to three per video, each on its own
+  line before the line it covers: `[CLIP] <file-name>: <prompt>`, for example
+  `[CLIP] red-de-luz: slow push-in through a dark space full of glowing threads of light connecting small nodes,
+  soft blue and teal light, shallow depth of field, cinematic, 16:9, no text, no people`. The file name is short,
+  lowercase, with hyphens, and unique in the video: the user saves the clip under that name. Write the prompt in
+  English (generators follow it best), in one sentence that says the subject, the camera move, the light and the
+  look, and always ends with the shape (16:9 for YouTube, 9:16 for a vertical-only video), "no text" (generators
+  write garbled letters) and "no people" unless a person is the point. End every prompt in a video with the same
+  look words, from the brand's `AI clip style:` line when it has one, so the clips match each other. A clip covers
+  4 to 8 seconds of voice: write the line under it so that much of it can play over the clip.
 - **The end:** the takeaway in one line, then the call to action.
 
 Show the user the script and adjust it with them before they film. Point out the animated explanations you
 marked, in one line each ("At 'cómo funciona un MCP' an animation: Claude, the MCP server and Gmail with arrows"), so
-they can drop or add one.
+they can drop or add one. Do the same for the AI clips ("At 'una red de neuronas' an AI clip: threads of light
+connecting nodes"). The first time a script has one, ask once which generator they use, and save it in the
+`AI clips:` line of `my-setup.md` (Google Flow has free daily credits). Then ask once, for the brand, whether to
+keep a look for every clip (for example "soft blue and teal light, dark background, cinematic"), and save it in the
+brand's `AI clip style:` line.
 
 ## 2. The shot list
 
@@ -79,6 +98,22 @@ Write `shotlist.md` next to it, for filming in one sitting:
 2. **Screen recordings:** every `[SCREEN]` note as a separate short clip to record, with the tips in Rule 6
    (bigger text, Do Not Disturb, nothing private on screen).
 3. **Graphics:** the `[GRAPHIC]` notes, made later in the edit.
+4. **AI clips to generate:** every `[CLIP]` as a numbered item with its file name, the prompt ready to paste, the
+   shape and the length (8 s, the usual longest; it's cut to fit later). Tell the user to make two or three versions
+   of each and keep the best, to download it as MP4 at the best quality the plan allows, and to save it in the
+   project's `clips/` folder (or next to the recording) under the file name given, for example `red-de-luz.mp4`.
+   **Make them yourself when you can.** When `AI clips:` is Google Flow and a browser on the user's computer is
+   available in this session (the Claude desktop app's built-in browser, or Claude in Chrome), generate the clips
+   there instead of handing over the list, once the user has approved the script: open Flow
+   (https://labs.google/fx/tools/flow), paste each prompt, make two or three versions, look at them, keep the one
+   with no stray letters or odd details, and download it as MP4 into the project's `clips/` folder under its file
+   name. Never type a password: if Google asks to sign in, stop and ask the user to sign in themselves in that
+   browser, then carry on. If the daily credits run out, keep what's done and give the rest of the list. Afterwards,
+   tell the user in one line which clips are ready and which, if any, are left. With no such browser, give the list
+   as above.
+   Two notes, once per video in one line each: when a clip looks real (a realistic person or place), YouTube asks
+   for it to be labelled as altered or synthetic content when uploading; and if the channel earns money, check that
+   the generator's plan allows commercial use.
 
 **Teleprompter.** Don't assume one. If `my-setup.md` has no `Teleprompter:` line, or it says `not asked yet`, ask
 once when you show the first script: "Do you read from a teleprompter when you film? On which camera?" Save
@@ -122,6 +157,15 @@ captions. `scriptcut.py` also wrote:
 - `shorts.json`: the Shorts, for `shorts.py` (below);
 - `edit-notes.json`: where each screen recording and graphic goes (before which words). Place the zoomed screen
   clips (`screen.py`, Rule 6) and the graphics there, while the speaker's voice continues over them where it fits.
+  **AI clips** (`"kind": "clip"`; the file name is the text before the colon): find each one in `clips/`, and say
+  in one line which are missing before going on (the edit can go ahead without them and add them later). Make each
+  one match the camera first: `python -I <skill>/scripts/conform.py clips/<name>.mp4 --like <camera recording>`
+  (same frame rate, size and colour tags; `references/cameras.md`). Then cut it into the wide edit like a screen
+  clip, starting at the words in `before`, for the length of the voice it covers (at most the clip's own length,
+  usually 4 to 8 s), with the speaker's voice over it and the clip's own sound left out, unless the user wants it
+  quiet underneath. Don't zoom, retouch or blur it, and keep captions on top of it as everywhere else. Look at a
+  frame from each placed clip, because a generated clip can carry stray letters or an odd detail: if one does, tell
+  the user and offer to drop it or to place a different version.
 
 Without a script, Claude can still write `shorts.json` after reading the transcript of the finished video: 3 to 5
 moments that stand alone, each with a title, a phrase where it starts (`say`) and one where it ends (`until`).
