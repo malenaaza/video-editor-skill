@@ -2,6 +2,15 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-23 · version 2.17.0
+
+### New
+- **Several videos in one request.** `references/batch.md` explains how to edit two or more videos together: you answer
+  the questions once for all of them, each video gets its own project folder, at most two run at the same time (they
+  share the computer's processor), and you see all the cut plans and draft exports in one list and approve each before
+  the final export. Shared files (`my-setup.md`, `skill-issues.md`) are written only by the main session. Editing one
+  video at a time is unchanged.
+
 ## 2026-11-23 · version 2.16.0
 
 ### Changed

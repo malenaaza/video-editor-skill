@@ -2495,6 +2495,16 @@ class SkillTest(unittest.TestCase):
             if path != "my-setup.md":
                 self.assertTrue((ROOT / path).exists(), path)
 
+    def test_34_batch_guide_is_linked_and_keeps_shared_files_safe(self):
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        batch = (ROOT / "references" / "batch.md").read_text("utf-8")
+        self.assertIn("references/batch.md", skill)
+        self.assertIn("references/batch.md", (REPO / "README.md").read_text("utf-8") + skill)
+        for rule in ("Two videos at a time at most", "One project folder per video",
+                     "Agents never write shared files", "A failed video stops alone"):
+            self.assertIn(rule, batch)
+        self.assertIn("nothing here changes it", batch)          # one video at a time is unchanged
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
