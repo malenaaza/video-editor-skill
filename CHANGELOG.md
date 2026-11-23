@@ -2,6 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-23 · version 2.15.0
+
+### New
+- **Choose the cover while you edit.** Once the cuts are settled, the skill shows 2 or 3 candidate frames from footage that
+  survives the cuts and you pick the one you like (or name a moment). It is saved in `project.md`, and at the end only the
+  title and the products are added to it. Before, the cover frame was picked at the end, without you.
+- **Product images in the B-roll are noted at the start.** What is in the folder belongs to this video; an empty folder means
+  the cover goes to shop websites or a video frame, as before.
+- **Images that are already cutouts are used as they are.** `cutout.py` recognizes a transparent PNG (transparent all along the
+  edge), only trims and pads it and still writes the check image; `--recut` cuts it out again. Photos are cut out as before.
+
 ## 2026-11-23 · version 2.14.6
 
 ### Faster
