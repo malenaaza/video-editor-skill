@@ -23,6 +23,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 | The user asks for a script, or brings one, for a video they'll film; Shorts cut from a long video; AI-generated clips (Google Flow or another generator) | `references/script.md` |
 | The first video from a camera, phone or app not in `my-setup.md` yet; the user asks what settings to film with | `references/cameras.md` |
 | A cover with pictures of the products | `references/cover.md` |
+| Two or more videos in one request (a batch) | `references/batch.md` |
 | A brand sheet, or a brand setting changed and the brand has a sheet | `references/brand-sheet.md` |
 
 ### Build order
@@ -101,7 +102,7 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 
 New users don't know what's possible, so tell them. Show this menu at the end of first setup (Rule 0), and whenever the user asks what you can do, what the options are, or which effects exist. Show it in the user's language, as a short list like this, not a wall of text:
 
-- **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · 2 or 3 openings and endings to choose from · speed up delivery slightly · split one long recording into several videos
+- **Cleaning up:** remove retakes, pauses, "um"s and silent stretches · 2 or 3 openings and endings to choose from · speed up delivery slightly · split one long recording into several videos · edit several videos in one go, two at a time, with your approval before each final export
 - **Text and graphics:** captions in your brand's style, or with each word lit up as you say it · animated title (pop-in or typewriter) · big letters behind you, with you in front of them · product name and price tag · your product's photo or clip from your B-roll pops in when you name it, with a sound · animated emojis on words · your handle and logo · end card
 - **Look:** color boost for dull footage · white balance measured and corrected · fixes for dark or grainy footage · skin softening · light beautify (soft glow, brighter under-eyes and eye whites; no makeup, no reshaping) · teeth whitening · background blur that keeps products sharp · pixelated faces of other people in the shot · a part in black and white (a "before", a flashback), fading back to colour · a slow push in on your face at a key line · small punch-in zooms between shots · Log footage conversion
 - **Sound:** background noise and hum removal, voice polish · voice leveling (including two voices) · sound effects (pop, whoosh, sparkle, cash register)

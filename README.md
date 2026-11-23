@@ -41,6 +41,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Checks the opening of every video: a black first frame, a clipped first word, silence before you speak, a sound effect on your first word, nothing to read with the sound off, and what the first 3 seconds say
 - Checks every export before it's delivered: black frames, a stray single frame left by a cut, picture and sound that end apart, sound that cuts out, missing colour tags, and words clipped at a cut
 - Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked, and one to three AI clips for atmosphere (a visual metaphor, an intro scene) with prompts ready to paste into Google Flow or another generator, all in the same look and never for text, diagrams or real people; after filming it matches each clip to your camera and places it under your voice, plus a clean text for your teleprompter if you use one (it asks once); after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
+- Several videos in one request: you answer the questions once for all of them, each video gets its own folder and runs the normal edit (two at a time, so the computer isn't overloaded), and you see every cut plan and draft together and approve each before the final export. One video at a time works exactly as before
 
 You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
 
@@ -110,7 +111,7 @@ plugins/video-editor/
   skills/video-editor/
     SKILL.md               the instructions Claude follows on every edit
     references/            details Claude reads only when a video needs them: setup, fillers,
-                           Log footage, sound, retouch and blur, graphics, covers, brand sheet
+                           Log footage, sound, retouch and blur, graphics, covers, brand sheet, batches of several videos
     project-template.md    becomes project.md in each video's folder, so an edit can continue later
     support.json           where reports go: the GitHub page and, if set, an email address
     setup-template.md      becomes ~/.video-editor/my-setup.md on first use (your hardware, brands, choices)
