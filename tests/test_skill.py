@@ -2348,6 +2348,78 @@ class SkillTest(unittest.TestCase):
                     cwd=tmp, capture_output=True, text=True)
                 self.assertEqual(result.returncode == 0, ok, f"{value}: {result.stderr[-200:]}")
 
+    def test_89_fast_masks_match_full_frame(self):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV or numpy not installed")
+        sys.path.insert(0, str(SCRIPTS / "retouch"))
+        import beauty
+        import feather
+        import roi
+        import spots
+        rng = np.random.default_rng(3)
+
+        def scene(h, w, cx, cy, fh):
+            frame = np.full((h, w, 3), (150, 170, 210), np.uint8)
+            frame = cv2.add(frame, rng.integers(0, 12, (h, w, 3), dtype=np.uint8))
+            pts = np.zeros((478, 2), np.float32)
+            ang = np.linspace(0, 2 * np.pi, 478, endpoint=False)
+            pts[:, 0], pts[:, 1] = cx + 0.38 * fh * np.cos(ang), cy + 0.5 * fh * np.sin(ang)
+            for k, eye in enumerate(beauty.EYES):
+                ex, ey = cx + (-1 if k == 0 else 1) * 0.17 * fh, cy - 0.08 * fh
+                for j, i in enumerate(beauty.EYE_OUTLINE[k]):
+                    a = 2 * np.pi * j / len(beauty.EYE_OUTLINE[k])
+                    pts[i] = (ex + 0.08 * fh * np.cos(a), ey + 0.03 * fh * np.sin(a))
+                for j, i in enumerate(eye["lower"]):
+                    pts[i] = (ex - 0.08 * fh + 0.02 * fh * j, ey + 0.03 * fh)
+                pts[eye["corners"][0]], pts[eye["corners"][1]] = (ex - 0.08 * fh, ey), (ex + 0.08 * fh, ey)
+                pts[eye["iris"][0]] = (ex, ey)
+                for j, i in enumerate(eye["iris"][1:]):
+                    pts[i] = (ex + 0.025 * fh * np.cos(j * np.pi / 2), ey + 0.025 * fh * np.sin(j * np.pi / 2))
+                cv2.circle(frame, (int(ex), int(ey)), int(0.025 * fh), (40, 40, 60), -1)
+            luma = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)[..., 0].astype(np.float32)
+            for _ in range(int(fh / 4)):                                        # dark and bright specks
+                cv2.circle(luma, (int(rng.uniform(cx - 0.3 * fh, cx + 0.3 * fh)), int(rng.uniform(cy - 0.3 * fh, cy + 0.4 * fh))),
+                           int(rng.integers(1, 4)), float(rng.choice([150, 215])), -1)
+            region = np.zeros((h, w), np.uint8)
+            cv2.fillPoly(region, [cv2.convexHull(pts.astype(np.int32))], 255)
+            tone = np.ones((h, w), np.float32)
+            tone[:max(0, int(cy - 0.6 * fh))] = 0
+            brow = np.zeros((h, w), np.uint8)
+            cv2.ellipse(brow, (int(cx - 0.17 * fh), int(cy - 0.15 * fh)), (int(0.12 * fh), int(0.02 * fh)), 0, 0, 360, 255, -1)
+            cv2.ellipse(luma, (int(cx - 0.17 * fh), int(cy - 0.15 * fh)), (int(0.12 * fh), int(0.01 * fh)), 0, 0, 360, 80, -1)
+            return frame, luma, pts, tone, region.astype(np.float32) / 255 * tone, brow
+
+        def both(fn):
+            roi.FAST = False
+            try:
+                ref = np.asarray(fn(), np.float32)
+            finally:
+                roi.FAST = True
+            return ref, np.asarray(fn(), np.float32)
+
+        for h, w, cx, cy, fh in ((1280, 720, 360, 600, 650.0), (1280, 720, 360, 500, 200.0), (1280, 720, 60, 600, 600.0)):
+            frame, luma, pts, tone, base, brow = scene(h, w, cx, cy, fh)       # a close-up, a small face, a face at the edge
+            keep, none, shape = np.ones((h, w), np.float32), np.zeros((h, w), bool), (h, w)
+            for feather_share in (0.04, 0):
+                ref, fast = both(lambda: feather.soft_skin(base, tone, keep, fh, feather_share))
+                self.assertLess(float(np.abs(ref - fast).max()) * 255, 2.0, (fh, feather_share))   # within 2 levels of 255
+            ref, fast = both(lambda: spots.brow_hair_keep(luma, brow, 14, fh))
+            self.assertLess(float(np.abs(ref - fast).max()), 0.01, fh)
+            mask = feather.soft_skin(base, tone, keep, fh, 0.04)
+            for bright, contrast in ((False, 14), (True, 8)):
+                ref, fast = both(lambda: spots.spot_mask(luma, mask, none, fh, contrast, bright=bright))
+                self.assertLess(float(np.mean((ref > 0.5) != (fast > 0.5))), 0.001, (fh, bright))  # a borderline speck may flip
+            for fn in (lambda: beauty.under_eye(pts, shape), lambda: beauty.eye_whites(frame, luma, pts, shape)):
+                ref, fast = both(fn)
+                self.assertEqual(float(np.abs(ref - fast).max()), 0.0, fh)
+        empty = np.zeros((100, 100), np.float32)
+        self.assertEqual(float(feather.soft_skin(empty, empty, empty + 1, 80, 0.04).max()), 0.0)   # no face: nothing
+        self.assertEqual(float(spots.spot_mask(empty, empty, empty > 0, 80).max()), 0.0)
+        self.assertIn("ms a frame", (SCRIPTS / "retouch" / "mask.py").read_text("utf-8"))    # mask.py reports its speed
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

@@ -24,6 +24,7 @@ a last pass that calms the spots (input 4, spots.mkv).
 import os
 import subprocess
 import sys
+import time
 
 import cv2
 import mediapipe as mp
@@ -100,6 +101,7 @@ options = FaceLandmarkerOptions(
 )
 previous = None
 frame_number = 0
+started = time.perf_counter()
 missed = 0
 edge = EdgeFace(MODEL, CFG["edge_faces"], CFG["edge_pad"])
 open_frames = 0
@@ -256,3 +258,6 @@ for extra in (under_out, white_out):
         extra.wait()
 edge.close()
 print(f"frames {frame_number}, no face {missed}, found at the frame edge {edge.found}, teeth visible {open_frames}")
+spent = time.perf_counter() - started
+# so a slow machine, or an extra that costs a lot, shows up (references/retouch.md, What the masks cost)
+print(f"masks: {spent / max(frame_number, 1) * 1000:.0f} ms a frame, {spent / 60:.1f} min in all")

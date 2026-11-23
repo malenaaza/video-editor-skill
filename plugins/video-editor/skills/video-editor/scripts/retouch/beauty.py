@@ -7,6 +7,8 @@ comes from the filter (beautify.py), so the same mask serves every level.
 import cv2
 import numpy as np
 
+import roi
+
 # MediaPipe face mesh: lower lid curve and corners of each eye, upper-lid centre, iris centre and rim.
 EYES = [
     {"lower": [33, 7, 163, 144, 145, 153, 154, 155, 133], "corners": (33, 133), "upper": 159, "lower_mid": 145,
@@ -34,13 +36,21 @@ def under_eye(pts, shape):
         if width < 6:
             continue
         down = lid + np.array([0.0, 0.36 * width], np.float32)
-        band = np.zeros(shape, np.uint8)
-        cv2.fillPoly(band, [np.vstack([lid, down[::-1]]).astype(np.int32)], 255)
+        sigma = max(1.0, 0.1 * width)
+        # the band, the eye and the blur's reach: a small box, not the whole frame (roi.py)
+        b = roi.points_box(np.vstack([lid, down, pts[outline]]), 4 * sigma + 4, shape)
+        if b is None:
+            continue
+        y0, y1, x0, x1 = b
+        offset = np.array([x0, y0], np.float32)
+        local, crop = pts - offset, (y1 - y0, x1 - x0)
+        band = np.zeros(crop, np.uint8)
+        cv2.fillPoly(band, [np.vstack([lid - offset, (down - offset)[::-1]]).astype(np.int32)], 255)
         band = band.astype(np.float32) / 255
-        inside = _eye_polygon(pts, outline, shape).astype(np.float32) / 255
-        soft = cv2.GaussianBlur(band * (1 - inside), (0, 0), max(1.0, 0.1 * width))
+        inside = _eye_polygon(local, outline, crop).astype(np.float32) / 255
+        soft = cv2.GaussianBlur(band * (1 - inside), (0, 0), sigma)
         soft *= 1 - cv2.GaussianBlur(inside, (0, 0), 1.5)  # the soft edge must not leak into the eye
-        out = np.maximum(out, soft)
+        out[y0:y1, x0:x1] = np.maximum(out[y0:y1, x0:x1], soft)
     return np.clip(out * 255, 0, 255).astype(np.uint8)
 
 
@@ -52,20 +62,29 @@ def eye_whites(frame, luma, pts, shape):
     (a median that removes veins and small spots) and whiten it in one piece; only pixels far darker than the white
     itself (lashes, the core of a shadow) are left out."""
     out = np.zeros(shape, np.float32)
+    full_luma = luma
     for eye, outline in zip(EYES, EYE_OUTLINE):
-        opening = _eye_polygon(pts, outline, shape)
+        b = roi.points_box(pts[outline], 8, shape)   # the eye's box: a few percent of the frame (roi.py)
+        if b is None:
+            continue
+        y0, y1, x0, x1 = b
+        offset = np.array([x0, y0], np.float32)
+        crop = (y1 - y0, x1 - x0)
+        local = pts - offset
+        luma = full_luma[y0:y1, x0:x1]
+        opening = _eye_polygon(local, outline, crop)
         opening = cv2.erode(opening, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
         inside = opening > 0
         if inside.sum() < 30:
             continue
         centre = pts[eye["iris"][0]]
         radius = float(np.mean([np.hypot(*(pts[i] - centre)) for i in eye["iris"][1:]]))
-        iris = np.zeros(shape, np.uint8)
-        cv2.circle(iris, (int(centre[0]), int(centre[1])), int(radius * 1.3) + 1, 255, -1)
+        iris = np.zeros(crop, np.uint8)
+        cv2.circle(iris, (int(centre[0]) - x0, int(centre[1]) - y0), int(radius * 1.3) + 1, 255, -1)
         white = inside & (iris == 0)
         if white.sum() < 20:
             continue
         typical = float(np.median(luma[white]))
         gate = np.clip((luma - 0.5 * typical) / max(1.0, 0.12 * typical), 0, 1) * white
-        out = np.maximum(out, cv2.GaussianBlur(gate.astype(np.float32), (0, 0), 1.2))
+        out[y0:y1, x0:x1] = np.maximum(out[y0:y1, x0:x1], cv2.GaussianBlur(gate.astype(np.float32), (0, 0), 1.2))
     return np.clip(out * 255, 0, 255).astype(np.uint8)

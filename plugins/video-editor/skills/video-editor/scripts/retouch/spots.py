@@ -17,6 +17,8 @@ Numpy and OpenCV only; mask.py calls these once per frame.
 import cv2
 import numpy as np
 
+import roi
+
 REF_FACE = 600.0   # face height in pixels the brow distances (21, 5, 10) were tuned at
 MOLE_DEPTH = 70.0  # a spot this much darker than the skin around it is a mole (or a pore in shadow): left alone
 
@@ -41,8 +43,15 @@ def brow_hair_keep(luma, brow_area, contrast, face_h=REF_FACE):
     are skin however close they are, and however big the face (the touching distance is not scaled: on a close-up it
     used to protect a band of skin 14-20 px wide under the brow)."""
     scale = max(1.0, face_h / REF_FACE)
+    full = np.zeros(luma.shape, np.float32)
+    # only the brows' box matters (the zone, the blur's reach and the final growth): work there (roi.py)
+    b = roi.box(brow_area > 0, 21 * scale + 40 * scale + 5 * scale + 5 * scale + 4, luma.shape)
+    if b is None:
+        return full
+    y0, y1, x0, x1 = b
+    luma, brow_area = luma[y0:y1, x0:x1], brow_area[y0:y1, x0:x1]
     zone = _grow(brow_area, int(round(21 * scale))) > 0
-    darker = (cv2.GaussianBlur(luma, (0, 0), 10 * scale) - luma > contrast) & zone
+    darker = (roi.blur(luma, 10 * scale) - luma > contrast) & zone
     count, labels, stats, _ = cv2.connectedComponentsWithStats(darker.astype(np.uint8), connectivity=8)
     inside = brow_area > 0
     attached = _grow(brow_area, 7) > 0
@@ -61,7 +70,8 @@ def brow_hair_keep(luma, brow_area, contrast, face_h=REF_FACE):
         if long_thin or in_brow or touching:
             keep[y:y + h, x:x + w][patch] = 255
     hair = _grow(keep, int(round(5 * scale)))
-    return cv2.GaussianBlur(hair.astype(np.float32) / 255, (0, 0), 1.2 * scale)
+    full[y0:y1, x0:x1] = cv2.GaussianBlur(hair.astype(np.float32) / 255, (0, 0), 1.2 * scale)
+    return full
 
 
 def spot_mask(luma, skin, exclude, face_h, contrast=14.0, bright=False):
@@ -72,7 +82,15 @@ def spot_mask(luma, skin, exclude, face_h, contrast=14.0, bright=False):
     (eyes, lips, mouth, the brow and its hairs); face_h: the face's height in pixels; contrast: how much darker (or,
     with bright, lighter) than the skin around it a pixel must be (settings spot_contrast, shimmer_contrast)."""
     face_h = max(float(face_h), 60.0)
-    surround = cv2.GaussianBlur(luma, (0, 0), max(3.0, 0.025 * face_h))
+    sigma = max(3.0, 0.025 * face_h)
+    full = np.zeros(luma.shape, np.float32)
+    # only the skin that may hold a spot, plus the surroundings' reach and the growth (roi.py)
+    b = roi.box((skin > 0.5) & ~exclude, 4 * sigma + 0.006 * face_h + 4 * 0.003 * face_h + 6, luma.shape)
+    if b is None:
+        return full
+    y0, y1, x0, x1 = b
+    luma, skin, exclude = luma[y0:y1, x0:x1], skin[y0:y1, x0:x1], exclude[y0:y1, x0:x1]
+    surround = roi.blur(luma, sigma)
     depth = (luma - surround) if bright else (surround - luma)
     candidate = ((depth > contrast) & (skin > 0.5) & ~exclude).astype(np.uint8)
     count, labels, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
@@ -88,4 +106,5 @@ def spot_mask(luma, skin, exclude, face_h, contrast=14.0, bright=False):
         result[y:y + h, x:x + w][patch] = 255
     result = _grow(result, max(3, int(round(0.006 * face_h))))
     soft = cv2.GaussianBlur(result.astype(np.float32) / 255, (0, 0), max(0.8, 0.003 * face_h))
-    return np.clip(soft * 1.4, 0, 1) * (skin > 0.5) * (~exclude)
+    full[y0:y1, x0:x1] = np.clip(soft * 1.4, 0, 1) * (skin > 0.5) * (~exclude)
+    return full
