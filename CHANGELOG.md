@@ -2,6 +2,14 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-23 · version 2.17.1
+
+### Fixed
+- **Batch editing is now offered at the start.** Version 2.17.0 only used the batch guide when a request already named two
+  or more videos, so someone starting with one video never heard about it. Now, at the start of the first edit in a
+  session, the skill asks once, in one line, whether there are more videos waiting and offers to edit them together. If
+  it's only one video, or you say no, it edits one video at a time and doesn't ask again in that session.
+
 ## 2026-11-23 · version 2.17.0
 
 ### New

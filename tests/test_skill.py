@@ -2505,6 +2505,12 @@ class SkillTest(unittest.TestCase):
             self.assertIn(rule, batch)
         self.assertIn("nothing here changes it", batch)          # one video at a time is unchanged
 
+    def test_35_batch_is_offered_once_not_forced(self):
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        self.assertIn("**Offer a batch once, at the start.**", skill)
+        self.assertIn("don't ask again in this session", skill)
+        self.assertIn("If it's only this one", skill)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
