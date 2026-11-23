@@ -2466,6 +2466,26 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(right, 0)                                             # and never over the speaker
         self.assertEqual(red_at(2.8), (0, 0))                                  # gone again
 
+    def test_60_cutout_keeps_ready_made_cutouts(self):
+        from PIL import Image, ImageDraw
+        folder = self.dir / "cutout"
+        folder.mkdir(exist_ok=True)
+        ready = Image.new("RGBA", (200, 300), (0, 0, 0, 0))
+        ImageDraw.Draw(ready).rectangle((60, 40, 140, 260), fill=(200, 30, 60, 255))
+        ready.save(folder / "ready.png")
+        Image.new("RGB", (200, 300), (250, 250, 250)).save(folder / "photo.png")
+        cli = lambda *a: run([sys.executable, "-I", SCRIPTS / "cover" / "cutout.py", *a], cwd=folder)
+        out = cli("ready.png", "ready-out.png", "--check", "ready-check.png", "--pad", "10")
+        self.assertIn("already a cutout", out)
+        done = Image.open(folder / "ready-out.png")
+        self.assertEqual(done.size, (81 + 20, 221 + 20))                # trimmed to the product, plus the padding
+        self.assertEqual(done.getpixel((50, 50))[:3], (200, 30, 60))    # the colours are untouched
+        self.assertTrue((folder / "ready-check.png").exists())
+        sys.path.insert(0, str(SCRIPTS / "cover"))
+        import cutout
+        self.assertFalse(cutout.already_cut_out(Image.open(folder / "photo.png")))
+        self.assertFalse(cutout.already_cut_out(Image.new("RGBA", (50, 50), (1, 2, 3, 255))))  # alpha channel, all solid
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

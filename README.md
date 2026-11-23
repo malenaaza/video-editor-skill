@@ -27,7 +27,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Pixelates the faces of other people in the shot (bystanders, customers, children) and keeps yours sharp: it follows every face, shows you a sheet to check, covers moments the detector loses, and checks the result for any face left visible. People who are small or far away (shop staff and customers in the background) need the thorough search; it hides faces only, not voices or name tags
 - A second camera for some parts: your main camera films the whole video and your iPhone films a few parts from another angle. Filmed at the same time, it syncs them by their sound and switches to the iPhone's picture for those parts while your voice stays the main camera's; filmed as separate takes, it joins them. Either way it makes the iPhone clips match first (same frame rate, at a steady rate, same size, HDR turned into normal video) and marks in the shot list which parts go on which camera
 - Log footage (Apple Log, S-Log and others) converted with the camera maker's official LUT
-- A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products
+- A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products (you choose the cover frame while you edit; product images already cut out are used as they are)
 - Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
 - Puppet videos, with no one on camera: one or two illustrated adult characters or a robot (drawn in code, all original, with your brand's colours and the skin tones and hair you choose) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
@@ -172,7 +172,7 @@ plugins/video-editor/
       remotion/CoverCard.tsx  cover image with products around the speaker's face
       remotion/Thumbnail.tsx  YouTube thumbnail: your face big on one side, a few huge words on the other
       remotion/brandFont.ts   loads the brand font for the templates
-      cover/cutout.py      cuts products out of shop photos or video frames
+      cover/cutout.py      cuts products out of shop photos or video frames (leaves ready cutouts as they are)
       cover/face_box.py    finds the face so the products go around it
       voice/clean_voice.py measures background noise, removes it and polishes the voice
       voice/leveljoin.py   joins clips and levels them to a loudness target, for quiet voices with clicks

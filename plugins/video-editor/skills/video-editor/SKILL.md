@@ -231,7 +231,7 @@ Check in this order:
 
 **Brand sheet:** the first time you edit for a brand, check its `Brand sheet:` line in `my-setup.md`. If it's empty or says "not asked yet", ask the user **once**, alongside the Rule 1 questions: "Do you want a brand sheet for this brand? It's one page showing your fonts, colors and caption styles, handy to share with anyone who makes graphics for you." If yes, read `references/brand-sheet.md` and build it. If no, write `Brand sheet: not wanted (<date>)`. Whenever a brand setting changes in `my-setup.md` and the brand has a sheet, update the sheet in the same turn.
 
-If a folder called `B-roll kit` exists, or `my-setup.md` names a `B-roll folder:`, pull the logo, photos and graphics from it. Product photos and clips in it can pop in when the speaker names the product (`references/graphics.md`, Product pop-in from B-roll).
+If a folder called `B-roll kit` exists, or `my-setup.md` names a `B-roll folder:`, pull the logo, photos and graphics from it. Product photos and clips in it can pop in when the speaker names the product (`references/graphics.md`, Product pop-in from B-roll). Note at the start which product images the folder holds (they belong to this video; an empty folder means none) and write them in `project.md`: the cover uses them (`references/cover.md`).
 
 When the user wants to borrow the style of creators they admire, borrow the format, type and pacing only. Never reuse another creator's lines, titles or footage.
 
@@ -302,6 +302,8 @@ All of these run when the brand's settings in `my-setup.md` say "every video", o
 
 Show before/after frames from the user's own video before a full render of any of these: masks for a whole video are slow to build.
 
+**Pick the cover during the edit,** once `retouched.mp4` (or `clean.mp4` with no retouch) exists and the cuts are settled, while the user is still looking at the video: extract 2 or 3 sharp candidate frames from footage that survives the cuts (eyes open, a clear expression, room around the face), show them with their times, and let the user choose or name a moment. Save the choice in `project.md` (Choices and approvals) and keep the frame. Rule 11 then only adds the title and the products to that frame. Detail in `references/cover.md`.
+
 ## Rule 10: Check for these problems on every edit
 
 - **Endings:** don't cut to the end card right after the last word; it feels harsh. Hold on the speaker about 0.5 s after the last word, then fade the picture into the end card's background color over the last 8 frames (`fade=t=out:...:color=<end card color>` before the captions), and fade the voice out over the last 0.25 s.
@@ -336,7 +338,7 @@ Then make a ready-to-post pack for each finished video. Save it as a UTF-8 `.txt
   - **Save:** keep the niche and its core tags, with the date checked, in the brand's `Niche and hashtags:` line in `my-setup.md`. If the line is empty, ask the user once what their niche is (for example "skincare for over-40s in Spain"), and save it.
   - **Without web access:** use the saved core tags, and write "not checked online this time" next to the hashtags in the pack, and in the chat.
   - Don't state post counts or view numbers unless a source gave them; then add the source and date in the pack's notes.
-- **Cover:** pick a sharp frame with the title readable and the speaker's eyes open, and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop. If the brand's `Cover:` line says with products, or the user asks, build it as in `references/cover.md`.
+- **Cover:** use the frame the user chose during the edit (if none was chosen, pick a sharp frame with the title readable and the speaker's eyes open), and save it as `<video-name>-cover.png`. Never overwrite an existing file. For Reels and TikTok, check the main text sits in the center so it survives the profile crop. If the brand's `Cover:` line says with products, or the user asks, build it as in `references/cover.md`.
 - **Chapters (YouTube, wide videos of about 3 minutes or more):** read the transcript of the finished video and mark where each topic starts, 3 to 8 chapters, with short titles (under 40 characters) in the video's language and the brand's voice, the first one at the start. Write them to `chapters.json`, each starting at a phrase the speaker says (`{"title": "Qué es un prompt", "say": "vale, empecemos"}`) so the times come from `captions.json`, then run `python -I <skill>/scripts/chapters.py chapters.json --length <seconds> --ffmetadata chapters.ffmeta`. It checks YouTube's rules (first at 0:00, at least 3, each at least 10 s) and writes the lines for the description; put them in the pack's YouTube description section. Embed `chapters.ffmeta` in the final export too (`-i chapters.ffmeta -map_metadata <its input number>`).
 - **Thumbnail (YouTube, wide videos):** the face big on one side, 2 to 4 huge words on the other, made with the `Thumbnail` template as in `references/cover.md`, YouTube thumbnail. Offer two or three word options first.
 - **Reminder:** the user can add a trending sound in the app, and should keep it quiet under the voice. Point out anything the video promises, like a follow-up video.

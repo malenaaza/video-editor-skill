@@ -1,16 +1,21 @@
 """Cut a product out of a photo or a video frame, for the cover.
 
 Usage:
-  python -I cutout.py <image> <out.png> [--crop x,y,w,h] [--white] [--pad 24] [--check check.png]
+  python -I cutout.py <image> <out.png> [--crop x,y,w,h] [--white] [--recut] [--pad 24] [--check check.png]
 
   --crop   cut out only this box (pixels), e.g. the product in a video frame,
            so the speaker and the room aren't picked up.
   --white  for shop photos on a plain light background, including white boxes and white
            products: it finds the product's outline (its edge and shadow) against the
            background color and fills everything inside it. No model needed.
+  --recut  cut the image out even if it already is a cutout (see below).
   --pad    transparent margin around the trimmed product, in pixels.
   --check  also save a check image: the cutout over red and over black, where any part
            that turned see-through shows at once. Look at it before using the cutout.
+
+A PNG that is already a cutout (transparent all around the edge, with a solid product in the middle)
+is used as it is: it is only trimmed and padded, and the script says so. Photos and any picture
+with no transparent edge are cut out as below.
 
 Without --white it uses rembg (isnet-general-use model, downloaded on first use), best for
 video frames and busy backgrounds.
@@ -64,6 +69,15 @@ def solidify(mask: Image.Image) -> Image.Image:
     return mask.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(1.0))
 
 
+def already_cut_out(img: Image.Image) -> bool:
+    """True for an image that is already a cutout: transparent along its whole edge, product inside."""
+    if img.mode not in ("RGBA", "LA", "PA") and "transparency" not in img.info:
+        return False
+    alpha = np.asarray(img.convert("RGBA").getchannel("A"))
+    edge = np.concatenate([alpha[0], alpha[-1], alpha[:, 0], alpha[:, -1]])
+    return bool((edge < 16).mean() > 0.95 and (alpha > 128).mean() > 0.03)
+
+
 def white_cutout(img: Image.Image) -> Image.Image:
     """Shop photo on a light background: the product is whatever differs from that color."""
     rgb = img.convert("RGB")
@@ -96,6 +110,7 @@ def main() -> int:
     ap.add_argument("out")
     ap.add_argument("--crop", help="x,y,w,h in pixels")
     ap.add_argument("--white", action="store_true")
+    ap.add_argument("--recut", action="store_true", help="cut out even if the image is already a cutout")
     ap.add_argument("--pad", type=int, default=24)
     ap.add_argument("--check", help="also save the cutout over red and black here")
     args = ap.parse_args()
@@ -106,7 +121,11 @@ def main() -> int:
         x, y, w, h = (int(v) for v in args.crop.split(","))
         img = img.crop((x, y, x + w, y + h))
 
-    out = white_cutout(img) if args.white else model_cutout(img)
+    if not args.recut and already_cut_out(img):
+        print("This image is already a cutout: using it as it is.")
+        out = img.convert("RGBA")
+    else:
+        out = white_cutout(img) if args.white else model_cutout(img)
 
     alpha = np.asarray(out.getchannel("A"))
     kept = float((alpha > 128).mean())
