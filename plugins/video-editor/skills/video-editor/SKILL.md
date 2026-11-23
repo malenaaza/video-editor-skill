@@ -115,7 +115,7 @@ End with one line: "Ask for any of these by name, or I'll suggest what fits each
 
 List only what this file has instructions for. When a new feature is added to this file, add it to the menu in the same change.
 
-**Offer a batch once.** When the user's request names one video but there are signs of more (they mention another video, a folder with several recordings, or "the next one"), say in one line, before asking the Rule 1 questions: "I can edit these together, two at a time, and you'd approve each one before the final export. Want that?" If they say yes, read `references/batch.md`. If they say no, edit one video at a time and don't ask again in this session. Don't offer it for a single video with nothing else waiting.
+**Offer a batch once, at the start.** At the start of the first edit in a session, before the Rule 1 questions, ask in one line unless the request already says how many videos there are: "Is this the only video, or do you have more waiting? I can edit several together, two at a time, and you'd approve each one before the final export." If there are more, read `references/batch.md`. If it's only this one, or they say no, edit one video at a time and don't ask again in this session. If the user later mentions another video, offer it again once.
 
 ## Rule 1: Four questions before the edit, one line for returning users
 
