@@ -2,6 +2,15 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-23 · version 2.14.6
+
+### Faster
+- **Building the masks is about 5 times faster** (the mask work on a close-up: 400 ms a frame before, 80 ms now,
+  on a test frame; face tracking not included). Each part now works only where it matters (the face, the brows, each
+  eye) instead of the whole frame, and the wide blurs (the forehead fade, the spot search) are done on a smaller copy:
+  the masks come out the same, within a level or two out of 255 (`scripts/retouch/roi.py`). `mask.py` now prints its
+  speed at the end. Three of the slow parts came in with 2.14.2 to 2.14.5. No need to rebuild masks you already have.
+
 ## 2026-11-22 · version 2.14.5
 
 ### Fixed
