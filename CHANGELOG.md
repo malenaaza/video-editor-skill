@@ -2,6 +2,19 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-23 · version 2.15.0
+
+### New
+- **AI clips in scripts.** For educational videos, the script can now mark one to three clips made with an AI video
+  generator (Google Flow by default, which has free daily credits) as `[CLIP] <file-name>: <prompt>`: visual metaphors,
+  an intro scene, a break in a long talking-head stretch, never text, diagrams, app screens or real people (those stay
+  screen recordings and animated graphics, which are exact). The prompts are written in English, end with the shape,
+  "no text" and the brand's `AI clip style:` look, so the clips match. The shot list gets an "AI clips to generate"
+  list ready to paste; after filming, `scriptcut.py` puts the clips in `edit-notes.json`, and the edit matches each one
+  to the camera with `conform.py` and places it under the voice. It asks once which generator you use (`AI clips:`
+  in `my-setup.md`) and reminds you about YouTube's label for realistic AI footage and about commercial use.
+  Guide: `references/script.md`.
+
 ## 2026-11-23 · version 2.14.6
 
 ### Faster

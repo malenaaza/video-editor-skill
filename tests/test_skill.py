@@ -1960,14 +1960,17 @@ class SkillTest(unittest.TestCase):
         import scriptcut
         text = "\n".join(["# Título", "", "Hola, soy Malena.", "", "## [CAPÍTULO] Qué hace", '[PANTALLA] abrir "Claude"',
                           '[SHORT "El truco"]', "Le pido a Claude", "que quite las pausas.", "", "Y listo.", "[/SHORT]",
-                          "## [CHAPTER] End", "> smile", "[GRAPHIC] a list", "Thanks for watching!"])
+                          "## [CHAPTER] End", "> smile", "[GRAPHIC] a list",
+                          "[CLIP] red-de-luz: slow push through glowing threads of light", "Thanks for watching!"])
         lines, chapters, shorts, notes = scriptcut.parse(text)
         self.assertEqual(lines, ["Hola, soy Malena.", "Le pido a Claude que quite las pausas.", "Y listo.",
                                  "Thanks for watching!"])                    # a paragraph is one line; > is not said
         self.assertEqual(chapters, [{"title": "Qué hace", "line": 1}, {"title": "End", "line": 3}])
         self.assertEqual(shorts, [{"title": "El truco", "first": 1, "last": 2}])
         self.assertEqual(notes, [{"kind": "screen", "text": 'abrir "Claude"', "line": 1},
-                                 {"kind": "graphic", "text": "a list", "line": 3}])
+                                 {"kind": "graphic", "text": "a list", "line": 3},
+                                 {"kind": "clip", "text": "red-de-luz: slow push through glowing threads of light",
+                                  "line": 3}])                               # an AI clip is a note for the edit
 
     def test_59_script_keeps_the_last_good_take(self):
         folder = self.dir / "script"
