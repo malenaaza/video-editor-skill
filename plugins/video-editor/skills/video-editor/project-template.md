@@ -25,6 +25,7 @@ Mark each step: done (with the file it produced and the date), skipped (why), or
 Dated, one line each: what the user decided or approved for this video.
 
 - <date>: <e.g. keep the second take of the intro; remove the line about shipping>
+- <date>: <cover frame chosen: time, file; product images found in the B-roll>
 
 ## Waiting for the user
 - <e.g. which of the two cover frames; listen to the cleaned voice>
