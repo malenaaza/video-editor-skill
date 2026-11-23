@@ -1,7 +1,7 @@
 # Several videos at once
 
 Read this only when the user brings **two or more videos to edit in the same request** ("edit these three", a folder of
-recordings). One video at a time is the normal flow and nothing here changes it: don't offer a batch for a single video.
+recordings), or when the user accepts the one-line batch offer in SKILL.md ("Offer a batch once"). One video at a time is the normal flow and nothing here changes it: don't offer a batch for a single video with nothing else waiting.
 
 The user stays the director. A batch only runs the usual build order for each video side by side; every judgment call
 (cut plan, openings and endings, extras, the final export) still waits for them.
