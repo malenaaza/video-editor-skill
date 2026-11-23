@@ -13,6 +13,8 @@ What each update of the video-editor skill brings. Newest first.
   list ready to paste; after filming, `scriptcut.py` puts the clips in `edit-notes.json`, and the edit matches each one
   to the camera with `conform.py` and places it under the voice. It asks once which generator you use (`AI clips:`
   in `my-setup.md`) and reminds you about YouTube's label for realistic AI footage and about commercial use.
+  When your computer is connected (the desktop app's built-in browser or Claude in Chrome), it makes the clips in
+  Flow itself, keeps the best version of each and saves it in `clips/`; you only sign in to Google yourself, once.
   Guide: `references/script.md`.
 
 ## 2026-11-23 · version 2.14.6

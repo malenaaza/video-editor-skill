@@ -102,6 +102,15 @@ Write `shotlist.md` next to it, for filming in one sitting:
    shape and the length (8 s, the usual longest; it's cut to fit later). Tell the user to make two or three versions
    of each and keep the best, to download it as MP4 at the best quality the plan allows, and to save it in the
    project's `clips/` folder (or next to the recording) under the file name given, for example `red-de-luz.mp4`.
+   **Make them yourself when you can.** When `AI clips:` is Google Flow and a browser on the user's computer is
+   available in this session (the Claude desktop app's built-in browser, or Claude in Chrome), generate the clips
+   there instead of handing over the list, once the user has approved the script: open Flow
+   (https://labs.google/fx/tools/flow), paste each prompt, make two or three versions, look at them, keep the one
+   with no stray letters or odd details, and download it as MP4 into the project's `clips/` folder under its file
+   name. Never type a password: if Google asks to sign in, stop and ask the user to sign in themselves in that
+   browser, then carry on. If the daily credits run out, keep what's done and give the rest of the list. Afterwards,
+   tell the user in one line which clips are ready and which, if any, are left. With no such browser, give the list
+   as above.
    Two notes, once per video in one line each: when a clip looks real (a realistic person or place), YouTube asks
    for it to be labelled as altered or synthetic content when uploading; and if the channel earns money, check that
    the generator's plan allows commercial use.
