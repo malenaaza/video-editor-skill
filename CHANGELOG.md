@@ -4,6 +4,13 @@ What each update of the video-editor skill brings. Newest first.
 
 ## 2026-11-23 · version 2.16.0
 
+### Changed
+- **Graphics always start from your Remotion templates.** The guide used to say to use HyperFrames first whenever its
+  skills were installed, so installing them for something else could make Claude build graphics from scratch instead
+  of using the tested templates. Now Remotion and the templates come first; another tool such as HyperFrames is only
+  used when you ask for it, for a graphic no template covers. Remotion's own Agent Skills, if you install them, help
+  write new Remotion code.
+
 ### New
 - **Letters behind you.** Big words in the background with you in front of them, partly covering them (the
   "text behind subject" effect), for a hook word or a title: `scripts/behindtext.py` draws them in the brand's font

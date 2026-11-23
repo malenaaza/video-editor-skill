@@ -2,7 +2,7 @@
 
 Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rule numbers refer to SKILL.md.
 
-HyperFrames skills (`hyperframes`, `hyperframes-cli`) make animated graphics if they're installed. Remotion, run through `npx`, also does; use it when the user asks for it or when HyperFrames isn't available. If neither works, build graphics with FFmpeg and say so.
+Graphics are made with Remotion, run through `npx`, and the ready-made templates below: use a template whenever one fits, because each is tested with this skill's scripts. Other motion-graphics tools the user may have installed (HyperFrames, for example) are only for a graphic no template covers, and only when the user asks for that tool. If Remotion doesn't work, build the graphic with FFmpeg and say so. Remotion's own Agent Skills (`/remotion-best-practices` and others), when installed, help write new Remotion code; this file still decides which template is used and how it's placed.
 
 Remotion builds motion graphics from React code: intros, outros, lower thirds, animated titles and charts, not cutting footage. Cuts, captions and export stay in FFmpeg. Add each graphic as a new composition in `src/Root.tsx`, and don't change or remove existing ones unless asked. Copy logos and images into its `public` folder first.
 

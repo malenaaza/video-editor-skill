@@ -19,7 +19,7 @@ This file has what every edit needs. Details for optional steps are in `<skill>/
 | Log footage (flat, grey picture; Apple Log, S-Log...) | `references/log.md` |
 | Noise removal, voice polish, two voices, joining clips to one loudness, sound effects | `references/sound.md` |
 | Skin softening, teeth whitening, background blur | `references/retouch.md` |
-| Animated title, product tag, emojis, letters behind the speaker, any Remotion or HyperFrames graphic | `references/graphics.md` |
+| Animated title, product tag, emojis, letters behind the speaker, any Remotion graphic | `references/graphics.md` |
 | The user asks for a script, or brings one, for a video they'll film; Shorts cut from a long video; AI-generated clips (Google Flow or another generator) | `references/script.md` |
 | The first video from a camera, phone or app not in `my-setup.md` yet; the user asks what settings to film with | `references/cameras.md` |
 | A cover with pictures of the products | `references/cover.md` |
@@ -95,7 +95,7 @@ It lives outside the skill folder so that updating the skill never deletes it. I
 
 **On a laptop,** run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export), and follow the Power section of `references/setup.md` for what to tell the user.
 
-**Animated graphics** (title, product tag, emojis, intros, lower thirds) are made with HyperFrames or Remotion and placed with FFmpeg: read `references/graphics.md` first. Cuts, captions and export stay in FFmpeg.
+**Animated graphics** (title, product tag, emojis, intros, lower thirds) are made with Remotion (the templates in `scripts/remotion/`) and placed with FFmpeg: read `references/graphics.md` first. Cuts, captions and export stay in FFmpeg.
 
 ## What I can do
 
