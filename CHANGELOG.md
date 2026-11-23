@@ -5,6 +5,10 @@ What each update of the video-editor skill brings. Newest first.
 ## 2026-11-23 · version 2.15.0
 
 ### New
+- **Letters behind you.** Big words in the background with you in front of them, partly covering them (the
+  "text behind subject" effect), for a hook word or a title: `scripts/behindtext.py` draws them in the brand's font
+  and colour, times them from the phrase that names them, and uses the background-blur mask (`bgmask.mkv`) to keep
+  you, and anything you hold, in front. Guide: `references/graphics.md`, Letters behind you.
 - **AI clips in scripts.** For educational videos, the script can now mark one to three clips made with an AI video
   generator (Google Flow by default, which has free daily credits) as `[CLIP] <file-name>: <prompt>`: visual metaphors,
   an intro scene, a break in a long talking-head stretch, never text, diagrams, app screens or real people (those stay

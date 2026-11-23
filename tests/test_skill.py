@@ -2423,6 +2423,49 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(float(spots.spot_mask(empty, empty, empty > 0, 80).max()), 0.0)
         self.assertIn("ms a frame", (SCRIPTS / "retouch" / "mask.py").read_text("utf-8"))    # mask.py reports its speed
 
+    def test_90_letters_behind_the_speaker(self):
+        try:
+            import numpy as np
+            from PIL import ImageFont  # noqa: F401
+        except ImportError:
+            self.skipTest("needs numpy and Pillow")
+        font = next((p for p in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "C:/Windows/Fonts/arialbd.ttf",
+                                 "/System/Library/Fonts/Supplemental/Arial Bold.ttf") if Path(p).exists()), None)
+        if not font:
+            self.skipTest("no bold font found")
+        folder = self.dir / "behind"
+        folder.mkdir(exist_ok=True)
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=gray:s=540x960:r=30:d=3", "-f", "lavfi", "-i",
+             "sine=d=3", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-c:a", "aac",
+             "retouched.mp4"], cwd=folder)
+        run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=white:s=270x480:r=30:d=3", "-vf",   # half size
+             "drawbox=x=135:y=0:w=135:h=480:color=black:t=fill,format=gray", "-c:v", "ffv1", "bgmask.mkv"], cwd=folder)
+        (folder / "captions.json").write_text(json.dumps([{"start": 0.5, "end": 2.5, "text": "la inteligencia artificial",
+            "words": [[0.5, 0.7, "la"], [0.7, 1.4, "inteligencia"], [1.4, 2.5, "artificial"]]}]), "utf-8")
+        out = script("behindtext.py", "HOLA|IA", "--say", "inteligencia artificial", "--font", font, "--color",
+                     "#FF0000", "--fade", "0", cwd=folder)
+        self.assertIn("from 0.70 to 2.50 s", out)                              # to the end of that caption
+        self.assertIn("scaled to 540x960", out)
+        run(["ffmpeg", "-v", "error", "-y", "-i", "retouched.mp4", "-i", "bgmask.mkv", "-loop", "1", "-framerate", "30",
+             "-i", "behindtext.png", filter_flag(), "behindtext.txt", "-map", "[v]", "-map", "0:a?", "-c:v", "libx264",
+             "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-c:a", "copy", "behind.mp4"], cwd=folder)
+        frames = run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries",
+                      "stream=nb_read_frames", "-of", "csv=p=0", "behind.mp4"], cwd=folder)
+        self.assertEqual(int(frames.strip()), 90)                              # no frame lost or added
+
+        def red_at(t):
+            raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(t), "-i", "behind.mp4", "-frames:v", "1", "-f",
+                                  "rawvideo", "-pix_fmt", "rgb24", "-"], cwd=folder, capture_output=True).stdout
+            f = np.frombuffer(raw, np.uint8).reshape(960, 540, 3).astype(int)
+            red = (f[..., 0] > 180) & (f[..., 1] < 80)
+            return red[:, :260].sum(), red[:, 280:].sum()
+
+        self.assertEqual(red_at(0.3), (0, 0))                                  # not yet
+        left, right = red_at(1.6)
+        self.assertGreater(left, 2000)                                         # the letters show in the background
+        self.assertEqual(right, 0)                                             # and never over the speaker
+        self.assertEqual(red_at(2.8), (0, 0))                                  # gone again
+
     def test_33_docs_point_to_files_that_exist(self):
         text = (ROOT / "SKILL.md").read_text("utf-8")
         for ref in set(re.findall(r"references/[\w-]+\.md", text)):

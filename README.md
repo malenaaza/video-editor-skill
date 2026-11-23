@@ -21,6 +21,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Captions (plain, or with each word lit up as you say it), titles, handle, end card and logos in your brand's colors and fonts, saved once and reused
 - Vertical (Reels, TikTok, Shorts) and wide (YouTube) exports, splitting long recordings into several videos
 - Background noise and hum removal, voice polish and leveling, sound effects, animated emojis, titles and product tags (via Remotion), dark-footage fixes
+- Big letters behind you (the "text behind subject" effect): a hook word or a title in the background, with you in front of it, fading in as you say it
 - Face-tracked skin softening (face and neck, stronger on close-ups), an optional light beautify (soft glow, brighter under-eyes and eye whites, never makeup or reshaping) and teeth whitening, background blur that keeps held products sharp (and isn't added when your camera already blurred the background), a part in black and white, a slow push in on your face at a key line
 - Makes its own folders: at first setup it asks where to keep working files (suggesting `~/video-work`), checks that the folder isn't in OneDrive, iCloud, Dropbox or Google Drive (where big videos time out), and creates it and a folder for each video. You never make folders by hand
 - Pixelates the faces of other people in the shot (bystanders, customers, children) and keeps yours sharp: it follows every face, shows you a sheet to check, covers moments the detector loses, and checks the result for any face left visible. People who are small or far away (shop staff and customers in the background) need the thorough search; it hides faces only, not voices or name tags
@@ -126,6 +127,7 @@ plugins/video-editor/
       popplace.py          places the product pop-in beside your temple, never over what you hold
       balance.py           measures a colour cast (white balance) and gives the filter that removes it
       mono.py              turns a part of the video black and white, fading back to colour
+      behindtext.py        big letters behind the speaker, who stays in front of them (uses the background-blur mask)
       pushin.py            a slow, smooth push in on your face at a key line, keeping your head in the frame
       reframe.py           turns a wide video into a vertical one for Shorts, following you like a camera operator
       chapters.py          YouTube chapters for the description, checked against YouTube's rules
