@@ -2,6 +2,14 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-25 · version 2.18.0
+
+### New
+- **The setup check now reports GPU memory and whether your computer could generate video locally.** It reads the
+  video memory of an NVIDIA card (or the shared memory of an Apple Silicon Mac) and says `no`, `limited` or `yes`,
+  saved in `my-setup.md`. Nothing uses it yet; it lets a future feature that needs a strong GPU skip asking and stay
+  out of your menu when your computer can't run it.
+
 ## 2026-11-23 · version 2.17.1
 
 ### Fixed

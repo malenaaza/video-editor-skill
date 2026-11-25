@@ -2511,6 +2511,25 @@ class SkillTest(unittest.TestCase):
         self.assertIn("don't ask again in this session", skill)
         self.assertIn("If it's only this one", skill)
 
+    def test_36_local_generation_verdict_from_gpu_memory(self):
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            import detect_setup
+        finally:
+            sys.path.remove(str(SCRIPTS))
+        card = lambda gb, kind="nvidia": [{"name": "Test GPU", "vram_gb": gb, "kind": kind}]
+        self.assertEqual(detect_setup.local_generation([])[0], "no")          # no usable GPU: never offered
+        self.assertEqual(detect_setup.local_generation(card(6))[0], "no")
+        self.assertEqual(detect_setup.local_generation(card(12))[0], "limited")
+        self.assertEqual(detect_setup.local_generation(card(24))[0], "yes")
+        self.assertEqual(detect_setup.local_generation(card(8) + card(24))[0], "yes")   # the best card counts
+        out = subprocess.run([sys.executable, "-I", str(SCRIPTS / "detect_setup.py"), "--json"],
+                             capture_output=True, text=True, encoding="utf-8").stdout
+        report = json.loads(out)
+        self.assertIsInstance(report["gpu_memory"], list)
+        self.assertIn(report["local_generation"]["verdict"], ("no", "limited", "yes"))
+        self.assertIn("GPU memory", (ROOT / "setup-template.md").read_text("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

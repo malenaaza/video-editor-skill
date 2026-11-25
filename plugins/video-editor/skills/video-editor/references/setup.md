@@ -52,6 +52,8 @@ Run every Python script with `-I` and the right environment's interpreter (`<ven
 
 ## Power
 
+`detect_setup.py` also reports GPU memory (NVIDIA: the card's own; Apple Silicon: the computer's shared memory) and a rough verdict on local AI video generation: `no` (under 8 GB or no suitable GPU), `limited` (8 to 16 GB: short, small, slow clips) or `yes` (16 GB or more). Save it in `my-setup.md`; a feature that needs a strong GPU reads it instead of asking, and is not offered on `no`.
+
 On a laptop, run `python <skill>/scripts/detect_setup.py power` before long jobs (transcription, retouch, blur masks, export). Being on battery isn't slow by itself: what slows jobs down is the power mode the laptop uses on battery, and each user sets that differently. So say only what the check found:
 
 - **"plugged in"**: start, no warning.
