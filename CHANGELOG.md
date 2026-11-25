@@ -10,6 +10,11 @@ What each update of the video-editor skill brings. Newest first.
   saved in `my-setup.md`. Nothing uses it yet; it lets a future feature that needs a strong GPU skip asking and stay
   out of your menu when your computer can't run it.
 
+### Changed
+- **The AI clip question names the options.** When a script has AI clips, the skill used to ask "which generator do
+  you use?" and mention only Google Flow. It now lists Google Flow, other online generators and ComfyUI (local, only
+  offered when your GPU can run it), with a line on what each is like.
+
 ## 2026-11-23 · version 2.17.1
 
 ### Fixed

@@ -2530,6 +2530,12 @@ class SkillTest(unittest.TestCase):
         self.assertIn(report["local_generation"]["verdict"], ("no", "limited", "yes"))
         self.assertIn("GPU memory", (ROOT / "setup-template.md").read_text("utf-8"))
 
+    def test_37_clip_generator_question_names_the_options(self):
+        script = (ROOT / "references" / "script.md").read_text("utf-8")
+        for option in ("Google Flow", "Another online generator", "ComfyUI"):
+            self.assertIn(option, script)
+        self.assertIn("on `no`, don't offer it", script)       # ComfyUI only where the GPU can run it
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
