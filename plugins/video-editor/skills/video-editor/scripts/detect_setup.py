@@ -230,6 +230,47 @@ def gpus():
     return []
 
 
+def gpu_memory():
+    """Video memory of each GPU that could run local AI generation (for example ComfyUI).
+
+    NVIDIA: the card's own memory, from nvidia-smi. Apple Silicon: the computer's memory, which the GPU shares.
+    Other GPUs are not listed: they are not suitable for local generation."""
+    found = []
+    if shutil.which("nvidia-smi"):
+        code, out = run(["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"])
+        if code == 0:
+            for line in out.splitlines():
+                name, _, mb = line.rpartition(",")
+                if name and mb.strip().isdigit():
+                    found.append({"name": name.strip(), "vram_gb": round(int(mb) / 1024, 1), "kind": "nvidia"})
+    if SYSTEM == "Darwin" and platform.machine() == "arm64":
+        code, out = run(["sysctl", "-n", "hw.memsize"])
+        if code == 0 and out.strip().isdigit():
+            found.append({"name": "Apple Silicon (shared memory)", "vram_gb": round(int(out) / 1024 ** 3, 1),
+                          "kind": "apple"})
+    return found
+
+
+# Rough thresholds for open video models run locally: below the first, don't offer it; below the second, it works
+# only for short, small clips and is slow.
+LOCAL_GEN_MIN_GB = 8
+LOCAL_GEN_COMFORTABLE_GB = 16
+
+
+def local_generation(cards):
+    """Can this computer generate video locally? Returns (verdict, one-line explanation).
+    verdict is "no", "limited" or "yes"; it is a rough guide, not a promise."""
+    best = max(cards, key=lambda c: c["vram_gb"], default=None)
+    if best is None:
+        return "no", "no NVIDIA GPU or Apple Silicon found: use an online generator"
+    gb = best["vram_gb"]
+    if gb < LOCAL_GEN_MIN_GB:
+        return "no", f"{best['name']} has {gb} GB: too little for video models, use an online generator"
+    if gb < LOCAL_GEN_COMFORTABLE_GB:
+        return "limited", f"{best['name']} has {gb} GB: short, small clips only, and slow"
+    return "yes", f"{best['name']} has {gb} GB: enough for local video generation"
+
+
 def cpu_name():
     if SYSTEM == "Windows":
         _, out = run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_Processor).Name"])
@@ -307,6 +348,7 @@ def main():
         "cpu": cpu_name(),
         "cpu_threads": os.cpu_count(),
         "gpus": gpus(),
+        "gpu_memory": gpu_memory(),
         "power": power(),
         "battery_power_mode": battery_power_mode()[0],
         "tools": {n: tool_version(n) for n in ("ffmpeg", "ffprobe")},
@@ -345,6 +387,7 @@ def main():
             vendor, e = best(kind)
             report[f"recommended_{kind}"] = {"vendor": vendor, "args": e["args"] if e else None,
                                              "fps_4k": e["fps_4k"] if e else None}
+    report["local_generation"] = dict(zip(("verdict", "reason"), local_generation(report["gpu_memory"])))
     report["final_export_args"] = " ".join(FINAL_EXPORT)
 
     if speech_python:
@@ -359,6 +402,7 @@ def main():
     print(f"System:     {report['os']}")
     print(f"CPU:        {report['cpu']} ({report['cpu_threads']} threads)")
     print(f"GPU:        {', '.join(report['gpus']) or 'none found'}")
+    print(f"Local AI video generation: {report['local_generation']['verdict']} ({report['local_generation']['reason']})")
     print(f"Power:      {report['power']}")
     if report["power"] not in ("no battery", "unknown"):
         print(f"On battery: power mode {report['battery_power_mode']}")

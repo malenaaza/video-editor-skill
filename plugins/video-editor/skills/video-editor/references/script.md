@@ -80,8 +80,14 @@ Este es el resultado final. ¿Qué os parece?
 Show the user the script and adjust it with them before they film. Point out the animated explanations you
 marked, in one line each ("At 'cómo funciona un MCP' an animation: Claude, the MCP server and Gmail with arrows"), so
 they can drop or add one. Do the same for the AI clips ("At 'una red de neuronas' an AI clip: threads of light
-connecting nodes"). The first time a script has one, ask once which generator they use, and save it in the
-`AI clips:` line of `my-setup.md` (Google Flow has free daily credits). Then ask once, for the brand, whether to
+connecting nodes"). The first time a script has one, ask once which generator they use, naming the real options, and save the answer in the
+`AI clips:` line of `my-setup.md`:
+  - **Google Flow**: the best quality of these, with free daily credits; you paste each prompt and save the clip.
+  - **Another online generator** (Runway, Kling, Veo and others): the same paste-and-save steps; credits and prices vary.
+  - **ComfyUI, on this computer**: free for each clip and private, but local models make shorter clips of lower
+    quality, need a strong GPU and are slow. Say it only when the GPU line in `my-setup.md` says `yes` or `limited`
+    (see `references/setup.md`); on `no`, don't offer it. `scripts/` has no ComfyUI script yet: if they choose it, say
+    so, and give them the prompts to run themselves. Then ask once, for the brand, whether to
 keep a look for every clip (for example "soft blue and teal light, dark background, cinematic"), and save it in the
 brand's `AI clip style:` line.
 

@@ -47,7 +47,7 @@ You don't need to remember this list: ask the skill "what can you do?" for a men
 
 ## Adjusts to your computer
 
-On first use it runs `scripts/detect_setup.py`, which checks your CPU and GPU and **test-encodes video with every hardware encoder your FFmpeg has**: NVIDIA (NVENC), Intel (Quick Sync), AMD (AMF) and Apple (VideoToolbox). It recommends the fastest one that actually works, and checks whether Whisper can use an NVIDIA GPU. Then it asks you the few things it can't detect: your cameras, whether you shoot Log, your languages, your brands and where finished videos go. Everything is saved to `~/.video-editor/my-setup.md`, so it never asks twice.
+On first use it runs `scripts/detect_setup.py`, which checks your CPU and GPU and **test-encodes video with every hardware encoder your FFmpeg has**: NVIDIA (NVENC), Intel (Quick Sync), AMD (AMF) and Apple (VideoToolbox). It recommends the fastest one that actually works, checks whether Whisper can use an NVIDIA GPU, and reads your GPU memory to say whether the computer could generate AI video locally. Then it asks you the few things it can't detect: your cameras, whether you shoot Log, your languages, your brands and where finished videos go. Everything is saved to `~/.video-editor/my-setup.md`, so it never asks twice.
 
 Working renders use the hardware encoder for speed. The final export always uses `libx264` at high quality, so the result looks the same on any computer.
 
@@ -106,6 +106,7 @@ The skin mask's colour thresholds were tuned on light-to-medium skin. The skill 
 
 ```
 .claude-plugin/marketplace.json   makes this repository a plugin marketplace (malenaaza)
+docs/es/SKILL.es.md                 Spanish (Spain) translation of SKILL.md, to read; Claude follows the English one
 plugins/video-editor/
   .claude-plugin/plugin.json      the plugin: name, version, description
   skills/video-editor/

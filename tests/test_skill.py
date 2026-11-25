@@ -2511,6 +2511,38 @@ class SkillTest(unittest.TestCase):
         self.assertIn("don't ask again in this session", skill)
         self.assertIn("If it's only this one", skill)
 
+    def test_36_local_generation_verdict_from_gpu_memory(self):
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            import detect_setup
+        finally:
+            sys.path.remove(str(SCRIPTS))
+        card = lambda gb, kind="nvidia": [{"name": "Test GPU", "vram_gb": gb, "kind": kind}]
+        self.assertEqual(detect_setup.local_generation([])[0], "no")          # no usable GPU: never offered
+        self.assertEqual(detect_setup.local_generation(card(6))[0], "no")
+        self.assertEqual(detect_setup.local_generation(card(12))[0], "limited")
+        self.assertEqual(detect_setup.local_generation(card(24))[0], "yes")
+        self.assertEqual(detect_setup.local_generation(card(8) + card(24))[0], "yes")   # the best card counts
+        out = subprocess.run([sys.executable, "-I", str(SCRIPTS / "detect_setup.py"), "--json"],
+                             capture_output=True, text=True, encoding="utf-8").stdout
+        report = json.loads(out)
+        self.assertIsInstance(report["gpu_memory"], list)
+        self.assertIn(report["local_generation"]["verdict"], ("no", "limited", "yes"))
+        self.assertIn("GPU memory", (ROOT / "setup-template.md").read_text("utf-8"))
+
+    def test_37_clip_generator_question_names_the_options(self):
+        script = (ROOT / "references" / "script.md").read_text("utf-8")
+        for option in ("Google Flow", "Another online generator", "ComfyUI"):
+            self.assertIn(option, script)
+        self.assertIn("on `no`, don't offer it", script)       # ComfyUI only where the GPU can run it
+
+    def test_38_recent_hashtag_list_is_reused(self):
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        self.assertIn("**Reuse a recent list:**", skill)
+        self.assertIn("7 days ago or less", skill)
+        self.assertIn("In a batch, search once", skill)
+        self.assertIn("look them up", skill)                    # an old list or a new topic still searches
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

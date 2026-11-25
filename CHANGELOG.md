@@ -2,6 +2,22 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-25 · version 2.18.0
+
+### New
+- **The setup check now reports GPU memory and whether your computer could generate video locally.** It reads the
+  video memory of an NVIDIA card (or the shared memory of an Apple Silicon Mac) and says `no`, `limited` or `yes`,
+  saved in `my-setup.md`. Nothing uses it yet; it lets a future feature that needs a strong GPU skip asking and stay
+  out of your menu when your computer can't run it.
+
+### Changed
+- **Hashtags aren't searched for every video.** If the brand's saved hashtag list was checked 7 days ago or less and the
+  video is on the same topic, the skill reuses it and adds one or two specific tags; otherwise (older list, new topic,
+  or you ask for fresh ones) it searches as before. In a batch it searches once and shares the result.
+- **The AI clip question names the options.** When a script has AI clips, the skill used to ask "which generator do
+  you use?" and mention only Google Flow. It now lists Google Flow, other online generators and ComfyUI (local, only
+  offered when your GPU can run it), with a line on what each is like.
+
 ## 2026-11-23 · version 2.17.1
 
 ### Fixed
