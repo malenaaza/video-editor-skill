@@ -1,5 +1,7 @@
 # Video Editor for Creators: a Claude Code plugin for talking-head videos
 
+**English** · [Español](README.es.md)
+
 
 
 https://github.com/user-attachments/assets/aa4c613b-1997-4f54-aed8-40265f171824
@@ -40,7 +42,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Checks every cut by its sound before rendering (a word clipped in half, a scrap of a removed word, a cut that flashes by) and fixes it, keeping or dropping the word whole
 - Checks the opening of every video: a black first frame, a clipped first word, silence before you speak, a sound effect on your first word, nothing to read with the sound off, and what the first 3 seconds say
 - Checks every export before it's delivered: black frames, a stray single frame left by a cut, picture and sound that end apart, sound that cuts out, missing colour tags, and words clipped at a cut
-- Script first: ask for a script and it writes one with chapters, screen recordings and Shorts marked, and one to three AI clips for atmosphere (a visual metaphor, an intro scene) with prompts ready to paste into Google Flow or another generator, all in the same look and never for text, diagrams or real people; after filming it matches each clip to your camera and places it under your voice, plus a clean text for your teleprompter if you use one (it asks once); after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
+- Script first: ask for a script and it writes one (with no topic yet, it suggests five ideas, each with a hook, and writes the one you pick) with chapters, screen recordings and Shorts marked, and one to three AI clips for atmosphere (a visual metaphor, an intro scene) with prompts ready to paste into Google Flow or another generator, all in the same look and never for text, diagrams or real people; after filming it matches each clip to your camera and places it under your voice, plus a clean text for your teleprompter if you use one (it asks once); after you film it, it keeps the last good take of each line, tells you what you missed, and cuts the chapters and Shorts from it
 - Several videos in one request: you answer the questions once for all of them, each video gets its own folder and runs the normal edit (two at a time, so the computer isn't overloaded), and you see every cut plan and draft together and approve each before the final export. One video at a time works exactly as before
 
 You don't need to remember this list: ask the skill "what can you do?" for a menu, and before each edit it suggests the extras that fit that video.
@@ -106,6 +108,7 @@ The skin mask's colour thresholds were tuned on light-to-medium skin. The skill 
 
 ```
 .claude-plugin/marketplace.json   makes this repository a plugin marketplace (malenaaza)
+README.es.md                      Spanish (Spain) translation of this README (without this file list)
 docs/es/SKILL.es.md                 Spanish (Spain) translation of SKILL.md, to read; Claude follows the English one
 plugins/video-editor/
   .claude-plugin/plugin.json      the plugin: name, version, description

@@ -8,6 +8,8 @@ of every line, and the markers become the chapters and the Shorts.
 
 ## 1. Write the script
 
+**No topic yet?** Don't ask the user to invent one. Suggest five video ideas from the brand's niche (`Niche and hashtags:` in `my-setup.md`), each in one line: a working title, the hook line it would open with, and why it suits this audience. Mix a few kinds (a how-to, a mistake to avoid, a before and after, a myth, a question viewers ask), and skip any idea listed in the brand's `Video ideas:` line, which holds what has been made or shown before. These are suggestions from the niche, not a claim that a topic is trending: say so, and only say a topic is popular if you searched for it and have the source. When the user picks one, save it in `Video ideas:` with the date, and write the script. Don't write a script until they choose.
+
 Ask only what's missing: the topic, who it's for, the length (8 to 12 minutes is typical for a YouTube tutorial),
 and the call to action. Write in the language and variant in `my-setup.md` (`Languages:`), for example Spanish from
 Spain ("vídeo", "ordenador", "vosotros"), in the brand's voice (Rule 5). Research any fact, tool, price or feature you
@@ -87,7 +89,9 @@ connecting nodes"). The first time a script has one, ask once which generator th
   - **ComfyUI, on this computer**: free for each clip and private, but local models make shorter clips of lower
     quality, need a strong GPU and are slow. Say it only when the GPU line in `my-setup.md` says `yes` or `limited`
     (see `references/setup.md`); on `no`, don't offer it. `scripts/` has no ComfyUI script yet: if they choose it, say
-    so, and give them the prompts to run themselves. Then ask once, for the brand, whether to
+    so, and give them the prompts to run themselves.
+
+Then ask once, for the brand, whether to
 keep a look for every clip (for example "soft blue and teal light, dark background, cinematic"), and save it in the
 brand's `AI clip style:` line.
 
