@@ -1,5 +1,7 @@
 # Video Editor for Creators: a Claude Code plugin for talking-head videos
 
+**English** · [Español](README.es.md)
+
 
 
 https://github.com/user-attachments/assets/aa4c613b-1997-4f54-aed8-40265f171824
@@ -106,6 +108,7 @@ The skin mask's colour thresholds were tuned on light-to-medium skin. The skill 
 
 ```
 .claude-plugin/marketplace.json   makes this repository a plugin marketplace (malenaaza)
+README.es.md                      Spanish (Spain) translation of this README (without this file list)
 docs/es/SKILL.es.md                 Spanish (Spain) translation of SKILL.md, to read; Claude follows the English one
 plugins/video-editor/
   .claude-plugin/plugin.json      the plugin: name, version, description

@@ -2543,6 +2543,14 @@ class SkillTest(unittest.TestCase):
         self.assertIn("In a batch, search once", skill)
         self.assertIn("look them up", skill)                    # an old list or a new topic still searches
 
+    def test_39_spanish_readme_is_linked_both_ways(self):
+        en = (REPO / "README.md").read_text("utf-8")
+        es = (REPO / "README.es.md").read_text("utf-8")
+        self.assertIn("(README.es.md)", en)
+        self.assertIn("(README.md)", es)
+        self.assertIn("/plugin install video-editor@malenaaza", es)   # the install commands are kept as they are
+        self.assertIn("Google Flow u otro generador", es)                # the AI clip line matches the English one
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
