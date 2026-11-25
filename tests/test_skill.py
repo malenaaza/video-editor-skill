@@ -2539,7 +2539,7 @@ class SkillTest(unittest.TestCase):
     def test_38_recent_hashtag_list_is_reused(self):
         skill = (ROOT / "SKILL.md").read_text("utf-8")
         self.assertIn("**Reuse a recent list:**", skill)
-        self.assertIn("14 days ago or less", skill)
+        self.assertIn("7 days ago or less", skill)
         self.assertIn("In a batch, search once", skill)
         self.assertIn("look them up", skill)                    # an old list or a new topic still searches
 

@@ -11,7 +11,7 @@ What each update of the video-editor skill brings. Newest first.
   out of your menu when your computer can't run it.
 
 ### Changed
-- **Hashtags aren't searched for every video.** If the brand's saved hashtag list was checked 14 days ago or less and the
+- **Hashtags aren't searched for every video.** If the brand's saved hashtag list was checked 7 days ago or less and the
   video is on the same topic, the skill reuses it and adds one or two specific tags; otherwise (older list, new topic,
   or you ask for fresh ones) it searches as before. In a batch it searches once and shares the result.
 - **The AI clip question names the options.** When a script has AI clips, the skill used to ask "which generator do
