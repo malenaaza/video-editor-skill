@@ -2551,6 +2551,17 @@ class SkillTest(unittest.TestCase):
         self.assertIn("/plugin install video-editor@malenaaza", es)   # the install commands are kept as they are
         self.assertIn("Google Flow u otro generador", es)                # the AI clip line matches the English one
 
+    def test_40_ideas_title_and_caption_choices(self):
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        script = (ROOT / "references" / "script.md").read_text("utf-8")
+        self.assertIn("offer 2 or 3 wordings", skill)
+        self.assertIn("write 2 or 3 versions in different tones", skill)
+        self.assertIn("If the user already gave the wording, use it", skill)       # never override the user's own words
+        self.assertIn("Suggest five video ideas", script)
+        self.assertIn("not a claim that a topic is trending", script)             # no invented popularity
+        self.assertIn("Don't write a script until they choose", script)
+        self.assertIn("Video ideas:", (ROOT / "setup-template.md").read_text("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -102,6 +102,7 @@ Copy this block for each brand or channel the user makes videos for.
 - Loudness: <e.g. loudnorm=I=-14:TP=-1:LRA=11>
 - Voice cleaning: <not asked yet / automatic / always light / always strong / never>; polish <on / off>; notes from listening
 - Default platforms: <Reels, TikTok, Shorts, YouTube...>
+- Video ideas: <topics already made or shown, each with its date, so new ideas don't repeat them>
 - Niche and hashtags: <niche and audience, e.g. skincare for over-40s in Spain; core hashtags per platform, and the date they were checked>
 - Other rules: <e.g. no zooms, always soften skin, one export only>
 

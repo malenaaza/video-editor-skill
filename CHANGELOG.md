@@ -2,6 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-26 · version 2.19.0
+
+### New
+- **Five video ideas when you have no topic.** Ask for a script without a topic and the skill suggests five ideas from
+  your niche, each with a working title, the hook it would open with and why it suits your audience, and writes the
+  script for the one you pick. It remembers the ideas in your settings (`Video ideas:`) so it doesn't repeat them,
+  and doesn't claim a topic is trending unless it searched and has the source.
+- **Choices for the hook and the caption.** The animated title now comes in two or three wordings to pick from, each
+  with a line on why it works, and the post caption in the ready-to-post pack comes in two or three tones. If you
+  already gave a wording, or only want one caption, it uses that.
+
 ## 2026-11-25 · version 2.18.0
 
 ### New
