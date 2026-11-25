@@ -2536,6 +2536,13 @@ class SkillTest(unittest.TestCase):
             self.assertIn(option, script)
         self.assertIn("on `no`, don't offer it", script)       # ComfyUI only where the GPU can run it
 
+    def test_38_recent_hashtag_list_is_reused(self):
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        self.assertIn("**Reuse a recent list:**", skill)
+        self.assertIn("14 days ago or less", skill)
+        self.assertIn("In a batch, search once", skill)
+        self.assertIn("look them up", skill)                    # an old list or a new topic still searches
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
