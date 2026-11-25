@@ -106,6 +106,7 @@ The skin mask's colour thresholds were tuned on light-to-medium skin. The skill 
 
 ```
 .claude-plugin/marketplace.json   makes this repository a plugin marketplace (malenaaza)
+docs/es/SKILL.es.md                 Spanish (Spain) translation of SKILL.md, to read; Claude follows the English one
 plugins/video-editor/
   .claude-plugin/plugin.json      the plugin: name, version, description
   skills/video-editor/
