@@ -33,7 +33,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
 - Puppet videos, with no one on camera: one or two illustrated adult characters or a robot (drawn in code, all original, with your brand's colours and the skin tones and hair you choose) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
-- For educational videos: a real web page in a browser window that scrolls to what you mention and highlights it, two to four numbers counting up as you say them, and a before and after with a sweep (a weak prompt and a good one), and a checklist that ticks off "three things" one by one as you say them (with the items you name, or just 1, 2, 3), and a row of steps that light up one by one for a process told in order, a name-and-role bar when you introduce someone, and a quote card that fades in the words you read out
+- For educational videos: a real web page in a browser window that scrolls to what you mention and highlights it, two to four numbers counting up as you say them, and a before and after with a sweep (a weak prompt and a good one), and a checklist that ticks off "three things" one by one as you say them (with the items you name, or just 1, 2, 3), and a row of steps that light up one by one for a process told in order, a name-and-role bar when you introduce someone, a quote card that fades in the words you read out, a countdown for "in three, two, one", and a ring that fills to the percentage you say
 - Tool cards for videos about AI: when you name a tool, its logo and name slide in, tools named in a row stack, and a tool isn't shown again for a while
 - An AI chat window for videos about AI: your prompt types with key clicks, it's sent, the assistant thinks and answers word by word, in your brand's colours, wide or vertical
 - Animated explanations for educational videos: boxes, arrows and a moving dot that show how something works (how an MCP connects Claude to your Gmail, how a request travels), each appearing as you name it, in your brand's colours, wide or vertical, with pops and whooshes timed to the picture
@@ -143,7 +143,7 @@ plugins/video-editor/
       checkexport.py       checks a finished export for black frames, stray frames, sound that ends early or cuts out, and clipped words
       wordfixes.py         keeps your list of word corrections (brands, products, foreign words) and applies it to every video
       asrcompare.py        compares Whisper and Parakeet on a piece of your own voice: speed, words, fillers, timing
-      overlays.py          times the web page, numbers, before-and-after, checklist, steps, lower-third and quote graphics from your captions
+      overlays.py          times the web page, numbers, before-and-after, checklist, steps, lower-third, quote, countdown and ring graphics from your captions
       toolcards.py         finds where each tool is named and times its card, with a pop per logo
       chatwindow.py        turns a described AI chat and the captions into the chat window's timing and key clicks
       explainer.py         turns a described diagram and the captions into an animated explanation's layout and timing
@@ -175,6 +175,8 @@ plugins/video-editor/
       remotion/ProgressSteps.tsx three to six steps lighting up in order, from overlays.py
       remotion/LowerThird.tsx a name and role on a bar sliding in, from overlays.py
       remotion/QuoteCard.tsx  a quotation fading in word by word with its author, from overlays.py
+      remotion/Countdown.tsx  big numbers counting down with a ring, then a word, from overlays.py
+      remotion/ProgressRing.tsx a ring filling to a percentage while the number counts up, from overlays.py
       remotion/ToolCard.tsx   a tool's logo and name sliding in when you name it, from toolcards.py
       remotion/ChatWindow.tsx an AI chat: the prompt types, is sent, the answer appears word by word, from chatwindow.py
       remotion/Explainer.tsx  animated explanation: boxes, arrows and a moving dot, from explainer.py

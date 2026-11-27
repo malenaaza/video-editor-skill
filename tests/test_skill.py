@@ -1309,7 +1309,30 @@ class SkillTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             overlays.quote_props(dict(qt, quote=""), overlays.Timer(qt, caps), 25)
         self.assertEqual((overlays.TEMPLATES["lowerthird"], overlays.TEMPLATES["quote"]), ("LowerThird", "QuoteCard"))
-        for name, props in (("LowerThird", ("name", "role", "top")),
+        # countdown: from N down to 1 at the given pace, then the word; ring: one value out of a maximum
+        cdspec = {"from": 3, "every": 1.0, "go": "¡YA!", "start_say": "Con IA"}
+        body, last, _ = overlays.countdown_props(cdspec, overlays.Timer(cdspec, caps), 25)
+        self.assertEqual([n["text"] for n in body["numbers"]], ["3", "2", "1", "¡YA!"])
+        self.assertEqual(body["numbers"][1]["frame"] - body["numbers"][0]["frame"], 25)
+        self.assertEqual(len(overlays.countdown_props(dict(cdspec, go=""), overlays.Timer(cdspec, caps), 25)[0]["numbers"]), 3)
+        for bad in ({"from": 1}, {"from": 11}, {"every": 5}):
+            with self.assertRaises(ValueError):
+                overlays.countdown_props(dict(cdspec, **bad), overlays.Timer(cdspec, caps), 25)
+        rg = {"value": 80, "suffix": " %", "label": "de acierto", "start_say": "Con IA", "say": "tres horas"}
+        rg_timer = overlays.Timer(rg, caps)
+        body, _, timeline = overlays.ring_props(rg, rg_timer, 25)
+        self.assertEqual(body["frame"], round((when("tres") - rg_timer.start - overlays.LEAD) * 25))
+        self.assertEqual((body["value"], body["max"]), (80.0, 100.0))
+        self.assertIn("80 %", timeline[0][1])
+        for bad in ({"value": 120}, {"max": 0}):
+            with self.assertRaises(ValueError):
+                overlays.ring_props(dict(rg, **bad), overlays.Timer(rg, caps), 25)
+        with self.assertRaises(ValueError):
+            overlays.ring_props({"start_say": "Con IA"}, overlays.Timer(rg, caps), 25)
+        self.assertEqual((overlays.TEMPLATES["countdown"], overlays.TEMPLATES["ring"]), ("Countdown", "ProgressRing"))
+        for name, props in (("Countdown", ("numbers", "text", "frame", "everyFrames")),
+                            ("ProgressRing", ("value", "max", "decimals", "prefix", "suffix", "label", "frame")),
+                            ("LowerThird", ("name", "role", "top")),
                             ("QuoteCard", ("quote", "author", "authorFrame", "wordFrames")),
                             ("ProgressSteps", ("steps", "label", "frame", "title")),
                             ("Checklist", ("items", "text", "frame", "title", "doneText", "doneFrame")),

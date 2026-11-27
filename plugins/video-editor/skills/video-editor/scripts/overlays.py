@@ -1,4 +1,4 @@
-"""Seven more graphics for educational videos (about AI or anything else), timed to what the speaker says:
+"""Nine more graphics for educational videos (about AI or anything else), timed to what the speaker says:
 
   python -I overlays.py browser     page.json  --captions captions.json --size 1920x1080 --fps 25 [style] [--out ...]
   python -I overlays.py stats       stats.json --captions captions.json ...
@@ -7,6 +7,8 @@
   python -I overlays.py steps       steps.json --captions captions.json ...
   python -I overlays.py lowerthird  who.json   --captions captions.json ...
   python -I overlays.py quote       quote.json --captions captions.json ...
+  python -I overlays.py countdown   count.json --captions captions.json ...
+  python -I overlays.py ring        ring.json  --captions captions.json ...
 
 Every spec has "start_say"/"end_say" (phrases; or "start"/"end" in seconds, or "seconds" for the length), and each
 timed part has "say" (it happens 0.2 s before that phrase) or "at" (seconds after the graphic starts). Style options:
@@ -55,7 +57,13 @@ quote: a quotation with its author, the words fading in as the speaker reads the
   {"quote": "La mejor manera de predecir el futuro es crearlo", "author": "Peter Drucker", "start_say": "como dijo",
    "author_say": "Drucker"}   (author_say or author_at: when the author appears; without it, after the quote)
 
-Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx or QuoteCard.tsx and prints the
+countdown: big numbers counting down, each slamming in with a ring that empties, then an optional word.
+  {"from": 3, "every": 1.0, "go": "¡YA!", "start_say": "en tres"}   (every: seconds per number, 1.0 if left out;
+   go: the word after the last number, left out for none; say the numbers' own phrase in start_say so the 3 lands on it)
+ring: one percentage (or any number out of a maximum) as a ring that fills and a number that counts up.
+  {"value": 80, "max": 100, "suffix": " %", "label": "de acierto", "start_say": "...", "say": "un ochenta"}
+
+Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx or ProgressRing.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
 """
 import argparse
@@ -74,7 +82,8 @@ GAP = 0.8
 TAIL = 2.0
 TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "BeforeAfter",
              "checklist": "Checklist", "steps": "ProgressSteps",
-             "lowerthird": "LowerThird", "quote": "QuoteCard"}
+             "lowerthird": "LowerThird", "quote": "QuoteCard",
+             "countdown": "Countdown", "ring": "ProgressRing"}
 
 
 def stamp(seconds):
@@ -321,6 +330,38 @@ def quote_props(spec, timer, fps):
             [(0.4, "the quote starts to appear"), (t, f'author: {spec.get("author", "")}')])
 
 
+def countdown_props(spec, timer, fps):
+    start = int(spec.get("from", 3))
+    if not 2 <= start <= 10:
+        raise ValueError('countdown "from" must be 2 to 10: one number is not a countdown, more than ten drags.')
+    every = float(spec.get("every", 1.0))
+    if not 0.4 <= every <= 2.0:
+        raise ValueError('countdown "every" is the seconds per number: 0.4 to 2.')
+    frame = lambda s: int(round(s * fps))
+    first, step = frame(0.3), frame(every)               # whole frames per number, so the pace never wobbles
+    numbers = [{"text": str(start - i), "frame": first + i * step} for i in range(start)]
+    go = str(spec.get("go", "")).strip()
+    if go:
+        numbers.append({"text": go, "frame": first + start * step})
+    last = 0.3 + (start + (1 if go else 0)) * every
+    timeline = [(n["frame"] / fps, n["text"]) for n in numbers]
+    return {"numbers": numbers, "everyFrames": frame(every)}, last, timeline
+
+
+def ring_props(spec, timer, fps):
+    if "value" not in spec:
+        raise ValueError('ring needs a "value".')
+    value, maximum = float(spec["value"]), float(spec.get("max", 100))
+    if maximum <= 0 or not 0 <= value <= maximum:
+        raise ValueError('ring: "value" must be between 0 and "max" (100 if left out).')
+    t = timer.part({k: v for k, v in (("say", spec.get("say")), ("at", spec.get("at"))) if v is not None}, "the number")
+    decimals = int(spec.get("decimals", 0))
+    final = number_text(value, decimals, spec.get("prefix", ""), spec.get("suffix", ""))
+    return ({"value": value, "max": maximum, "decimals": decimals, "prefix": spec.get("prefix", ""),
+             "suffix": spec.get("suffix", ""), "label": spec.get("label", ""), "frame": int(round(t * fps))},
+            t + 1.6, [(t, f'{final} {spec.get("label", "")}'.strip())])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", choices=sorted(TEMPLATES))
@@ -350,6 +391,10 @@ def main():
             body, last, timeline = browser_props(spec, timer, fps, a.public, width, height)
         elif a.kind == "stats":
             body, last, timeline = stats_props(spec, timer, fps)
+        elif a.kind == "countdown":
+            body, last, timeline = countdown_props(spec, timer, fps)
+        elif a.kind == "ring":
+            body, last, timeline = ring_props(spec, timer, fps)
         elif a.kind == "lowerthird":
             body, last, timeline = lowerthird_props(spec, timer, fps)
         elif a.kind == "quote":

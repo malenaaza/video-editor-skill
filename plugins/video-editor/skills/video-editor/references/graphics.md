@@ -38,6 +38,8 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `ProgressSteps` | Three to six steps of a process in a row (a column on vertical video), each lighting up as it's said, the one before turning into a tick | written by `overlays.py steps` | the stretch it shows |
 | `LowerThird` | A name and a role on a bar sliding in from the left, when someone is introduced | written by `overlays.py lowerthird` | 4 s |
 | `QuoteCard` | A quotation with its author, the words fading in as the speaker reads them | written by `overlays.py quote` | the stretch it shows |
+| `Countdown` | Big numbers counting down (3, 2, 1) with a ring, then an optional word ("¡YA!") | written by `overlays.py countdown` | the numbers plus the word |
+| `ProgressRing` | One number out of a maximum (a percentage) as a ring that fills while the number counts up | written by `overlays.py ring` | the stretch it shows |
 | `Checklist` | Two to five items appearing one by one as they're said, each ticking off ("three things": 1, 2, 3) | written by `overlays.py checklist` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
@@ -129,9 +131,9 @@ named one after another stack into one group, each appearing on its own word.
 3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
 4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
 
-## Web page, numbers, before and after, checklist, steps, lower third, quote
+## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring
 
-Seven graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote>
+Nine graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring>
 <spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
 `--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
 phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
@@ -167,6 +169,13 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
 - **Quote** (`quote`, template `QuoteCard`): when the speaker reads out someone's words. The words fade in one by one over
   the time it takes to read them and the `author` follows at `author_say` (or after the quote). Only a quote the speaker
   or the user gave, word for word, never one remembered from elsewhere.
+- **Countdown** (`countdown`, template `Countdown`): when the speaker counts down ("en tres, dos, uno…"): `from` (2 to 10),
+  `every` (seconds per number, 1 if left out) and an optional `go` word. Put the first number's phrase in
+  `start_say`, so the 3 lands on it; if the speaker counts at their own pace, set `every` to match and check the
+  timing on the video.
+- **Ring** (`ring`, template `ProgressRing`): one number the speaker stresses as a share of something ("un ochenta por
+  ciento"): a ring that fills while the number counts up, `value` out of `max` (100 if left out). For two to four
+  numbers together, use the stat tiles; only numbers the speaker says.
 
 ## Letters behind you
 
