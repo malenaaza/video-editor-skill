@@ -152,7 +152,8 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
   decidido a terminar tres cosas…", "tres errores", "cuatro pasos") and then goes through them. Two to five items,
   each appearing on its own `say` with its number turning into a tick. An item with a `text` shows those words (only
   what the speaker names, never invented labels); one without shows just 1, 2, 3, so it works when the speaker
-  counts without naming. Watch the transcript for these moments and offer it, with the phrases for each item.
+  counts without naming. The `title` ("3 cosas") pops in big with its number in the accent colour; `done` (`true` for
+  "DONE", or the word you want, such as "HECHO") slams a stamp onto the list at `done_say`, or after the last item. Watch the transcript for these moments and offer it, with the phrases for each item.
 
 ## Letters behind you
 

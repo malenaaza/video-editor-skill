@@ -8,7 +8,8 @@ What each update of the video-editor skill brings. Newest first.
 - **A checklist for "three things".** When you announce a number of things and go through them ("si estás decidido a
   terminar tres cosas…"), the skill can show a checklist (`overlays.py checklist`, new template `Checklist`): two to
   five items, each appearing as you say it, with its number turning into a tick. Items show the words you name, or
-  just 1, 2, 3 when you only count. While editing, the skill now looks for these moments in the transcript and
+  just 1, 2, 3 when you only count. The title ("3 cosas") pops in big with its number highlighted, and a
+  "DONE" stamp can slam onto the list when you finish. While editing, the skill now looks for these moments in the transcript and
   offers it.
 
 ## 2026-11-26 · version 2.19.0

@@ -1274,8 +1274,13 @@ class SkillTest(unittest.TestCase):
             overlays.checklist_props(dict(cl, items=cl["items"][:1]), overlays.Timer(cl, caps), 25)
         with self.assertRaises(ValueError):
             overlays.checklist_props(dict(cl, items=cl["items"] * 3), overlays.Timer(cl, caps), 25)
+        self.assertEqual(body["doneText"], "")                                    # no stamp unless asked for
+        stamped = dict(cl, done="HECHO", done_say="el doble")
+        body, _, timeline = overlays.checklist_props(stamped, overlays.Timer(stamped, caps), 25)
+        self.assertEqual((body["doneText"], body["doneFrame"]), ("HECHO", body["items"][1]["frame"]))
+        self.assertEqual(overlays.checklist_props(dict(cl, done=True), overlays.Timer(cl, caps), 25)[0]["doneText"], "DONE")
         self.assertEqual(overlays.TEMPLATES["checklist"], "Checklist")
-        for name, props in (("Checklist", ("items", "text", "frame", "title")),
+        for name, props in (("Checklist", ("items", "text", "frame", "title", "doneText", "doneFrame")),
                             ("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
                             ("BeforeAfter", ("before", "after", "reveal", "revealFrames", "label", "text", "image")),
                             ("BrowserPage", ("image", "url", "pageWidth", "pageHeight", "scroll", "boxes", "to"))):

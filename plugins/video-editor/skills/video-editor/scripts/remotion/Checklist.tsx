@@ -14,6 +14,8 @@ export type ChecklistItem = { text: string; frame: number };
 
 export type ChecklistProps = {
   items: ChecklistItem[];
+  doneText?: string;
+  doneFrame?: number;
   title?: string;
   fontSize?: number;
   accentColor?: string;
@@ -28,7 +30,7 @@ export type ChecklistProps = {
 };
 
 const defaults = {
-  title: "", fontSize: 54, accentColor: "#FF4F8B", font: "sans-serif", fontFile: "", background: "#1B1033",
+  title: "", doneText: "", doneFrame: 0, fontSize: 54, accentColor: "#FF4F8B", font: "sans-serif", fontFile: "", background: "#1B1033",
   background2: "#0E2A47", seconds: 6, fps: 30, width: 1920, height: 1080,
 };
 
@@ -41,16 +43,20 @@ export const Checklist: React.FC<ChecklistProps> = (input) => {
   const vertical = p.height > p.width;
   const leave = interpolate(frame, [durationInFrames - 8, durationInFrames - 1], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const over = p.background === "transparent";
+  const titlePop = spring({ frame, fps, config: { damping: 12, stiffness: 140 } });
+  const stamp = spring({ frame: frame - p.doneFrame, fps, config: { damping: 9, stiffness: 220 } });
   const cardW = Math.min(p.width * (vertical ? 0.86 : 0.55), s * 16);
   return (
     <AbsoluteFill style={{ fontFamily: p.font, alignItems: "center", justifyContent: "center", opacity: leave,
       background: over ? "transparent" : `linear-gradient(135deg, ${p.background} 0%, ${p.background2} 100%)` }}>
-      <div style={{ width: cardW, display: "flex", flexDirection: "column", gap: s * 0.45 }}>
+      <div style={{ position: "relative", width: cardW, display: "flex", flexDirection: "column", gap: s * 0.45 }}>
         {p.title ? (
-          <div style={{ color: "#FFFFFF", fontSize: s * 1.05, fontWeight: 800, textAlign: "center", marginBottom: s * 0.2,
+          <div style={{ color: "#FFFFFF", fontSize: s * 1.9, fontWeight: 900, textAlign: "center", marginBottom: s * 0.3,
+            textTransform: "uppercase", letterSpacing: s * 0.02, lineHeight: 1.05,
             textShadow: over ? "0 4px 16px rgba(0,0,0,0.5)" : "none",
-            opacity: interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" }) }}>
-            {p.title}
+            transform: `scale(${0.6 + 0.4 * titlePop})`, opacity: Math.min(1, titlePop * 1.5) }}>
+            {p.title.split(/(\d+)/).map((part, k) => /^\d+$/.test(part)
+              ? <span key={k} style={{ color: p.accentColor, fontSize: "1.35em" }}>{part}</span> : part)}
           </div>
         ) : null}
         {p.items.map((it, i) => {
@@ -76,6 +82,15 @@ export const Checklist: React.FC<ChecklistProps> = (input) => {
             </div>
           );
         })}
+        {p.doneText && frame >= p.doneFrame ? (
+          <div style={{ position: "absolute", right: -s * 0.6, bottom: -s * 0.5, color: p.accentColor, fontSize: s * 1.5,
+            fontWeight: 900, letterSpacing: s * 0.05, padding: `${s * 0.05}px ${s * 0.35}px`,
+            border: `${s / 9}px solid ${p.accentColor}`, borderRadius: s * 0.2, backgroundColor: "rgba(255,255,255,0.92)",
+            transform: `rotate(-9deg) scale(${2.4 - 1.4 * Math.min(1.08, stamp)})`, opacity: Math.min(1, stamp * 2),
+            boxShadow: "0 10px 30px rgba(0,0,0,0.35)" }}>
+            {p.doneText}
+          </div>
+        ) : null}
       </div>
     </AbsoluteFill>
   );

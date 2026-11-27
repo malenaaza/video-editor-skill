@@ -36,7 +36,10 @@ checklist: two to five items that appear one by one as they're said, each with a
 (the speaker says "three things" and then names or counts them). An item without a "text" is just its number:
 1, 2, 3.
   {"title": "3 cosas", "start_say": "...", "end_say": "...",
-   "items": [{"text": "Planifica", "say": "primero"}, {"text": "Empieza", "say": "segundo"}, {"say": "y tercero"}]}
+   "items": [{"text": "Planifica", "say": "primero"}, {"text": "Empieza", "say": "segundo"}, {"say": "y tercero"}],
+   "done": "HECHO", "done_say": "y listo"}
+  The title is big, with its number in the accent colour. "done" (true for "DONE", or the word you want) slams a
+  stamp onto the checklist at "done_say" (or "done_at"); without a time it comes after the last item.
 
 Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx or Checklist.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
@@ -255,7 +258,16 @@ def checklist_props(spec, timer, fps):
         text = str(item.get("text", "")).strip()
         out.append({"text": text, "frame": frame(t)})
         timeline.append((t, f"{i + 1}. {text}" if text else f"{i + 1}"))
-    return {"title": spec.get("title", ""), "items": out}, max(o["frame"] for o in out) / fps + 0.8, timeline
+    body = {"title": spec.get("title", ""), "items": out, "doneText": "", "doneFrame": 0}
+    last = max(o["frame"] for o in out) / fps + 0.8
+    if spec.get("done"):
+        t = timer.part({k: v for k, v in (("say", spec.get("done_say")), ("at", spec.get("done_at"))) if v is not None},
+                       "the stamp")
+        body["doneText"] = "DONE" if spec["done"] is True else str(spec["done"])
+        body["doneFrame"] = frame(t)
+        timeline.append((t, f'stamp "{body["doneText"]}"'))
+        last = t + 1.0
+    return body, last, timeline
 
 
 def main():
