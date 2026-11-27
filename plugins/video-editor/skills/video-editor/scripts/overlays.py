@@ -1,10 +1,12 @@
-"""Five more graphics for educational videos (about AI or anything else), timed to what the speaker says:
+"""Seven more graphics for educational videos (about AI or anything else), timed to what the speaker says:
 
   python -I overlays.py browser     page.json  --captions captions.json --size 1920x1080 --fps 25 [style] [--out ...]
   python -I overlays.py stats       stats.json --captions captions.json ...
   python -I overlays.py beforeafter ba.json    --captions captions.json ...
   python -I overlays.py checklist   list.json  --captions captions.json ...
   python -I overlays.py steps       steps.json --captions captions.json ...
+  python -I overlays.py lowerthird  who.json   --captions captions.json ...
+  python -I overlays.py quote       quote.json --captions captions.json ...
 
 Every spec has "start_say"/"end_say" (phrases; or "start"/"end" in seconds, or "seconds" for the length), and each
 timed part has "say" (it happens 0.2 s before that phrase) or "at" (seconds after the graphic starts). Style options:
@@ -47,7 +49,13 @@ into a tick), and a line fills between them.
   {"title": "El proceso", "start_say": "...", "end_say": "...",
    "steps": [{"label": "Investiga", "say": "primero"}, {"label": "Diseña", "say": "luego"}, {"label": "Lanza", "say": "por último"}]}
 
-Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx or ProgressSteps.tsx and prints the
+lowerthird: a name and a role on a bar that slides in from the left, for when someone is introduced.
+  {"name": "Ana Pérez", "role": "Directora de IA", "start_say": "mi invitada", "seconds": 4}
+quote: a quotation with its author, the words fading in as the speaker reads them out.
+  {"quote": "La mejor manera de predecir el futuro es crearlo", "author": "Peter Drucker", "start_say": "como dijo",
+   "author_say": "Drucker"}   (author_say or author_at: when the author appears; without it, after the quote)
+
+Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx or QuoteCard.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
 """
 import argparse
@@ -65,7 +73,8 @@ LEAD = 0.2
 GAP = 0.8
 TAIL = 2.0
 TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "BeforeAfter",
-             "checklist": "Checklist", "steps": "ProgressSteps"}
+             "checklist": "Checklist", "steps": "ProgressSteps",
+             "lowerthird": "LowerThird", "quote": "QuoteCard"}
 
 
 def stamp(seconds):
@@ -290,6 +299,28 @@ def steps_props(spec, timer, fps):
     return {"title": spec.get("title", ""), "steps": out}, max(o["frame"] for o in out) / fps + 1.0, timeline
 
 
+def lowerthird_props(spec, timer, fps):
+    name = str(spec.get("name", "")).strip()
+    if not name:
+        raise ValueError('lowerthird needs a "name".')
+    role = str(spec.get("role", "")).strip()
+    return ({"name": name, "role": role, "top": float(spec.get("top", 0))}, 2.0,
+            [(0.0, f"{name}" + (f", {role}" if role else ""))])
+
+
+def quote_props(spec, timer, fps):
+    text = str(spec.get("quote", "")).strip()
+    if not text:
+        raise ValueError('quote needs a "quote".')
+    frame = lambda s: int(round(s * fps))
+    reading = 0.5 + 0.3 * len(text.split())             # the words appear over about this long
+    t = timer.part({k: v for k, v in (("say", spec.get("author_say")), ("at", spec.get("author_at"))) if v is not None},
+                   "the author", first=reading + 0.3)
+    return ({"quote": text, "author": str(spec.get("author", "")).strip(), "authorFrame": frame(t),
+             "wordFrames": frame(reading)}, t + 1.0,
+            [(0.4, "the quote starts to appear"), (t, f'author: {spec.get("author", "")}')])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", choices=sorted(TEMPLATES))
@@ -319,6 +350,10 @@ def main():
             body, last, timeline = browser_props(spec, timer, fps, a.public, width, height)
         elif a.kind == "stats":
             body, last, timeline = stats_props(spec, timer, fps)
+        elif a.kind == "lowerthird":
+            body, last, timeline = lowerthird_props(spec, timer, fps)
+        elif a.kind == "quote":
+            body, last, timeline = quote_props(spec, timer, fps)
         elif a.kind == "steps":
             body, last, timeline = steps_props(spec, timer, fps)
         elif a.kind == "checklist":

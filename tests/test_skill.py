@@ -1292,7 +1292,26 @@ class SkillTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 overlays.steps_props(dict(sp, steps=bad), overlays.Timer(sp, caps), 25)
         self.assertEqual(overlays.TEMPLATES["steps"], "ProgressSteps")
-        for name, props in (("ProgressSteps", ("steps", "label", "frame", "title")),
+        # lower third: a name is required; quote: the author comes on its phrase, after the words
+        lt = {"name": "Ana Pérez", "role": "Directora de IA", "start_say": "Con IA"}
+        body, last, _ = overlays.lowerthird_props(lt, overlays.Timer(lt, caps), 25)
+        self.assertEqual((body["name"], body["role"]), ("Ana Pérez", "Directora de IA"))
+        self.assertGreaterEqual(overlays.Timer(lt, caps).length(lt, last), 3.0)
+        with self.assertRaises(ValueError):
+            overlays.lowerthird_props(dict(lt, name=" "), overlays.Timer(lt, caps), 25)
+        qt = {"quote": "Con IA voy más rápido", "author": "Yo", "start_say": "Con IA", "author_say": "doble"}
+        qt_timer = overlays.Timer(qt, caps)
+        body, _, _ = overlays.quote_props(qt, qt_timer, 25)
+        self.assertEqual(body["authorFrame"], round((when("doble") - qt_timer.start - overlays.LEAD) * 25))
+        self.assertGreater(body["wordFrames"], 0)
+        plain = overlays.quote_props(dict(qt, author_say=None), overlays.Timer(qt, caps), 25)[0]
+        self.assertGreater(plain["authorFrame"], plain["wordFrames"])           # no phrase: after the quote is read
+        with self.assertRaises(ValueError):
+            overlays.quote_props(dict(qt, quote=""), overlays.Timer(qt, caps), 25)
+        self.assertEqual((overlays.TEMPLATES["lowerthird"], overlays.TEMPLATES["quote"]), ("LowerThird", "QuoteCard"))
+        for name, props in (("LowerThird", ("name", "role", "top")),
+                            ("QuoteCard", ("quote", "author", "authorFrame", "wordFrames")),
+                            ("ProgressSteps", ("steps", "label", "frame", "title")),
                             ("Checklist", ("items", "text", "frame", "title", "doneText", "doneFrame")),
                             ("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
                             ("BeforeAfter", ("before", "after", "reveal", "revealFrames", "label", "text", "image")),

@@ -11,7 +11,10 @@ What each update of the video-editor skill brings. Newest first.
   just 1, 2, 3 when you only count. The title ("3 cosas") pops in big with its number highlighted, and a
   "DONE" stamp can slam onto the list when you finish.
 - **Steps for a process told in order** (`overlays.py steps`, new template `ProgressSteps`): three to six steps in a
-  row (a column on vertical video), each lighting up as you say it while the one before turns into a tick. While editing, the skill now looks for these moments in the transcript and
+  row (a column on vertical video), each lighting up as you say it while the one before turns into a tick.
+- **A name bar and a quote card** (`overlays.py lowerthird` and `quote`, new templates `LowerThird` and `QuoteCard`): a
+  name and role on a bar that slides in when you introduce someone, and a quotation whose words fade in as you read
+  it out, with the author after. While editing, the skill now looks for these moments in the transcript and
   offers it.
 
 ## 2026-11-26 · version 2.19.0
