@@ -1280,7 +1280,20 @@ class SkillTest(unittest.TestCase):
         self.assertEqual((body["doneText"], body["doneFrame"]), ("HECHO", body["items"][1]["frame"]))
         self.assertEqual(overlays.checklist_props(dict(cl, done=True), overlays.Timer(cl, caps), 25)[0]["doneText"], "DONE")
         self.assertEqual(overlays.TEMPLATES["checklist"], "Checklist")
-        for name, props in (("Checklist", ("items", "text", "frame", "title", "doneText", "doneFrame")),
+        # steps: 3 to 6, each lighting up on its phrase
+        sp = {"start_say": "Con IA", "steps": [{"label": "Uno", "say": "tres horas"}, {"label": "Dos", "say": "el doble"},
+                                              {"label": "Tres", "say": "Antes"}]}
+        sp_timer = overlays.Timer(sp, caps)
+        body, _, timeline = overlays.steps_props(sp, sp_timer, 25)
+        self.assertEqual(body["steps"][0]["frame"], round((when("tres") - sp_timer.start - overlays.LEAD) * 25))
+        self.assertEqual([s["label"] for s in body["steps"]], ["Uno", "Dos", "Tres"])
+        self.assertTrue(body["steps"][0]["frame"] < body["steps"][1]["frame"] < body["steps"][2]["frame"])
+        for bad in (sp["steps"][:2], sp["steps"] * 3):
+            with self.assertRaises(ValueError):
+                overlays.steps_props(dict(sp, steps=bad), overlays.Timer(sp, caps), 25)
+        self.assertEqual(overlays.TEMPLATES["steps"], "ProgressSteps")
+        for name, props in (("ProgressSteps", ("steps", "label", "frame", "title")),
+                            ("Checklist", ("items", "text", "frame", "title", "doneText", "doneFrame")),
                             ("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
                             ("BeforeAfter", ("before", "after", "reveal", "revealFrames", "label", "text", "image")),
                             ("BrowserPage", ("image", "url", "pageWidth", "pageHeight", "scroll", "boxes", "to"))):

@@ -9,7 +9,9 @@ What each update of the video-editor skill brings. Newest first.
   terminar tres cosas…"), the skill can show a checklist (`overlays.py checklist`, new template `Checklist`): two to
   five items, each appearing as you say it, with its number turning into a tick. Items show the words you name, or
   just 1, 2, 3 when you only count. The title ("3 cosas") pops in big with its number highlighted, and a
-  "DONE" stamp can slam onto the list when you finish. While editing, the skill now looks for these moments in the transcript and
+  "DONE" stamp can slam onto the list when you finish.
+- **Steps for a process told in order** (`overlays.py steps`, new template `ProgressSteps`): three to six steps in a
+  row (a column on vertical video), each lighting up as you say it while the one before turns into a tick. While editing, the skill now looks for these moments in the transcript and
   offers it.
 
 ## 2026-11-26 · version 2.19.0
