@@ -35,6 +35,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `BrowserPage` | A real web page in a browser window, scrolling, with boxes on what's mentioned (see Web page, numbers, before and after below) | written by `overlays.py browser` | the stretch it shows |
 | `StatTiles` | Two to four numbers that belong together, counting up as they're said | written by `overlays.py stats` | the stretch it shows |
 | `BeforeAfter` | A before and an after (images or texts: a weak prompt and a good one), the after sweeping in | written by `overlays.py beforeafter` | the stretch it shows |
+| `Checklist` | Two to five items appearing one by one as they're said, each ticking off ("three things": 1, 2, 3) | written by `overlays.py checklist` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
@@ -125,9 +126,9 @@ named one after another stack into one group, each appearing on its own word.
 3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
 4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
 
-## Web page, numbers, before and after
+## Web page, numbers, before and after, checklist
 
-Three graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter>
+Four graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist>
 <spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
 `--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
 phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
@@ -147,6 +148,11 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
   horas a la semana"), written the Spanish way. Only numbers the speaker says, never one made up or rounded up.
 - **Before and after** (`beforeafter`, template `BeforeAfter`): a weak prompt and a good one, a draft and the AI's
   version, a photo before and after. Each side is a `text` or an `image`; the after sweeps in at `reveal_say`.
+- **Checklist** (`checklist`, template `Checklist`): when the speaker announces a number of things ("si estás
+  decidido a terminar tres cosas…", "tres errores", "cuatro pasos") and then goes through them. Two to five items,
+  each appearing on its own `say` with its number turning into a tick. An item with a `text` shows those words (only
+  what the speaker names, never invented labels); one without shows just 1, 2, 3, so it works when the speaker
+  counts without naming. Watch the transcript for these moments and offer it, with the phrases for each item.
 
 ## Letters behind you
 

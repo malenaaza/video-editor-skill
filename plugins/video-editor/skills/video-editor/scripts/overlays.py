@@ -1,8 +1,9 @@
-"""Three more graphics for educational videos (about AI or anything else), timed to what the speaker says:
+"""Four more graphics for educational videos (about AI or anything else), timed to what the speaker says:
 
   python -I overlays.py browser     page.json  --captions captions.json --size 1920x1080 --fps 25 [style] [--out ...]
   python -I overlays.py stats       stats.json --captions captions.json ...
   python -I overlays.py beforeafter ba.json    --captions captions.json ...
+  python -I overlays.py checklist   list.json  --captions captions.json ...
 
 Every spec has "start_say"/"end_say" (phrases; or "start"/"end" in seconds, or "seconds" for the length), and each
 timed part has "say" (it happens 0.2 s before that phrase) or "at" (seconds after the graphic starts). Style options:
@@ -31,7 +32,13 @@ beforeafter: a before and an after, the after revealed by a sweep as it's said. 
    "before": {"label": "Antes", "text": "Escribe un post"},
    "after": {"label": "Después", "image": "img/after.png"}}
 
-Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx or BeforeAfter.tsx and prints the
+checklist: two to five items that appear one by one as they're said, each with a number that turns into a tick
+(the speaker says "three things" and then names or counts them). An item without a "text" is just its number:
+1, 2, 3.
+  {"title": "3 cosas", "start_say": "...", "end_say": "...",
+   "items": [{"text": "Planifica", "say": "primero"}, {"text": "Empieza", "say": "segundo"}, {"say": "y tercero"}]}
+
+Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx or Checklist.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
 """
 import argparse
@@ -48,7 +55,8 @@ sys.stdout.reconfigure(encoding="utf-8")
 LEAD = 0.2
 GAP = 0.8
 TAIL = 2.0
-TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "BeforeAfter"}
+TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "BeforeAfter",
+             "checklist": "Checklist"}
 
 
 def stamp(seconds):
@@ -236,6 +244,20 @@ def beforeafter_props(spec, timer, fps):
              "revealFrames": int(round(0.6 * fps))}, t + 0.6, [(t, "the after sweeps in")])
 
 
+def checklist_props(spec, timer, fps):
+    items = spec.get("items", [])
+    if not 2 <= len(items) <= 5:
+        raise ValueError("checklist needs 2 to 5 items: one is a title, more than five don't read in time.")
+    frame = lambda s: int(round(s * fps))
+    out, timeline = [], []
+    for i, item in enumerate(items):
+        t = timer.part(item, f"item {i + 1}")
+        text = str(item.get("text", "")).strip()
+        out.append({"text": text, "frame": frame(t)})
+        timeline.append((t, f"{i + 1}. {text}" if text else f"{i + 1}"))
+    return {"title": spec.get("title", ""), "items": out}, max(o["frame"] for o in out) / fps + 0.8, timeline
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", choices=sorted(TEMPLATES))
@@ -265,6 +287,8 @@ def main():
             body, last, timeline = browser_props(spec, timer, fps, a.public, width, height)
         elif a.kind == "stats":
             body, last, timeline = stats_props(spec, timer, fps)
+        elif a.kind == "checklist":
+            body, last, timeline = checklist_props(spec, timer, fps)
         else:
             body, last, timeline = beforeafter_props(spec, timer, fps)
         seconds = timer.length(spec, last)

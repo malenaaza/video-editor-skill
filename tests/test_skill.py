@@ -1262,7 +1262,21 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(body["reveal"], round((when("ahora") - ba_timer.start - overlays.LEAD) * 25))
         with self.assertRaises(ValueError):
             overlays.beforeafter_props(dict(ba, after={}), overlays.Timer(ba, caps), 25)
-        for name, props in (("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
+        # checklist: items appear on their phrases, plain 1-2-3 when no text, 2 to 5 items
+        cl = {"start_say": "Con IA", "items": [{"say": "tres horas"}, {"text": "Ideas", "say": "el doble"}]}
+        cl_timer = overlays.Timer(cl, caps)
+        body, _, timeline = overlays.checklist_props(cl, cl_timer, 25)
+        self.assertEqual(body["items"][0]["frame"], round((when("tres") - cl_timer.start - overlays.LEAD) * 25))
+        self.assertLess(body["items"][0]["frame"], body["items"][1]["frame"])
+        self.assertEqual((body["items"][0]["text"], body["items"][1]["text"]), ("", "Ideas"))
+        self.assertEqual(timeline[0][1], "1")
+        with self.assertRaises(ValueError):
+            overlays.checklist_props(dict(cl, items=cl["items"][:1]), overlays.Timer(cl, caps), 25)
+        with self.assertRaises(ValueError):
+            overlays.checklist_props(dict(cl, items=cl["items"] * 3), overlays.Timer(cl, caps), 25)
+        self.assertEqual(overlays.TEMPLATES["checklist"], "Checklist")
+        for name, props in (("Checklist", ("items", "text", "frame", "title")),
+                            ("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
                             ("BeforeAfter", ("before", "after", "reveal", "revealFrames", "label", "text", "image")),
                             ("BrowserPage", ("image", "url", "pageWidth", "pageHeight", "scroll", "boxes", "to"))):
             tsx = (SCRIPTS / "remotion" / f"{name}.tsx").read_text("utf-8")
