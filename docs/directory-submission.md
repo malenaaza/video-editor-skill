@@ -1,5 +1,12 @@
 # Submitting video-editor to Anthropic's plugin directory
 
+> **Status (2026-11-28): not possible yet.** The portal accepts only Markdown, text, JSON, YAML and image files from
+> organizations that aren't Verified, and this plugin needs its Python scripts, Remotion templates and sound
+> effects. Verified status is requested in the portal (Submissions, Help and appeals, Request verified) and needs a
+> paid plan and a domain you own. The portal also flagged the name as close to an existing listing, and reported
+> "uses a credential from the user's machine" on `plugin.json` without saying which line. Kept here for a future
+> attempt; see `docs/promote.md` for the other ways to share the plugin.
+
 A draft of everything the submission form at https://claude.ai/directory/manage asks for. Copy each part into the
 form. It needs a paid claude.ai plan (Pro, Max or Ultra), and the repository must be public when the listing goes
 live (it already is).
