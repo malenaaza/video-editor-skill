@@ -2704,6 +2704,38 @@ class SkillTest(unittest.TestCase):
         self.assertIn("Don't write a script until they choose", script)
         self.assertIn("Video ideas:", (ROOT / "setup-template.md").read_text("utf-8"))
 
+    def test_91_menu_lists_every_explaining_graphic(self):
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        menu = skill.split("## What I can do", 1)[1].split("\n## ", 1)[0]
+        in_menu = {"BrowserPage": "a web page", "StatTiles": "number tiles", "BeforeAfter": "before and after",
+                   "Checklist": "a checklist", "ProgressSteps": "steps for a process", "LowerThird": "a name bar",
+                   "QuoteCard": "a quote card", "Countdown": "a countdown", "ProgressRing": "filling ring",
+                   "BarChart": "bars for numbers", "KeyPhrase": "a key phrase", "SubscribeReminder": "a subscribe button",
+                   "ChapterTitle": "section titles", "Notifications": "notifications", "PictureInPicture": "picture in picture",
+                   "ToolCard": "tool cards", "ChatWindow": "AI chat window", "Explainer": "animated explanations"}
+        line = next(l for l in skill.splitlines() if "`scripts/overlays.py` with the" in l)
+        templates = set(re.findall(r"`([A-Z]\w+)`", line.split("templates", 1)[0]))
+        templates |= {"ToolCard", "ChatWindow", "Explainer"}
+        for name in templates:                       # a new template in Rule 5 needs a menu entry too
+            self.assertIn(name, in_menu, f"add {name} to the menu in What I can do and to this test")
+            self.assertIn(in_menu[name], menu, name)
+
+    def test_92_spanish_copies_keep_up_with_the_english(self):
+        names = lambda t: set(re.findall(r"[\w/-]+\.py\b", t)) | set(re.findall(r"`([A-Z][a-z]+(?:[A-Z][a-z]+)+)`", t))
+        en = (ROOT / "SKILL.md").read_text("utf-8")
+        es = (REPO / "docs" / "es" / "SKILL.es.md").read_text("utf-8")
+        self.assertEqual(names(en) - names(es), set(), "update docs/es/SKILL.es.md")
+        menu = lambda t, head: re.findall(r"^- \*\*", t.split(head, 1)[1].split("\n## ", 1)[0], re.M)
+        self.assertEqual(len(menu(en, "## What I can do")), len(menu(es, "## Qué puedo hacer")))
+
+        def bullets(path, head):                     # What it does / Qué hace, one item per feature
+            part = path.read_text("utf-8").split(head, 1)[1].split("\n## ", 1)[0]
+            return re.findall(r"^- .*(?:\n  .*)*", part, re.M)
+        en_items, es_items = bullets(REPO / "README.md", "## What it does"), bullets(REPO / "README.es.md", "## Qué hace")
+        self.assertEqual(len(en_items), len(es_items), "README.es.md needs the same features as README.md")
+        for e, s in zip(en_items, es_items):         # Spanish runs longer: a much shorter item missed an addition
+            self.assertGreater(len(s), 0.85 * len(e), f"README.es.md is behind on: {e[:80]}")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

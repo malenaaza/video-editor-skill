@@ -2,6 +2,17 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-28 · version 2.20.1
+
+### Fixed
+- **The menu shows the explaining graphics.** "What can you do?" now has an **Explaining things** line: the checklist,
+  steps, name bar, quote card, countdown, ring, bars, key phrase, subscribe button, section titles, notifications,
+  picture in picture, web page, number tiles, before and after, tool cards, AI chat window and animated
+  explanations. They worked when asked for, but new users never saw them offered. A test now fails when a new
+  graphic is added without its menu entry.
+- **The Spanish README and the Spanish copy of the skill** have the 2.20.0 graphics, and a test now fails when they
+  fall behind the English ones.
+
 ## 2026-11-27 · version 2.20.0
 
 ### New
