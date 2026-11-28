@@ -31,7 +31,7 @@ Un plugin para [Claude Code](https://claude.com/claude-code) que edita en tu pro
 - Un paquete listo para publicar para cada vídeo: texto, hashtags y fotograma de portada, o una portada con fotos de tus productos (eliges el fotograma de portada mientras editas; las imágenes de producto ya recortadas se usan tal cual)
 - Revisa cómo se grabó cada vídeo (Blackmagic Camera, la app Cámara del iPhone, móviles Android, Sony, GoPro, DJI) y te dice una vez qué cambiar para mejorar el material: fotogramas por segundo según las luces de tu país, obturador, 4K, sonido Bluetooth, HDR, cámara frontal
 - Para YouTube: Shorts sacados de tu vídeo horizontal que te siguen como un operador de cámara, grabaciones de pantalla con zooms suaves sobre la acción (y una composición con la pantalla encima de ti para Shorts), capítulos para la descripción y miniaturas con tu cara y unas pocas palabras grandes
-- Vídeos con marionetas, sin nadie a cámara: uno o dos personajes adultos ilustrados o un robot (dibujados con código, todos originales, con los colores de tu marca y los tonos de piel y pelo que elijas) dicen tu guion con una voz gratuita creada en tu ordenador, con castellano de España e inglés británico incluidos, con bocas que coinciden con cada sonido, parpadeo, expresiones, subtítulos con las palabras exactas del guion y una traducción opcional debajo de cada frase para estudiantes de idiomas
+- Vídeos con marionetas (un plugin aparte, `puppet-video`), sin nadie a cámara: uno o dos personajes adultos ilustrados o un robot (dibujados con código, todos originales, con los colores de tu marca y los tonos de piel y pelo que elijas) dicen tu guion con una voz gratuita creada en tu ordenador, con castellano de España e inglés británico incluidos, con bocas que coinciden con cada sonido, parpadeo, expresiones, subtítulos con las palabras exactas del guion y una traducción opcional debajo de cada frase para estudiantes de idiomas
 - Para vídeos educativos: una página web real en una ventana de navegador que se desplaza hasta lo que mencionas y lo resalta, de dos a cuatro cifras que cuentan hacia arriba mientras las dices, y un antes y después con un barrido (un prompt débil y uno bueno), y una lista que marca «tres cosas» una a una mientras las dices (con lo que nombras, o solo 1, 2, 3), una fila de pasos que se iluminan uno a uno para un proceso contado en orden, una barra con nombre y cargo cuando presentas a alguien, una tarjeta de cita que hace aparecer las palabras que lees, una cuenta atrás para «en tres, dos, uno», un anillo que se llena hasta el porcentaje que dices, barras que crecen al comparar cifras, un resaltado tipo rotulador para la frase que recalcas, un botón de suscribirse que se pulsa, títulos de sección en pantalla, notificaciones de mensajes que se apilan mientras las enumeras, y una imagen o un vídeo corto en una ventana en la esquina mientras hablas
 - Tarjetas de herramienta para vídeos sobre IA: cuando nombras una herramienta, entran su logo y su nombre; las herramientas nombradas seguidas se apilan, y una herramienta no se vuelve a mostrar durante un rato
 - Una ventana de chat de IA para vídeos sobre IA: tu prompt se escribe con clics de teclas, se envía, el asistente piensa y responde palabra a palabra, con los colores de tu marca, horizontal o vertical
@@ -64,7 +64,11 @@ La skill es un plugin de Claude Code. En Claude Code, escribe estos dos comandos
 /plugin install video-editor@malenaaza
 ```
 
-El plugin tiene dos skills, y estos comandos instalan las dos: **video-editor** (editar los vídeos que grabas) y **puppet-video** (marionetas animadas que dicen un guion, sin nadie a cámara).
+Eso instala **video-editor**, para editar los vídeos que grabas. Para los **vídeos de marionetas** (personajes animados que dicen un guion, sin nadie a cámara), instala también el segundo plugin; usa el editor de vídeo para los subtítulos y la exportación:
+
+```
+/plugin install puppet-video@malenaaza
+```
 
 Reinicia Claude Code y pide una edición ("edita este vídeo para Reels: ...") o un vídeo con marionetas ("haz un vídeo con marionetas en el que Lola pide un café en inglés"). La primera vez comprueba tu ordenador y te hace unas pocas preguntas de configuración; el primer vídeo con marionetas también instala sus herramientas de voz y de sincronización labial.
 
@@ -79,7 +83,7 @@ Las actualizaciones del plugin llegan por el sistema de plugins de Claude Code. 
 - **Tus ajustes están a salvo.** Viven en `~/.video-editor/my-setup.md`, fuera de la skill, y una actualización nunca los toca. Los ajustes de cada vídeo (`retouch.json`) están en la carpeta de ese vídeo.
 - **Por favor, no edites los archivos de la propia skill.** Las preferencias van en tus ajustes, y Claude las guarda ahí cuando le pides un cambio ("menos desenfoque", "pon siempre mi logo aquí").
 - **¿Quieres tu propia versión de la skill?** Haz una copia del repositorio en GitHub (un "fork") y añade tu copia como marketplace.
-- **Sin el sistema de plugins:** aún puedes copiar la carpeta `plugins/video-editor/skills/video-editor` en `~/.claude/skills/` y decir "actualiza mi skill de video-editor" para actualizarla. Para los vídeos con marionetas, copia también ahí `plugins/video-editor/skills/puppet-video`, al lado (usa los scripts del editor de vídeo). Un clon de desarrollador enlazado ahí se actualiza con `git pull`.
+- **Sin el sistema de plugins:** aún puedes copiar la carpeta `plugins/video-editor/skills/video-editor` en `~/.claude/skills/` y decir "actualiza mi skill de video-editor" para actualizarla. Para los vídeos con marionetas, copia también ahí `plugins/puppet-video/skills/puppet-video`, al lado (usa los scripts del editor de vídeo). Un clon de desarrollador enlazado ahí se actualiza con `git pull`.
 
 ### Qué instala en el primer uso
 

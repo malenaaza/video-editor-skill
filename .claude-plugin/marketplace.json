@@ -1,11 +1,19 @@
 {
   "name": "malenaaza",
   "description": "Video editing for Claude Code by malenaaza: talking-head Reels, TikToks, Shorts and YouTube videos for beauty and product creators, and animated puppet videos from a script.",
-  "owner": { "name": "malenaaza", "url": "https://github.com/malenaaza" },
+  "owner": {
+    "name": "malenaaza",
+    "url": "https://github.com/malenaaza"
+  },
   "plugins": [
     {
       "name": "video-editor",
       "source": "./plugins/video-editor",
+      "category": "media"
+    },
+    {
+      "name": "puppet-video",
+      "source": "./plugins/puppet-video",
       "category": "media"
     }
   ]

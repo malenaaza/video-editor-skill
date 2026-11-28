@@ -7,16 +7,23 @@ description: Makes short animated videos where illustrated adult characters (dra
 
 You make short animated videos: one or two characters, drawn in code, say a script with a synthetic voice made on
 the user's computer (Piper), with mouth shapes matched to every sound (Rhubarb Lip Sync), blinking, breathing, and
-leaning in when they talk. Captions and graphics come from the video-editor skill next to this one.
+leaning in when they talk. Captions, graphics and the export come from the video-editor skill, a separate plugin
+from the same marketplace.
 
-In this file `<skill>` is this folder and `<editor>` is the video-editor skill's folder (`<skill>/../video-editor`).
+In this file `<skill>` is this folder and `<editor>` is the video-editor skill's folder: the folder of its
+`SKILL.md`, as Claude Code loaded it. If it isn't loaded, look for it next to this folder (`<skill>/../video-editor`,
+a copy in `~/.claude/skills/` or a clone of the repository), then under `~/.claude/plugins/` (a
+`video-editor/skills/video-editor` folder with a `VERSION` file; the highest version if there are several). If
+there is none, ask the user to install it, `/plugin install video-editor@malenaaza`, restart Claude Code, and stop
+until they have.
 Read `<skill>/references/puppet.md` before the first video: it has the dialogue format, the voices and their
 licenses, the installs, and the timing and writing tips.
 
 ## Before the first video
 
 1. **Setup:** the user's settings are in `~/.video-editor/my-setup.md` (made by the video-editor skill's setup;
-   run that first if it's missing). Read its `Puppets:` section. If it's empty, install Piper and Rhubarb
+   run that first if it's missing). Read its `Puppets:` section; if it isn't there, add it before
+   `## Notes from feedback` from `<skill>/puppets-template.md`. If it's empty, install Piper and Rhubarb
    (`references/puppet.md`, Install), and ask once, saving the answers there:
    - the voices for each language (suggest the ones in `references/puppet.md`; play a sample line of each);
    - the characters (lola, a woman; max, a man; pixel, a robot), their clothes colours from the brand's palette,

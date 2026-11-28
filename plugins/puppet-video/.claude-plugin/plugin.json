@@ -1,0 +1,23 @@
+{
+  "name": "puppet-video",
+  "displayName": "Puppet Videos",
+  "version": "1.0.0",
+  "description": "Animated puppet videos with no one on camera: one or two illustrated adult characters or a robot, drawn in code, say your script with a free voice made on your computer (Piper), with lip-sync (Rhubarb), blinking and captions, for explainers and language lessons. Needs the video-editor plugin from the same marketplace for captions and export.",
+  "author": {
+    "name": "malenaaza",
+    "email": "malena_aza@hotmail.com",
+    "url": "https://github.com/malenaaza"
+  },
+  "homepage": "https://github.com/malenaaza/video-editor-skill",
+  "repository": "https://github.com/malenaaza/video-editor-skill",
+  "license": "MIT",
+  "keywords": [
+    "video",
+    "animation",
+    "puppet",
+    "lip-sync",
+    "text-to-speech",
+    "language-learning",
+    "explainer"
+  ]
+}

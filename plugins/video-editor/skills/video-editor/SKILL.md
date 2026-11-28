@@ -89,6 +89,8 @@ New users don't know what's possible, so tell them. Show this menu at the end of
 
 End with one line: "Ask for any of these by name, or I'll suggest what fits each video."
 
+**Puppet videos** (animated characters that say a script, with no one on camera) are a separate plugin, `puppet-video`, from the same marketplace. If the user asks for one and that skill isn't available, tell them in one line: `/plugin install puppet-video@malenaaza`, then restart Claude Code.
+
 List only what this file has instructions for. When a new feature is added to this file, add it to the menu in the same change.
 
 **Offer a batch once, at the start.** At the start of the first edit in a session, before the Rule 1 questions, ask in one line unless the request already says how many videos there are: "Is this the only video, or do you have more waiting? I can edit several together, two at a time, and you'd approve each one before the final export." If there are more, read `references/batch.md`. If it's only this one, or they say no, edit one video at a time and don't ask again in this session. If the user later mentions another video, offer it again once.

@@ -20,7 +20,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ROOT = REPO / "plugins" / "video-editor" / "skills" / "video-editor"
 SCRIPTS = ROOT / "scripts"
-PUPPET = REPO / "plugins" / "video-editor" / "skills" / "puppet-video"
+PUPPET = REPO / "plugins" / "puppet-video" / "skills" / "puppet-video"
 FPS = 30
 
 WORDS = [(" Hola", 0.5, 1.0), (" amigas,", 1.0, 1.5),      # first take, removed in cuts.json
@@ -1757,6 +1757,37 @@ class SkillTest(unittest.TestCase):
         version = (ROOT / "VERSION").read_text("utf-8").strip()
         self.assertEqual(manifest["version"], version)                                 # the plugin system sees updates
         self.assertEqual((REPO / "video-editor" / "VERSION").read_text("utf-8").strip(), version)  # old installs too
+
+    def test_95_puppets_are_their_own_plugin(self):
+        market = json.loads((REPO / ".claude-plugin" / "marketplace.json").read_text("utf-8"))
+        sources = {p["name"]: (REPO / p["source"]).resolve() for p in market["plugins"]}
+        self.assertEqual(set(sources), {"video-editor", "puppet-video"})
+        puppet = json.loads((sources["puppet-video"] / ".claude-plugin" / "plugin.json").read_text("utf-8"))
+        self.assertEqual(puppet["name"], "puppet-video")
+        self.assertRegex(puppet["version"], r"^\d+\.\d+\.\d+$")
+        self.assertEqual(sources["puppet-video"] / "skills" / "puppet-video", PUPPET)
+        self.assertTrue((PUPPET / "puppets-template.md").read_text("utf-8").startswith("## Puppets"))
+        # the video editor submitted to the directory makes no synthetic voices: that lives in puppet-video
+        editor = sources["video-editor"]
+        for f in editor.rglob("*"):
+            if f.is_file() and f.suffix in (".md", ".py", ".json", ".tsx", ".ts"):
+                self.assertNotRegex(f.read_text("utf-8", errors="ignore").lower(), r"piper|rhubarb|text-to-speech",
+                                    str(f.relative_to(REPO)))
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        self.assertIn("/plugin install puppet-video@malenaaza", skill)          # asked for a puppet video: say how
+        self.assertIn("/plugin install video-editor@malenaaza", (PUPPET / "SKILL.md").read_text("utf-8"))
+        self.assertNotIn("<skill>/../video-editor`)", (PUPPET / "SKILL.md").read_text("utf-8").split("If it isn't")[0])
+
+    def test_96_listing_icon_fits_the_directory(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("Pillow not installed")
+        icon = REPO / "plugins" / "video-editor" / ".claude-plugin" / "icon.png"
+        with Image.open(icon) as im:
+            self.assertEqual(im.width, im.height)
+            self.assertTrue(512 <= im.width <= 2048)
+        self.assertLess(icon.stat().st_size, 2 * 1024 * 1024)
 
     def test_45_updater_leaves_a_plugin_install_alone(self):
         home = self.dir / "upd-plugin"
