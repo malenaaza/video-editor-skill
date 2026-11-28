@@ -91,6 +91,8 @@ Los usuarios nuevos no saben qué es posible, así que cuéntaselo. Muestra este
 
 Termina con una línea: "Pídeme cualquiera de estas cosas por su nombre, o te sugeriré lo que encaje con cada vídeo."
 
+**Los vídeos de marionetas** (personajes animados que dicen un guion, sin nadie a cámara) son un plugin aparte, `puppet-video`, del mismo marketplace. Si el usuario pide uno y esa skill no está disponible, díselo en una línea: `/plugin install puppet-video@malenaaza`, y que reinicie Claude Code.
+
 Enumera solo aquello para lo que este archivo tiene instrucciones. Cuando se añada una función nueva a este archivo, añádela al menú en el mismo cambio.
 
 **Ofrece un lote una vez, al principio.** Al empezar la primera edición de una sesión, antes de las preguntas de la Regla 1, pregunta en una línea, salvo que la petición ya diga cuántos vídeos hay: "¿Es el único vídeo, o tienes más esperando? Puedo editar varios juntos, de dos en dos, y aprobarías cada uno antes de la exportación final." Si hay más, lee `references/batch.md`. Si es solo este, o dice que no, edita un vídeo cada vez y no vuelvas a preguntar en esta sesión. Si el usuario menciona otro vídeo más tarde, ofrécelo otra vez una sola vez.

@@ -32,7 +32,7 @@ A plugin for [Claude Code](https://claude.com/claude-code) that edits short-form
 - A ready-to-post pack for each video: caption, hashtags and cover frame, or a cover with pictures of your products (you choose the cover frame while you edit; product images already cut out are used as they are)
 - Checks how each video was recorded (Blackmagic Camera, the iPhone Camera app, Android phones, Sony, GoPro, DJI) and tells you once what to change for better footage: frame rate for your country's lights, shutter, 4K, Bluetooth sound, HDR, front camera
 - For YouTube: Shorts cut from your horizontal video that follow you like a camera operator, screen recordings with smooth zooms onto the action (and a screen-above-you layout for Shorts), chapters for the description, and thumbnails with your face and a few big words
-- Puppet videos, with no one on camera: one or two illustrated adult characters or a robot (drawn in code, all original, with your brand's colours and the skin tones and hair you choose) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
+- Puppet videos (a separate plugin, `puppet-video`), with no one on camera: one or two illustrated adult characters or a robot (drawn in code, all original, with your brand's colours and the skin tones and hair you choose) say your script with a free voice made on your computer, Spanish from Spain and British English included, with mouths that match every sound, blinking, expressions, captions in the script's exact words, and an optional translation under each line for language students
 - For educational videos: a real web page in a browser window that scrolls to what you mention and highlights it, two to four numbers counting up as you say them, and a before and after with a sweep (a weak prompt and a good one), and a checklist that ticks off "three things" one by one as you say them (with the items you name, or just 1, 2, 3), and a row of steps that light up one by one for a process told in order, a name-and-role bar when you introduce someone, a quote card that fades in the words you read out, a countdown for "in three, two, one", a ring that fills to the percentage you say, bars that grow as you compare numbers, a marker-style highlight for the phrase you stress, a subscribe button that gets pressed, section titles on screen, message notifications that stack up as you list them, and a picture or short video in a corner window while you talk
 - Tool cards for videos about AI: when you name a tool, its logo and name slide in, tools named in a row stack, and a tool isn't shown again for a while
 - An AI chat window for videos about AI: your prompt types with key clicks, it's sent, the assistant thinks and answers word by word, in your brand's colours, wide or vertical
@@ -65,8 +65,12 @@ The skill is a Claude Code plugin. In Claude Code, type these two commands (or p
 /plugin install video-editor@malenaaza
 ```
 
-The plugin has two skills, and these commands install both: **video-editor** (editing the videos you film) and
-**puppet-video** (animated characters that say a script, with no one on camera).
+That installs **video-editor**, for editing the videos you film. For **puppet videos** (animated characters that say
+a script, with no one on camera), also install the second plugin; it uses the video editor for captions and export:
+
+```
+/plugin install puppet-video@malenaaza
+```
 
 Restart Claude Code, then ask for an edit ("edit this video for Reels: ...") or a puppet video ("make a puppet video
 where Lola orders a coffee in English"). The first time, it checks your computer and asks a few setup questions; the
@@ -83,7 +87,7 @@ Plugin updates come through Claude Code's plugin system. Type `/plugin`, open **
 - **Your settings are safe.** They live in `~/.video-editor/my-setup.md`, outside the skill, and an update never touches them. Each video's own settings (`retouch.json`) are in that video's folder.
 - **Please don't edit the skill's own files.** Preferences go in your settings, and Claude saves them there when you ask for a change ("less blur", "always put my logo here").
 - **Want your own version of the skill?** Make a copy of the repository on GitHub (a "fork") and add your copy as the marketplace instead.
-- **Without the plugin system:** you can still copy the folder `plugins/video-editor/skills/video-editor` into `~/.claude/skills/` and say "update my video-editor skill" to update it. For puppet videos, copy `plugins/video-editor/skills/puppet-video` there too, next to it (it uses the video editor's scripts). A developer's clone linked there is updated with `git pull`.
+- **Without the plugin system:** you can still copy the folder `plugins/video-editor/skills/video-editor` into `~/.claude/skills/` and say "update my video-editor skill" to update it. For puppet videos, copy `plugins/puppet-video/skills/puppet-video` there too, next to it (it uses the video editor's scripts). A developer's clone linked there is updated with `git pull`.
 
 ### What it installs on first use
 
@@ -109,9 +113,12 @@ The skin mask's colour thresholds were tuned on light-to-medium skin. The skill 
 ```
 .claude-plugin/marketplace.json   makes this repository a plugin marketplace (malenaaza)
 README.es.md                      Spanish (Spain) translation of this README (without this file list)
+PRIVACY.md                        what stays on your computer and when the plugins go online
+docs/directory-submission.md      the text for submitting video-editor to Anthropic's plugin directory
 docs/es/SKILL.es.md                 Spanish (Spain) translation of SKILL.md, to read; Claude follows the English one
 plugins/video-editor/
   .claude-plugin/plugin.json      the plugin: name, version, description
+  .claude-plugin/icon.png        the plugin's icon in the directory listing
   skills/video-editor/
     SKILL.md               the instructions Claude follows on every edit
     references/            details Claude reads only when a video needs them: setup, fillers,
@@ -196,7 +203,9 @@ plugins/video-editor/
       cover/face_box.py    finds the face so the products go around it
       voice/clean_voice.py measures background noise, removes it and polishes the voice
       voice/leveljoin.py   joins clips and levels them to a loudness target, for quiet voices with clicks
-  skills/puppet-video/     the second skill: animated puppet videos from a script
+plugins/puppet-video/       the second plugin, puppet-video (needs video-editor)
+  .claude-plugin/plugin.json  its name, version and description
+  skills/puppet-video/     animated puppet videos from a script
     SKILL.md               the steps Claude follows for a puppet video
     references/puppet.md   the dialogue format, the voices and their licenses, installs, writing tips
     scripts/dialogue.py    makes the voice of every turn (Piper) and the mouth shapes (Rhubarb), and the timing

@@ -2,6 +2,19 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-28 · version 2.21.0
+
+### Changed
+- **Puppet videos are now their own plugin.** If you make puppet videos, install it once:
+  `/plugin install puppet-video@malenaaza`, then restart Claude Code. Your puppet settings, voices and characters
+  in `~/.video-editor/` stay as they are. If you ask the video editor for a puppet video without it, it tells you
+  this line. The video editor itself is unchanged; this lets it be submitted to Anthropic's plugin directory, which
+  doesn't list plugins that make synthetic voices.
+
+### New
+- **A privacy page** (`PRIVACY.md`): what stays on your computer and when the plugins go online, and an icon for the
+  directory listing.
+
 ## 2026-11-28 · version 2.20.1
 
 ### Changed
