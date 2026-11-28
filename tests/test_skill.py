@@ -2720,6 +2720,22 @@ class SkillTest(unittest.TestCase):
             self.assertIn(name, in_menu, f"add {name} to the menu in What I can do and to this test")
             self.assertIn(in_menu[name], menu, name)
 
+    def test_93_filler_prompt_for_each_way_of_naming_a_language(self):
+        sys.path.insert(0, str(SCRIPTS))
+        try:
+            import filler_prompts as fp
+        finally:
+            sys.path.remove(str(SCRIPTS))
+        for name in ("es", "ES", "es_ES", "es-MX", "spanish", "Spanish (Spain)", "español"):
+            self.assertEqual(fp.prompt_for(name), fp.PROMPTS["es"], name)
+        self.assertEqual(fp.prompt_for("en_GB"), fp.PROMPTS["en"])
+        for unknown in ("nl", "", None):                       # no prompt for the language: the neutral one
+            self.assertEqual(fp.prompt_for(unknown), fp.DEFAULT)
+        for lang, prompt in fp.PROMPTS.items():                 # each prompt is mostly fillers, in its own words
+            self.assertEqual(len(lang), 2)
+            self.assertGreaterEqual(prompt.count(","), 4, lang)
+            self.assertNotEqual(prompt, fp.PROMPTS["en"] if lang != "en" else "", lang)
+
     def test_92_spanish_copies_keep_up_with_the_english(self):
         names = lambda t: set(re.findall(r"[\w/-]+\.py\b", t)) | set(re.findall(r"`([A-Z][a-z]+(?:[A-Z][a-z]+)+)`", t))
         en = (ROOT / "SKILL.md").read_text("utf-8")

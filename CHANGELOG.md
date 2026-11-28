@@ -12,6 +12,9 @@ What each update of the video-editor skill brings. Newest first.
   graphic is added without its menu entry.
 - **The Spanish README and the Spanish copy of the skill** have the 2.20.0 graphics, and a test now fails when they
   fall behind the English ones.
+- **Fillers are kept in the transcript whatever way the language is written.** The filler prompt (which makes
+  Whisper write "eh", "mmm" down) was only found for a bare code like `es`; with `spanish`, `es_ES` or
+  "Spanish (Spain)" it fell back to the neutral English one, and more fillers slipped through. Now all of those find it.
 
 ## 2026-11-27 · version 2.20.0
 
