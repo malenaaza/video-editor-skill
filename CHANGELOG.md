@@ -17,7 +17,10 @@ What each update of the video-editor skill brings. Newest first.
   it out, with the author after.
 - **A countdown and a progress ring** (`overlays.py countdown` and `ring`, new templates `Countdown` and
   `ProgressRing`): big numbers counting down with a ring that empties, then a word such as "¡YA!", and one percentage
-  as a ring that fills while its number counts up. While editing, the skill now looks for these moments in the transcript and
+  as a ring that fills while its number counts up.
+- **Bars, a key phrase and a subscribe button** (`overlays.py barchart`, `highlight` and `subscribe`, new templates
+  `BarChart`, `KeyPhrase` and `SubscribeReminder`): two to five bars that grow as you say their values, a phrase you
+  stress on a marker sweep, and a subscribe button that slides in, gets pressed and turns into "subscribed". While editing, the skill now looks for these moments in the transcript and
   offers it.
 
 ## 2026-11-26 · version 2.19.0

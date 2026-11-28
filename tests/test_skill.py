@@ -1330,7 +1330,36 @@ class SkillTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             overlays.ring_props({"start_say": "Con IA"}, overlays.Timer(rg, caps), 25)
         self.assertEqual((overlays.TEMPLATES["countdown"], overlays.TEMPLATES["ring"]), ("Countdown", "ProgressRing"))
-        for name, props in (("Countdown", ("numbers", "text", "frame", "everyFrames")),
+        # bar chart: each bar on its phrase, 2 to 5, no negatives, max not below the biggest bar
+        bc = {"start_say": "Con IA", "suffix": " h", "bars": [{"label": "Antes", "value": 10, "say": "tres horas"},
+                                                           {"label": "IA", "value": 3, "say": "doble"}]}
+        bc_timer = overlays.Timer(bc, caps)
+        body, _, timeline = overlays.barchart_props(bc, bc_timer, 25)
+        self.assertEqual(body["bars"][0]["frame"], round((when("tres") - bc_timer.start - overlays.LEAD) * 25))
+        self.assertEqual(body["max"], 10.0)                                       # the biggest value if "max" is left out
+        self.assertEqual(timeline[0][1], "Antes: 10 h")
+        for bad in (dict(bc, bars=bc["bars"][:1]), dict(bc, bars=bc["bars"] * 3), dict(bc, max=5),
+                    dict(bc, bars=[{"label": "x", "value": -1}] * 2), dict(bc, bars=[{"label": "x"}] * 2)):
+            with self.assertRaises(ValueError):
+                overlays.barchart_props(bad, overlays.Timer(bc, caps), 25)
+        # key phrase and subscribe button
+        hl = {"text": "Esto es clave", "start_say": "Con IA", "seconds": 2.5}
+        body, last, _ = overlays.highlight_props(hl, overlays.Timer(hl, caps), 25)
+        self.assertEqual(overlays.Timer(hl, caps).length(hl, last), 2.5)         # the length asked for is kept
+        for bad in ({"text": " "}, {"top": 1.5}):
+            with self.assertRaises(ValueError):
+                overlays.highlight_props(dict(hl, **bad), overlays.Timer(hl, caps), 25)
+        sb = {"sub": "para más vídeos", "done_text": "Suscrito", "start_say": "Con IA"}
+        body, _, timeline = overlays.subscribe_props(sb, overlays.Timer(sb, caps), 25)
+        self.assertEqual((body["text"], body["doneText"]), ("Suscríbete", "Suscrito"))   # a default label
+        self.assertEqual(len(timeline), 2)                                        # the press is in the timeline
+        self.assertEqual(len(overlays.subscribe_props(dict(sb, done_text=""), overlays.Timer(sb, caps), 25)[2]), 1)
+        self.assertEqual((overlays.TEMPLATES["barchart"], overlays.TEMPLATES["highlight"], overlays.TEMPLATES["subscribe"]),
+                         ("BarChart", "KeyPhrase", "SubscribeReminder"))
+        for name, props in (("BarChart", ("bars", "label", "value", "frame", "max", "decimals", "prefix", "suffix")),
+                            ("KeyPhrase", ("text", "top")),
+                            ("SubscribeReminder", ("text", "sub", "doneText", "pressFrame")),
+                            ("Countdown", ("numbers", "text", "frame", "everyFrames")),
                             ("ProgressRing", ("value", "max", "decimals", "prefix", "suffix", "label", "frame")),
                             ("LowerThird", ("name", "role", "top")),
                             ("QuoteCard", ("quote", "author", "authorFrame", "wordFrames")),

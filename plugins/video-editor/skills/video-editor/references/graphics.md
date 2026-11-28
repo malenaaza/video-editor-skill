@@ -40,6 +40,9 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `QuoteCard` | A quotation with its author, the words fading in as the speaker reads them | written by `overlays.py quote` | the stretch it shows |
 | `Countdown` | Big numbers counting down (3, 2, 1) with a ring, then an optional word ("¡YA!") | written by `overlays.py countdown` | the numbers plus the word |
 | `ProgressRing` | One number out of a maximum (a percentage) as a ring that fills while the number counts up | written by `overlays.py ring` | the stretch it shows |
+| `BarChart` | Two to five bars to compare, each growing as its value is said | written by `overlays.py barchart` | the stretch it shows |
+| `KeyPhrase` | A short phrase the speaker stresses, big on a marker sweep | written by `overlays.py highlight` | 2.5 s |
+| `SubscribeReminder` | A subscribe button that slides in, gets pressed and turns into "subscribed" | written by `overlays.py subscribe` | 4 s |
 | `Checklist` | Two to five items appearing one by one as they're said, each ticking off ("three things": 1, 2, 3) | written by `overlays.py checklist` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
@@ -131,9 +134,9 @@ named one after another stack into one group, each appearing on its own word.
 3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
 4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
 
-## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring
+## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring, bars, key phrase, subscribe
 
-Nine graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring>
+Twelve graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring|barchart|highlight|subscribe>
 <spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
 `--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
 phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
@@ -176,6 +179,16 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
 - **Ring** (`ring`, template `ProgressRing`): one number the speaker stresses as a share of something ("un ochenta por
   ciento"): a ring that fills while the number counts up, `value` out of `max` (100 if left out). For two to four
   numbers together, use the stat tiles; only numbers the speaker says.
+- **Bar chart** (`barchart`, template `BarChart`): two to five numbers the speaker compares ("antes diez horas, con IA
+  tres"): each bar grows on its own `say` with its number counting up, in the same unit (`suffix`). `max` is the full
+  length of a bar (the biggest value if left out). For numbers that don't compare, use the stat tiles. Only numbers
+  the speaker says.
+- **Key phrase** (`highlight`, template `KeyPhrase`): a few words the speaker stresses ("esto es clave"): big on a marker
+  sweep, 2.5 s by default (`seconds`), in the middle of the picture (`top` moves it, so it stays off the face and the
+  captions). Use it a few times per video at most, or nothing stands out. Only words the speaker says.
+- **Subscribe** (`subscribe`, template `SubscribeReminder`): where the speaker asks to subscribe: a button that slides in
+  from the left, gets pressed and turns into `done_text` ("Suscrito") with a tick, 4 s by default. Once per video, at
+  the moment it's asked or near the end.
 
 ## Letters behind you
 

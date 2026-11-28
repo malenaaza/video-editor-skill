@@ -1,4 +1,4 @@
-"""Nine more graphics for educational videos (about AI or anything else), timed to what the speaker says:
+"""Twelve more graphics for educational videos (about AI or anything else), timed to what the speaker says:
 
   python -I overlays.py browser     page.json  --captions captions.json --size 1920x1080 --fps 25 [style] [--out ...]
   python -I overlays.py stats       stats.json --captions captions.json ...
@@ -9,6 +9,9 @@
   python -I overlays.py quote       quote.json --captions captions.json ...
   python -I overlays.py countdown   count.json --captions captions.json ...
   python -I overlays.py ring        ring.json  --captions captions.json ...
+  python -I overlays.py barchart    bars.json  --captions captions.json ...
+  python -I overlays.py highlight   phrase.json --captions captions.json ...
+  python -I overlays.py subscribe   sub.json   --captions captions.json ...
 
 Every spec has "start_say"/"end_say" (phrases; or "start"/"end" in seconds, or "seconds" for the length), and each
 timed part has "say" (it happens 0.2 s before that phrase) or "at" (seconds after the graphic starts). Style options:
@@ -63,7 +66,16 @@ countdown: big numbers counting down, each slamming in with a ring that empties,
 ring: one percentage (or any number out of a maximum) as a ring that fills and a number that counts up.
   {"value": 80, "max": 100, "suffix": " %", "label": "de acierto", "start_say": "...", "say": "un ochenta"}
 
-Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx or ProgressRing.tsx and prints the
+barchart: two to five bars to compare, each growing as its value is said, the number counting up on it.
+  {"title": "Tiempo ahorrado", "suffix": " h", "start_say": "...", "end_say": "...",
+   "bars": [{"label": "Antes", "value": 10, "say": "diez horas"}, {"label": "Con IA", "value": 3, "say": "tres horas"}]}
+  ("max" sets the full length of a bar, the biggest value if left out; "decimals", "prefix", "suffix" as for stats)
+highlight: a short phrase the speaker stresses, big on a marker sweep ("esto es clave").
+  {"text": "Esto es clave", "start_say": "esto es clave", "seconds": 2.5, "top": 0.4}   (top: 0 to 1 of the height)
+subscribe: a subscribe button that gets pressed, then turns into "subscribed".
+  {"text": "Suscríbete", "sub": "para más vídeos de IA", "done_text": "Suscrito", "start_say": "suscríbete", "seconds": 4}
+
+Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx, ProgressRing.tsx, BarChart.tsx, KeyPhrase.tsx or SubscribeReminder.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
 """
 import argparse
@@ -83,7 +95,8 @@ TAIL = 2.0
 TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "BeforeAfter",
              "checklist": "Checklist", "steps": "ProgressSteps",
              "lowerthird": "LowerThird", "quote": "QuoteCard",
-             "countdown": "Countdown", "ring": "ProgressRing"}
+             "countdown": "Countdown", "ring": "ProgressRing",
+             "barchart": "BarChart", "highlight": "KeyPhrase", "subscribe": "SubscribeReminder"}
 
 
 def stamp(seconds):
@@ -362,6 +375,50 @@ def ring_props(spec, timer, fps):
             t + 1.6, [(t, f'{final} {spec.get("label", "")}'.strip())])
 
 
+def barchart_props(spec, timer, fps):
+    bars = spec.get("bars", [])
+    if not 2 <= len(bars) <= 5:
+        raise ValueError("barchart needs 2 to 5 bars: one bar is a number (use ring or stats), more than five are hard to read.")
+    frame = lambda s: int(round(s * fps))
+    values = []
+    for i, b in enumerate(bars):
+        if "value" not in b:
+            raise ValueError(f"bar {i + 1} needs a value.")
+        values.append(float(b["value"]))
+        if values[-1] < 0:
+            raise ValueError(f"bar {i + 1}: a negative value can't be drawn as a bar.")
+    maximum = float(spec["max"]) if "max" in spec else max(values)
+    if maximum <= 0 or max(values) > maximum:
+        raise ValueError('barchart: "max" must be above zero and not below the biggest value.')
+    decimals, prefix, suffix = int(spec.get("decimals", 0)), spec.get("prefix", ""), spec.get("suffix", "")
+    out, timeline = [], []
+    for i, b in enumerate(bars):
+        t = timer.part(b, f"bar {i + 1}")
+        out.append({"label": b.get("label", ""), "value": values[i], "frame": frame(t)})
+        timeline.append((t, f'{b.get("label", "")}: {number_text(values[i], decimals, prefix, suffix)}'))
+    body = {"title": spec.get("title", ""), "bars": out, "max": maximum, "decimals": decimals, "prefix": prefix,
+            "suffix": suffix}
+    return body, max(o["frame"] for o in out) / fps + 1.2, timeline
+
+
+def highlight_props(spec, timer, fps):
+    text = str(spec.get("text", "")).strip()
+    if not text:
+        raise ValueError('highlight needs a "text".')
+    top = float(spec.get("top", 0))
+    if not 0 <= top < 1:
+        raise ValueError('highlight "top" is a fraction of the height: 0 (the default place) or between 0 and 1.')
+    return {"text": text, "top": top}, 1.0, [(0.0, f'"{text}"')]
+
+
+def subscribe_props(spec, timer, fps):
+    text = str(spec.get("text", "")).strip() or "Suscríbete"
+    done = str(spec.get("done_text", "")).strip()
+    press = int(round(1.2 * fps))
+    return ({"text": text, "sub": str(spec.get("sub", "")).strip(), "doneText": done, "pressFrame": press},
+            3.0, [(0.0, f"button: {text}")] + ([(1.2, f"pressed: {done}")] if done else []))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", choices=sorted(TEMPLATES))
@@ -391,6 +448,12 @@ def main():
             body, last, timeline = browser_props(spec, timer, fps, a.public, width, height)
         elif a.kind == "stats":
             body, last, timeline = stats_props(spec, timer, fps)
+        elif a.kind == "barchart":
+            body, last, timeline = barchart_props(spec, timer, fps)
+        elif a.kind == "highlight":
+            body, last, timeline = highlight_props(spec, timer, fps)
+        elif a.kind == "subscribe":
+            body, last, timeline = subscribe_props(spec, timer, fps)
         elif a.kind == "countdown":
             body, last, timeline = countdown_props(spec, timer, fps)
         elif a.kind == "ring":
