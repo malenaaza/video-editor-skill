@@ -1,6 +1,35 @@
-# Installing, and the power check
+# First setup, links, installing, updating and the power check
 
 Part of the video-editor skill. `<skill>` is the folder that holds SKILL.md; rule numbers refer to SKILL.md.
+
+## First setup
+
+Run when `~/.video-editor/my-setup.md` doesn't exist (SKILL.md, Rule 0), or again for a new computer or camera.
+
+1. **Detect.** Run `python <skill>/scripts/detect_setup.py`. It needs only Python and FFmpeg. It reports the system, CPU, GPU, GPU memory (and whether the computer could generate video locally: `no`, `limited` or `yes`, saved in `my-setup.md` for any feature that needs a GPU), power, tools, and test-encodes 4K video with every hardware encoder FFmpeg offers (NVIDIA `nvenc`, Intel `qsv`, AMD `amf`, Apple `videotoolbox`), then recommends the fastest one that really works. An encoder that appears in `ffmpeg -encoders` but fails the test (missing driver, no such chip) is never recommended.
+2. **Install what's missing**, with the user's OK. See `references/setup.md`. Then run the script again with `--speech-python <path>` to check whether Whisper can use an NVIDIA GPU.
+3. **Confirm in one short message**, in plain words. For example: "I found an NVIDIA RTX 4060. I'll use it for working renders (`h264_nvenc`) and transcription. The final export always uses `libx264` at top quality, so the result looks the same on any computer. OK?"
+4. **Ask only what can't be detected**, all in one message:
+   - Which cameras or phones do you film with? Do you ever shoot Log (Apple Log, S-Log, V-Log, C-Log...)?
+   - Which languages do you speak in your videos?
+   - Who are the videos for? List each brand or channel (a business, your personal account...).
+   - Where should I keep working files, and where should finished videos go? Get the suggestion first with `python <skill>/scripts/detect_setup.py folder` (it proposes `~/video-work`): "I'll keep working files in `<path>`: big temporary files, never in OneDrive, iCloud, Dropbox or Google Drive. OK, or another folder? And finished videos next to the originals, or in a folder?"
+   - Remove every pause and filler, or keep a natural pace? Speed up a little after cutting?
+   - Which country do they film in (for 50 or 60 Hz lights)? Then, with the first video from each camera or app, run the footage check in `references/cameras.md` and give the settings advice once.
+5. **Create the folders and save** the answers. Check the work folder with `python <skill>/scripts/detect_setup.py folder <path>`; if it says NOT OK, tell the user in one line and use the suggested one. Then create the work folder (and the finished-videos folder, if it isn't "next to the original") yourself. Copy `<skill>/setup-template.md` to `~/.video-editor/my-setup.md` and fill it in. Leave brand colors and fonts as `unknown` until the first video for that brand (Rule 5).
+6. **Show what you can do.** End setup by showing the menu from What I can do in SKILL.md, so a new user knows the options before their first edit.
+
+## Links
+
+When the user gives a link instead of a file (SKILL.md, Rule 2).
+
+**When the user gives a link instead of a file,** download it with `yt-dlp` into the project's work folder at the best available quality:
+
+```
+yt-dlp --no-playlist -f "bv*+ba/b" -o "source.%(ext)s" "<url>"
+```
+
+The download counts as the original: keep it untouched and work on a copy. Only download a whole playlist if the user asks. If the video is private or needs a login, ask before using their browser cookies (`--cookies-from-browser`). Only download videos the user owns or has the right to edit. If a download fails, update yt-dlp and try again, because sites change often.
 
 ## Folders
 
@@ -32,6 +61,10 @@ The first only says whether a newer version exists (the `VERSION` file). The sec
 If `my-setup.md` says `Update check: weekly`, the skill also checks quietly once a week at the start of an edit and mentions a newer version in one line (`update_skill.py --weekly`). It asks permission once. Say "update my skill" to get it.
 
 Never edit the skill's own files to apply a user's preference: those go in `my-setup.md` and in each video's `retouch.json`, which an update never touches.
+
+### The skill installed twice
+
+**The skill installed twice:** this skill is now a plugin. If it runs from Claude's plugin folder (`<skill>` contains `.claude/plugins/`) and `~/.claude/skills/video-editor` also exists as a plain folder (not a link to a Git clone, which is a developer's setup), tell the user once, in one line, that the old copy can make Claude pick either one, and offer to remove it: `python -I <skill>/scripts/update_skill.py --remove-old-copy` (it makes a backup first). Then ask them to restart Claude Code.
 
 ## Installing
 

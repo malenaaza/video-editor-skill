@@ -39,7 +39,7 @@ Este es el resultado final. ¿Qué os parece?
   written prose: if a line is hard to say in one breath, split it.
 - **Markers on their own lines,** in English or Spanish (`[CHAPTER]`/`[CAPÍTULO]`, `[SCREEN]`/`[PANTALLA]`,
   `[GRAPHIC]`/`[GRÁFICO]`, `[CLIP]` (the same in both), `[SHORT "Title"]`/`[/SHORT]`). `>` lines are directions to the speaker, never spoken.
-- **The opening:** the first line is the hook, said within 5 seconds: the promise or the question, not a greeting.
+- **The opening:** the first line is the hook, said within 5 seconds: the promise or the question, not a greeting. After the export, `scripts/hookcheck.py` checks it (SKILL.md, Rule 11): it prints the words said in the first 3 seconds, to judge with the user against this.
   The intro (before the first chapter) stays under 30 seconds.
 - **Chapters:** 3 to 8, each covering one idea, with short titles (under 40 characters) that viewers would search for.
 - **Shorts:** mark 3 to 5 passages, each 30 to 60 seconds when said (about 75 to 150 words in Spanish or English),

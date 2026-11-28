@@ -2,6 +2,29 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-28 · version 2.20.1
+
+### Changed
+- **The instructions Claude reads on every edit are a fifth shorter** (61 KB to 49 KB), so the rules that matter on
+  every video are easier to follow. Detail for steps only some videos need moved, unchanged, to the files Claude
+  reads before that step: first setup, links and the skill installed twice (`setup.md`), logging problems and
+  reports to the author (new `feedback.md`), white balance, black and white and push in (new `look.md`), Shorts,
+  screen recordings, chapters and thumbnails (new `youtube.md`), hashtags (new `posting.md`), and a brand's first
+  zoom and look questions (new `brand-defaults.md`). The Spanish reading copy follows. A test keeps the file under
+  52 KB and every reference file in its table.
+
+### Fixed
+- **The menu shows the explaining graphics.** "What can you do?" now has an **Explaining things** line: the checklist,
+  steps, name bar, quote card, countdown, ring, bars, key phrase, subscribe button, section titles, notifications,
+  picture in picture, web page, number tiles, before and after, tool cards, AI chat window and animated
+  explanations. They worked when asked for, but new users never saw them offered. A test now fails when a new
+  graphic is added without its menu entry.
+- **The Spanish README and the Spanish copy of the skill** have the 2.20.0 graphics, and a test now fails when they
+  fall behind the English ones.
+- **Fillers are kept in the transcript whatever way the language is written.** The filler prompt (which makes
+  Whisper write "eh", "mmm" down) was only found for a bare code like `es`; with `spanish`, `es_ES` or
+  "Spanish (Spain)" it fell back to the neutral English one, and more fillers slipped through. Now all of those find it.
+
 ## 2026-11-27 · version 2.20.0
 
 ### New
