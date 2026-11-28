@@ -35,6 +35,18 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `BrowserPage` | A real web page in a browser window, scrolling, with boxes on what's mentioned (see Web page, numbers, before and after below) | written by `overlays.py browser` | the stretch it shows |
 | `StatTiles` | Two to four numbers that belong together, counting up as they're said | written by `overlays.py stats` | the stretch it shows |
 | `BeforeAfter` | A before and an after (images or texts: a weak prompt and a good one), the after sweeping in | written by `overlays.py beforeafter` | the stretch it shows |
+| `ProgressSteps` | Three to six steps of a process in a row (a column on vertical video), each lighting up as it's said, the one before turning into a tick | written by `overlays.py steps` | the stretch it shows |
+| `LowerThird` | A name and a role on a bar sliding in from the left, when someone is introduced | written by `overlays.py lowerthird` | 4 s |
+| `QuoteCard` | A quotation with its author, the words fading in as the speaker reads them | written by `overlays.py quote` | the stretch it shows |
+| `Countdown` | Big numbers counting down (3, 2, 1) with a ring, then an optional word ("¡YA!") | written by `overlays.py countdown` | the numbers plus the word |
+| `ProgressRing` | One number out of a maximum (a percentage) as a ring that fills while the number counts up | written by `overlays.py ring` | the stretch it shows |
+| `BarChart` | Two to five bars to compare, each growing as its value is said | written by `overlays.py barchart` | the stretch it shows |
+| `KeyPhrase` | A short phrase the speaker stresses, big on a marker sweep | written by `overlays.py highlight` | 2.5 s |
+| `SubscribeReminder` | A subscribe button that slides in, gets pressed and turns into "subscribed" | written by `overlays.py subscribe` | 4 s |
+| `ChapterTitle` | The title of a section on screen, with its number and lines growing out from it | written by `overlays.py chapter` | 3 s |
+| `Notifications` | Message notifications stacking in a corner, each sliding in as it's said | written by `overlays.py notify` | the stretch it shows |
+| `PictureInPicture` | A picture or a short muted video in a framed window in a corner while the speaker keeps talking | written by `overlays.py pip` | the stretch it shows |
+| `Checklist` | Two to five items appearing one by one as they're said, each ticking off ("three things": 1, 2, 3) | written by `overlays.py checklist` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
 Shared style props: `font`, `fontFile`, `fontSize`, `textColor`, `boxColor` (`transparent` for no box), `accentColor`, `seconds`.
@@ -125,9 +137,9 @@ named one after another stack into one group, each appearing on its own word.
 3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
 4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
 
-## Web page, numbers, before and after
+## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring, bars, key phrase, subscribe, chapter title, notifications, picture in picture
 
-Three graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter>
+Fifteen graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring|barchart|highlight|subscribe|chapter|notify|pip>
 <spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
 `--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
 phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
@@ -147,6 +159,55 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
   horas a la semana"), written the Spanish way. Only numbers the speaker says, never one made up or rounded up.
 - **Before and after** (`beforeafter`, template `BeforeAfter`): a weak prompt and a good one, a draft and the AI's
   version, a photo before and after. Each side is a `text` or an `image`; the after sweeps in at `reveal_say`.
+- **Checklist** (`checklist`, template `Checklist`): when the speaker announces a number of things ("si estás
+  decidido a terminar tres cosas…", "tres errores", "cuatro pasos") and then goes through them. Two to five items,
+  each appearing on its own `say` with its number turning into a tick. An item with a `text` shows those words (only
+  what the speaker names, never invented labels); one without shows just 1, 2, 3, so it works when the speaker
+  counts without naming. The `title` ("3 cosas") pops in big with its number in the accent colour; `done` (`true` for
+  "DONE", or the word you want, such as "HECHO") slams a stamp onto the list at `done_say`, or after the last item. Watch the transcript for these moments and offer it, with the phrases for each item.
+- **Steps** (`steps`, template `ProgressSteps`): a process told in order ("primero investigas, luego diseñas, por último
+  lanzas"): three to six steps, each lighting up on its `say` while the one before turns into a tick and a line fills
+  between them. Use it for stages that follow one another; use the checklist for things that are all to be done.
+- **Lower third** (`lowerthird`, template `LowerThird`): when the speaker introduces someone or themselves ("mi invitada,
+  Ana Pérez, directora de IA"): `name` and `role` on a bar from the left, 4 s by default (`seconds`). Only a name and
+  role the speaker or the user gave. It sits at 70 % of the height (64 % on vertical video): `top` moves it so it
+  stays off the captions and the face.
+- **Quote** (`quote`, template `QuoteCard`): when the speaker reads out someone's words. The words fade in one by one over
+  the time it takes to read them and the `author` follows at `author_say` (or after the quote). Only a quote the speaker
+  or the user gave, word for word, never one remembered from elsewhere.
+- **Countdown** (`countdown`, template `Countdown`): when the speaker counts down ("en tres, dos, uno…"): `from` (2 to 10),
+  `every` (seconds per number, 1 if left out) and an optional `go` word. Put the first number's phrase in
+  `start_say`, so the 3 lands on it; if the speaker counts at their own pace, set `every` to match and check the
+  timing on the video.
+- **Ring** (`ring`, template `ProgressRing`): one number the speaker stresses as a share of something ("un ochenta por
+  ciento"): a ring that fills while the number counts up, `value` out of `max` (100 if left out). For two to four
+  numbers together, use the stat tiles; only numbers the speaker says.
+- **Bar chart** (`barchart`, template `BarChart`): two to five numbers the speaker compares ("antes diez horas, con IA
+  tres"): each bar grows on its own `say` with its number counting up, in the same unit (`suffix`). `max` is the full
+  length of a bar (the biggest value if left out). For numbers that don't compare, use the stat tiles. Only numbers
+  the speaker says.
+- **Key phrase** (`highlight`, template `KeyPhrase`): a few words the speaker stresses ("esto es clave"): big on a marker
+  sweep, 2.5 s by default (`seconds`), in the middle of the picture (`top` moves it, so it stays off the face and the
+  captions). Use it a few times per video at most, or nothing stands out. Only words the speaker says.
+- **Subscribe** (`subscribe`, template `SubscribeReminder`): where the speaker asks to subscribe: a button that slides in
+  from the left, gets pressed and turns into `done_text` ("Suscrito") with a tick, 4 s by default. Once per video, at
+  the moment it's asked or near the end.
+- **Chapter title** (`chapter`, template `ChapterTitle`): when the speaker starts a new part of a longer video ("vamos con
+  los ejemplos"): `title`, and optionally `number` and `label` ("Capítulo"), 3 s by default (`seconds`). Use the same
+  titles as `chapters.py` (the YouTube chapters in the description) so the two match; that script only writes the
+  timestamps, so this is what shows them on screen. Short titles read better; it warns above 60 characters.
+- **Notifications** (`notify`, template `Notifications`): when the speaker lists things arriving ("te llega un pedido, una
+  factura, un aviso", an automation reporting back): two to eight toasts in the top right corner (top centre on
+  vertical video), each on its own `say`, the newest on top; four show at once and a fifth pushes the first out. The
+  `app` is shown as its first letter in an accent-coloured tile, never a real logo. Texts the speaker says or the user
+  gave, never invented messages that look like a real person's.
+- **Picture in picture** (`pip`, template `PictureInPicture`): a second picture next to the speaker: a tool's screen, a
+  result, a photo, or a short video (muted, so the speaker stays the only voice; `video_start` is where in it to
+  begin). Copy the file into the Remotion project's `public/pip/` first. `corner` defaults to top right because the
+  captions are low; `size` is its width as a share of the video's (0.32), `ratio` its shape (16/9: the picture is cropped
+  to fill it). Put it where it doesn't cover the face. For a long screen recording with the speaker small in a
+  corner, or the screen above the speaker in a Short, use `screen.py` instead. Only pictures and videos the user owns
+  or may use, and nothing with other people's private details.
 
 ## Letters behind you
 

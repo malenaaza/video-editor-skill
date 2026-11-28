@@ -1,8 +1,20 @@
-"""Three more graphics for educational videos (about AI or anything else), timed to what the speaker says:
+"""Fifteen more graphics for educational videos (about AI or anything else), timed to what the speaker says:
 
   python -I overlays.py browser     page.json  --captions captions.json --size 1920x1080 --fps 25 [style] [--out ...]
   python -I overlays.py stats       stats.json --captions captions.json ...
   python -I overlays.py beforeafter ba.json    --captions captions.json ...
+  python -I overlays.py checklist   list.json  --captions captions.json ...
+  python -I overlays.py steps       steps.json --captions captions.json ...
+  python -I overlays.py lowerthird  who.json   --captions captions.json ...
+  python -I overlays.py quote       quote.json --captions captions.json ...
+  python -I overlays.py countdown   count.json --captions captions.json ...
+  python -I overlays.py ring        ring.json  --captions captions.json ...
+  python -I overlays.py barchart    bars.json  --captions captions.json ...
+  python -I overlays.py highlight   phrase.json --captions captions.json ...
+  python -I overlays.py subscribe   sub.json   --captions captions.json ...
+  python -I overlays.py chapter     chapter.json --captions captions.json ...
+  python -I overlays.py notify      toasts.json --captions captions.json ...
+  python -I overlays.py pip         pip.json    --captions captions.json ...
 
 Every spec has "start_say"/"end_say" (phrases; or "start"/"end" in seconds, or "seconds" for the length), and each
 timed part has "say" (it happens 0.2 s before that phrase) or "at" (seconds after the graphic starts). Style options:
@@ -31,7 +43,59 @@ beforeafter: a before and an after, the after revealed by a sweep as it's said. 
    "before": {"label": "Antes", "text": "Escribe un post"},
    "after": {"label": "Después", "image": "img/after.png"}}
 
-Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx or BeforeAfter.tsx and prints the
+checklist: two to five items that appear one by one as they're said, each with a number that turns into a tick
+(the speaker says "three things" and then names or counts them). An item without a "text" is just its number:
+1, 2, 3.
+  {"title": "3 cosas", "start_say": "...", "end_say": "...",
+   "items": [{"text": "Planifica", "say": "primero"}, {"text": "Empieza", "say": "segundo"}, {"say": "y tercero"}],
+   "done": "HECHO", "done_say": "y listo"}
+  The title is big, with its number in the accent colour. "done" (true for "DONE", or the word you want) slams a
+  stamp onto the checklist at "done_say" (or "done_at"); without a time it comes after the last item.
+
+steps: a row of 3 to 6 steps of a process ("step 1 of 4"). Each step lights up as it's said (the one before turns
+into a tick), and a line fills between them.
+  {"title": "El proceso", "start_say": "...", "end_say": "...",
+   "steps": [{"label": "Investiga", "say": "primero"}, {"label": "Diseña", "say": "luego"}, {"label": "Lanza", "say": "por último"}]}
+
+lowerthird: a name and a role on a bar that slides in from the left, for when someone is introduced.
+  {"name": "Ana Pérez", "role": "Directora de IA", "start_say": "mi invitada", "seconds": 4}
+quote: a quotation with its author, the words fading in as the speaker reads them out.
+  {"quote": "La mejor manera de predecir el futuro es crearlo", "author": "Peter Drucker", "start_say": "como dijo",
+   "author_say": "Drucker"}   (author_say or author_at: when the author appears; without it, after the quote)
+
+countdown: big numbers counting down, each slamming in with a ring that empties, then an optional word.
+  {"from": 3, "every": 1.0, "go": "¡YA!", "start_say": "en tres"}   (every: seconds per number, 1.0 if left out;
+   go: the word after the last number, left out for none; say the numbers' own phrase in start_say so the 3 lands on it)
+ring: one percentage (or any number out of a maximum) as a ring that fills and a number that counts up.
+  {"value": 80, "max": 100, "suffix": " %", "label": "de acierto", "start_say": "...", "say": "un ochenta"}
+
+barchart: two to five bars to compare, each growing as its value is said, the number counting up on it.
+  {"title": "Tiempo ahorrado", "suffix": " h", "start_say": "...", "end_say": "...",
+   "bars": [{"label": "Antes", "value": 10, "say": "diez horas"}, {"label": "Con IA", "value": 3, "say": "tres horas"}]}
+  ("max" sets the full length of a bar, the biggest value if left out; "decimals", "prefix", "suffix" as for stats)
+highlight: a short phrase the speaker stresses, big on a marker sweep ("esto es clave").
+  {"text": "Esto es clave", "start_say": "esto es clave", "seconds": 2.5, "top": 0.4}   (top: 0 to 1 of the height)
+subscribe: a subscribe button that gets pressed, then turns into "subscribed".
+  {"text": "Suscríbete", "sub": "para más vídeos de IA", "done_text": "Suscrito", "start_say": "suscríbete", "seconds": 4}
+
+chapter: the title of a section on screen, with its number and lines that grow out from it.
+  {"number": 2, "label": "Capítulo", "title": "Tres ejemplos reales", "start_say": "vamos con los ejemplos",
+   "seconds": 3}   (label and number are both optional; the titles can be the ones of chapters.json)
+notify: message notifications stacking in a corner, each appearing as it's said (a phone filling with messages, emails
+  arriving, an automation reporting back). Up to four at a time; a fifth pushes the first out.
+  {"start_say": "...", "end_say": "...",
+   "notifications": [{"app": "WhatsApp", "text": "Nuevo pedido de Ana", "say": "un pedido"},
+                     {"app": "Gmail", "text": "Factura recibida", "say": "una factura"}]}
+
+pip: a picture or a short video in a framed window in a corner while the speaker keeps talking (a tool's screen, a
+  photo, a result). A video is muted: the speaker stays the only voice.
+  {"image": "pip/result.png", "corner": "bottom-right", "size": 0.32, "label": "Claude", "start_say": "...",
+   "end_say": "..."}    (or "video": "pip/demo.mp4", with "video_start" seconds into it, 0 if left out)
+  The file is in the Remotion project's public folder. corner: top-left, top-right, bottom-left or bottom-right
+  (default top-right: the captions are low); size: its width as a share of the video's, 0.15 to 0.6 (0.32);
+  ratio: width/height of the window (16/9 if left out; the picture is cropped to fill it).
+
+Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx, ProgressRing.tsx, BarChart.tsx, KeyPhrase.tsx or SubscribeReminder.tsx, ChapterTitle.tsx, Notifications.tsx or PictureInPicture.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
 """
 import argparse
@@ -48,7 +112,13 @@ sys.stdout.reconfigure(encoding="utf-8")
 LEAD = 0.2
 GAP = 0.8
 TAIL = 2.0
-TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "BeforeAfter"}
+TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "BeforeAfter",
+             "checklist": "Checklist", "steps": "ProgressSteps",
+             "lowerthird": "LowerThird", "quote": "QuoteCard",
+             "countdown": "Countdown", "ring": "ProgressRing",
+             "barchart": "BarChart", "highlight": "KeyPhrase", "subscribe": "SubscribeReminder",
+             "chapter": "ChapterTitle", "notify": "Notifications",
+             "pip": "PictureInPicture"}
 
 
 def stamp(seconds):
@@ -236,6 +306,201 @@ def beforeafter_props(spec, timer, fps):
              "revealFrames": int(round(0.6 * fps))}, t + 0.6, [(t, "the after sweeps in")])
 
 
+def checklist_props(spec, timer, fps):
+    items = spec.get("items", [])
+    if not 2 <= len(items) <= 5:
+        raise ValueError("checklist needs 2 to 5 items: one is a title, more than five don't read in time.")
+    frame = lambda s: int(round(s * fps))
+    out, timeline = [], []
+    for i, item in enumerate(items):
+        t = timer.part(item, f"item {i + 1}")
+        text = str(item.get("text", "")).strip()
+        out.append({"text": text, "frame": frame(t)})
+        timeline.append((t, f"{i + 1}. {text}" if text else f"{i + 1}"))
+    body = {"title": spec.get("title", ""), "items": out, "doneText": "", "doneFrame": 0}
+    last = max(o["frame"] for o in out) / fps + 0.8
+    if spec.get("done"):
+        t = timer.part({k: v for k, v in (("say", spec.get("done_say")), ("at", spec.get("done_at"))) if v is not None},
+                       "the stamp")
+        body["doneText"] = "DONE" if spec["done"] is True else str(spec["done"])
+        body["doneFrame"] = frame(t)
+        timeline.append((t, f'stamp "{body["doneText"]}"'))
+        last = t + 1.0
+    return body, last, timeline
+
+
+def steps_props(spec, timer, fps):
+    steps = spec.get("steps", [])
+    if not 3 <= len(steps) <= 6:
+        raise ValueError("steps needs 3 to 6 steps: two is a before and after, more than six don't fit on screen.")
+    frame = lambda s: int(round(s * fps))
+    out, timeline = [], []
+    for i, step in enumerate(steps):
+        t = timer.part(step, f"step {i + 1}")
+        label = str(step.get("label", "")).strip()
+        out.append({"label": label, "frame": frame(t)})
+        timeline.append((t, f"step {i + 1}: {label}" if label else f"step {i + 1}"))
+    return {"title": spec.get("title", ""), "steps": out}, max(o["frame"] for o in out) / fps + 1.0, timeline
+
+
+def lowerthird_props(spec, timer, fps):
+    name = str(spec.get("name", "")).strip()
+    if not name:
+        raise ValueError('lowerthird needs a "name".')
+    role = str(spec.get("role", "")).strip()
+    return ({"name": name, "role": role, "top": float(spec.get("top", 0))}, 2.0,
+            [(0.0, f"{name}" + (f", {role}" if role else ""))])
+
+
+def quote_props(spec, timer, fps):
+    text = str(spec.get("quote", "")).strip()
+    if not text:
+        raise ValueError('quote needs a "quote".')
+    frame = lambda s: int(round(s * fps))
+    reading = 0.5 + 0.3 * len(text.split())             # the words appear over about this long
+    t = timer.part({k: v for k, v in (("say", spec.get("author_say")), ("at", spec.get("author_at"))) if v is not None},
+                   "the author", first=reading + 0.3)
+    return ({"quote": text, "author": str(spec.get("author", "")).strip(), "authorFrame": frame(t),
+             "wordFrames": frame(reading)}, t + 1.0,
+            [(0.4, "the quote starts to appear"), (t, f'author: {spec.get("author", "")}')])
+
+
+def countdown_props(spec, timer, fps):
+    start = int(spec.get("from", 3))
+    if not 2 <= start <= 10:
+        raise ValueError('countdown "from" must be 2 to 10: one number is not a countdown, more than ten drags.')
+    every = float(spec.get("every", 1.0))
+    if not 0.4 <= every <= 2.0:
+        raise ValueError('countdown "every" is the seconds per number: 0.4 to 2.')
+    frame = lambda s: int(round(s * fps))
+    first, step = frame(0.3), frame(every)               # whole frames per number, so the pace never wobbles
+    numbers = [{"text": str(start - i), "frame": first + i * step} for i in range(start)]
+    go = str(spec.get("go", "")).strip()
+    if go:
+        numbers.append({"text": go, "frame": first + start * step})
+    last = 0.3 + (start + (1 if go else 0)) * every
+    timeline = [(n["frame"] / fps, n["text"]) for n in numbers]
+    return {"numbers": numbers, "everyFrames": frame(every)}, last, timeline
+
+
+def ring_props(spec, timer, fps):
+    if "value" not in spec:
+        raise ValueError('ring needs a "value".')
+    value, maximum = float(spec["value"]), float(spec.get("max", 100))
+    if maximum <= 0 or not 0 <= value <= maximum:
+        raise ValueError('ring: "value" must be between 0 and "max" (100 if left out).')
+    t = timer.part({k: v for k, v in (("say", spec.get("say")), ("at", spec.get("at"))) if v is not None}, "the number")
+    decimals = int(spec.get("decimals", 0))
+    final = number_text(value, decimals, spec.get("prefix", ""), spec.get("suffix", ""))
+    return ({"value": value, "max": maximum, "decimals": decimals, "prefix": spec.get("prefix", ""),
+             "suffix": spec.get("suffix", ""), "label": spec.get("label", ""), "frame": int(round(t * fps))},
+            t + 1.6, [(t, f'{final} {spec.get("label", "")}'.strip())])
+
+
+def barchart_props(spec, timer, fps):
+    bars = spec.get("bars", [])
+    if not 2 <= len(bars) <= 5:
+        raise ValueError("barchart needs 2 to 5 bars: one bar is a number (use ring or stats), more than five are hard to read.")
+    frame = lambda s: int(round(s * fps))
+    values = []
+    for i, b in enumerate(bars):
+        if "value" not in b:
+            raise ValueError(f"bar {i + 1} needs a value.")
+        values.append(float(b["value"]))
+        if values[-1] < 0:
+            raise ValueError(f"bar {i + 1}: a negative value can't be drawn as a bar.")
+    maximum = float(spec["max"]) if "max" in spec else max(values)
+    if maximum <= 0 or max(values) > maximum:
+        raise ValueError('barchart: "max" must be above zero and not below the biggest value.')
+    decimals, prefix, suffix = int(spec.get("decimals", 0)), spec.get("prefix", ""), spec.get("suffix", "")
+    out, timeline = [], []
+    for i, b in enumerate(bars):
+        t = timer.part(b, f"bar {i + 1}")
+        out.append({"label": b.get("label", ""), "value": values[i], "frame": frame(t)})
+        timeline.append((t, f'{b.get("label", "")}: {number_text(values[i], decimals, prefix, suffix)}'))
+    body = {"title": spec.get("title", ""), "bars": out, "max": maximum, "decimals": decimals, "prefix": prefix,
+            "suffix": suffix}
+    return body, max(o["frame"] for o in out) / fps + 1.2, timeline
+
+
+def highlight_props(spec, timer, fps):
+    text = str(spec.get("text", "")).strip()
+    if not text:
+        raise ValueError('highlight needs a "text".')
+    top = float(spec.get("top", 0))
+    if not 0 <= top < 1:
+        raise ValueError('highlight "top" is a fraction of the height: 0 (the default place) or between 0 and 1.')
+    return {"text": text, "top": top}, 1.0, [(0.0, f'"{text}"')]
+
+
+def subscribe_props(spec, timer, fps):
+    text = str(spec.get("text", "")).strip() or "Suscríbete"
+    done = str(spec.get("done_text", "")).strip()
+    press = int(round(1.2 * fps))
+    return ({"text": text, "sub": str(spec.get("sub", "")).strip(), "doneText": done, "pressFrame": press},
+            3.0, [(0.0, f"button: {text}")] + ([(1.2, f"pressed: {done}")] if done else []))
+
+
+def chapter_props(spec, timer, fps):
+    title = str(spec.get("title", "")).strip()
+    if not title:
+        raise ValueError('chapter needs a "title".')
+    if len(title) > 60:
+        timer.problems.append(f"The title is {len(title)} characters: it wraps onto several lines; a short one reads better.")
+    number = spec.get("number")
+    label = str(spec.get("label", "")).strip()
+    return ({"title": title, "number": "" if number is None else str(number), "label": label}, 1.0,
+            [(0.0, " ".join(x for x in (label, "" if number is None else str(number), title) if x))])
+
+
+def notify_props(spec, timer, fps):
+    toasts = spec.get("notifications", [])
+    if not 2 <= len(toasts) <= 8:
+        raise ValueError("notify needs 2 to 8 notifications: one is a pop-up, more than eight don't read in time.")
+    frame = lambda s: int(round(s * fps))
+    out, timeline = [], []
+    for i, n in enumerate(toasts):
+        text = str(n.get("text", "")).strip()
+        if not text:
+            raise ValueError(f"notification {i + 1} needs a text.")
+        t = timer.part(n, f"notification {i + 1}")
+        out.append({"app": str(n.get("app", "")).strip(), "text": text, "frame": frame(t)})
+        timeline.append((t, f'{n.get("app", "")}: {text}'.strip(": ")))
+    return {"notifications": out}, max(o["frame"] for o in out) / fps + 1.5, timeline
+
+
+PIP_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
+PIP_FILES = {".png": "image", ".jpg": "image", ".jpeg": "image", ".webp": "image", ".gif": "image",
+             ".mp4": "video", ".mov": "video", ".webm": "video", ".mkv": "video"}
+
+
+def pip_props(spec, timer, fps, public="."):
+    given = [k for k in ("image", "video") if spec.get(k)]
+    if len(given) != 1:
+        raise ValueError('pip needs exactly one of "image" or "video": a file in the Remotion project\'s public folder.')
+    kind = given[0]
+    src = str(spec[kind])
+    expected = PIP_FILES.get(os.path.splitext(src)[1].lower())
+    if expected != kind:
+        raise ValueError(f'"{src}" is not {"an image" if kind == "image" else "a video"}: check the extension.')
+    corner = spec.get("corner", "top-right")
+    if corner not in PIP_CORNERS:
+        raise ValueError(f'pip "corner" is one of {", ".join(PIP_CORNERS)}.')
+    size = float(spec.get("size", 0.32))
+    if not 0.15 <= size <= 0.6:
+        raise ValueError('pip "size" is its width as a share of the video\'s: 0.15 to 0.6.')
+    ratio = float(spec.get("ratio", 16 / 9))
+    if not 0.4 <= ratio <= 3:
+        raise ValueError('pip "ratio" is width divided by height: 0.4 to 3.')
+    problems = []
+    if os.path.isdir(public) and not os.path.exists(os.path.join(public, src)):
+        problems.append(f'{os.path.join(public, src)} not found: copy it into the Remotion project\'s public folder.')
+    timer.problems.extend(problems)
+    return ({"src": src, "kind": kind, "corner": corner, "size": size, "ratio": ratio, "label": str(spec.get("label", "")).strip(),
+             "videoStart": float(spec.get("video_start", 0))}, 1.0,
+            [(0.0, f"{kind} {src} in the {corner} corner")])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", choices=sorted(TEMPLATES))
@@ -265,6 +530,30 @@ def main():
             body, last, timeline = browser_props(spec, timer, fps, a.public, width, height)
         elif a.kind == "stats":
             body, last, timeline = stats_props(spec, timer, fps)
+        elif a.kind == "pip":
+            body, last, timeline = pip_props(spec, timer, fps, a.public)
+        elif a.kind == "chapter":
+            body, last, timeline = chapter_props(spec, timer, fps)
+        elif a.kind == "notify":
+            body, last, timeline = notify_props(spec, timer, fps)
+        elif a.kind == "barchart":
+            body, last, timeline = barchart_props(spec, timer, fps)
+        elif a.kind == "highlight":
+            body, last, timeline = highlight_props(spec, timer, fps)
+        elif a.kind == "subscribe":
+            body, last, timeline = subscribe_props(spec, timer, fps)
+        elif a.kind == "countdown":
+            body, last, timeline = countdown_props(spec, timer, fps)
+        elif a.kind == "ring":
+            body, last, timeline = ring_props(spec, timer, fps)
+        elif a.kind == "lowerthird":
+            body, last, timeline = lowerthird_props(spec, timer, fps)
+        elif a.kind == "quote":
+            body, last, timeline = quote_props(spec, timer, fps)
+        elif a.kind == "steps":
+            body, last, timeline = steps_props(spec, timer, fps)
+        elif a.kind == "checklist":
+            body, last, timeline = checklist_props(spec, timer, fps)
         else:
             body, last, timeline = beforeafter_props(spec, timer, fps)
         seconds = timer.length(spec, last)

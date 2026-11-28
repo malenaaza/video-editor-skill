@@ -2,6 +2,32 @@
 
 What each update of the video-editor skill brings. Newest first.
 
+## 2026-11-27 · version 2.20.0
+
+### New
+- **A checklist for "three things".** When you announce a number of things and go through them ("si estás decidido a
+  terminar tres cosas…"), the skill can show a checklist (`overlays.py checklist`, new template `Checklist`): two to
+  five items, each appearing as you say it, with its number turning into a tick. Items show the words you name, or
+  just 1, 2, 3 when you only count. The title ("3 cosas") pops in big with its number highlighted, and a
+  "DONE" stamp can slam onto the list when you finish.
+- **Steps for a process told in order** (`overlays.py steps`, new template `ProgressSteps`): three to six steps in a
+  row (a column on vertical video), each lighting up as you say it while the one before turns into a tick.
+- **A name bar and a quote card** (`overlays.py lowerthird` and `quote`, new templates `LowerThird` and `QuoteCard`): a
+  name and role on a bar that slides in when you introduce someone, and a quotation whose words fade in as you read
+  it out, with the author after.
+- **A countdown and a progress ring** (`overlays.py countdown` and `ring`, new templates `Countdown` and
+  `ProgressRing`): big numbers counting down with a ring that empties, then a word such as "¡YA!", and one percentage
+  as a ring that fills while its number counts up.
+- **Bars, a key phrase and a subscribe button** (`overlays.py barchart`, `highlight` and `subscribe`, new templates
+  `BarChart`, `KeyPhrase` and `SubscribeReminder`): two to five bars that grow as you say their values, a phrase you
+  stress on a marker sweep, and a subscribe button that slides in, gets pressed and turns into "subscribed".
+- **Section titles and notifications** (`overlays.py chapter` and `notify`, new templates `ChapterTitle` and
+  `Notifications`): the title of each part of a longer video on screen, with its number, and message notifications
+  that stack up in a corner as you list them.
+- **Picture in picture** (`overlays.py pip`, new template `PictureInPicture`): a picture or a short video (muted) in a
+  framed window in a corner while you keep talking, on the phrase you choose. While editing, the skill now looks for these moments in the transcript and
+  offers it.
+
 ## 2026-11-26 · version 2.19.0
 
 ### New

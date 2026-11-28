@@ -1262,7 +1262,149 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(body["reveal"], round((when("ahora") - ba_timer.start - overlays.LEAD) * 25))
         with self.assertRaises(ValueError):
             overlays.beforeafter_props(dict(ba, after={}), overlays.Timer(ba, caps), 25)
-        for name, props in (("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
+        # checklist: items appear on their phrases, plain 1-2-3 when no text, 2 to 5 items
+        cl = {"start_say": "Con IA", "items": [{"say": "tres horas"}, {"text": "Ideas", "say": "el doble"}]}
+        cl_timer = overlays.Timer(cl, caps)
+        body, _, timeline = overlays.checklist_props(cl, cl_timer, 25)
+        self.assertEqual(body["items"][0]["frame"], round((when("tres") - cl_timer.start - overlays.LEAD) * 25))
+        self.assertLess(body["items"][0]["frame"], body["items"][1]["frame"])
+        self.assertEqual((body["items"][0]["text"], body["items"][1]["text"]), ("", "Ideas"))
+        self.assertEqual(timeline[0][1], "1")
+        with self.assertRaises(ValueError):
+            overlays.checklist_props(dict(cl, items=cl["items"][:1]), overlays.Timer(cl, caps), 25)
+        with self.assertRaises(ValueError):
+            overlays.checklist_props(dict(cl, items=cl["items"] * 3), overlays.Timer(cl, caps), 25)
+        self.assertEqual(body["doneText"], "")                                    # no stamp unless asked for
+        stamped = dict(cl, done="HECHO", done_say="el doble")
+        body, _, timeline = overlays.checklist_props(stamped, overlays.Timer(stamped, caps), 25)
+        self.assertEqual((body["doneText"], body["doneFrame"]), ("HECHO", body["items"][1]["frame"]))
+        self.assertEqual(overlays.checklist_props(dict(cl, done=True), overlays.Timer(cl, caps), 25)[0]["doneText"], "DONE")
+        self.assertEqual(overlays.TEMPLATES["checklist"], "Checklist")
+        # steps: 3 to 6, each lighting up on its phrase
+        sp = {"start_say": "Con IA", "steps": [{"label": "Uno", "say": "tres horas"}, {"label": "Dos", "say": "el doble"},
+                                              {"label": "Tres", "say": "Antes"}]}
+        sp_timer = overlays.Timer(sp, caps)
+        body, _, timeline = overlays.steps_props(sp, sp_timer, 25)
+        self.assertEqual(body["steps"][0]["frame"], round((when("tres") - sp_timer.start - overlays.LEAD) * 25))
+        self.assertEqual([s["label"] for s in body["steps"]], ["Uno", "Dos", "Tres"])
+        self.assertTrue(body["steps"][0]["frame"] < body["steps"][1]["frame"] < body["steps"][2]["frame"])
+        for bad in (sp["steps"][:2], sp["steps"] * 3):
+            with self.assertRaises(ValueError):
+                overlays.steps_props(dict(sp, steps=bad), overlays.Timer(sp, caps), 25)
+        self.assertEqual(overlays.TEMPLATES["steps"], "ProgressSteps")
+        # lower third: a name is required; quote: the author comes on its phrase, after the words
+        lt = {"name": "Ana Pérez", "role": "Directora de IA", "start_say": "Con IA"}
+        body, last, _ = overlays.lowerthird_props(lt, overlays.Timer(lt, caps), 25)
+        self.assertEqual((body["name"], body["role"]), ("Ana Pérez", "Directora de IA"))
+        self.assertGreaterEqual(overlays.Timer(lt, caps).length(lt, last), 3.0)
+        with self.assertRaises(ValueError):
+            overlays.lowerthird_props(dict(lt, name=" "), overlays.Timer(lt, caps), 25)
+        qt = {"quote": "Con IA voy más rápido", "author": "Yo", "start_say": "Con IA", "author_say": "doble"}
+        qt_timer = overlays.Timer(qt, caps)
+        body, _, _ = overlays.quote_props(qt, qt_timer, 25)
+        self.assertEqual(body["authorFrame"], round((when("doble") - qt_timer.start - overlays.LEAD) * 25))
+        self.assertGreater(body["wordFrames"], 0)
+        plain = overlays.quote_props(dict(qt, author_say=None), overlays.Timer(qt, caps), 25)[0]
+        self.assertGreater(plain["authorFrame"], plain["wordFrames"])           # no phrase: after the quote is read
+        with self.assertRaises(ValueError):
+            overlays.quote_props(dict(qt, quote=""), overlays.Timer(qt, caps), 25)
+        self.assertEqual((overlays.TEMPLATES["lowerthird"], overlays.TEMPLATES["quote"]), ("LowerThird", "QuoteCard"))
+        # countdown: from N down to 1 at the given pace, then the word; ring: one value out of a maximum
+        cdspec = {"from": 3, "every": 1.0, "go": "¡YA!", "start_say": "Con IA"}
+        body, last, _ = overlays.countdown_props(cdspec, overlays.Timer(cdspec, caps), 25)
+        self.assertEqual([n["text"] for n in body["numbers"]], ["3", "2", "1", "¡YA!"])
+        self.assertEqual(body["numbers"][1]["frame"] - body["numbers"][0]["frame"], 25)
+        self.assertEqual(len(overlays.countdown_props(dict(cdspec, go=""), overlays.Timer(cdspec, caps), 25)[0]["numbers"]), 3)
+        for bad in ({"from": 1}, {"from": 11}, {"every": 5}):
+            with self.assertRaises(ValueError):
+                overlays.countdown_props(dict(cdspec, **bad), overlays.Timer(cdspec, caps), 25)
+        rg = {"value": 80, "suffix": " %", "label": "de acierto", "start_say": "Con IA", "say": "tres horas"}
+        rg_timer = overlays.Timer(rg, caps)
+        body, _, timeline = overlays.ring_props(rg, rg_timer, 25)
+        self.assertEqual(body["frame"], round((when("tres") - rg_timer.start - overlays.LEAD) * 25))
+        self.assertEqual((body["value"], body["max"]), (80.0, 100.0))
+        self.assertIn("80 %", timeline[0][1])
+        for bad in ({"value": 120}, {"max": 0}):
+            with self.assertRaises(ValueError):
+                overlays.ring_props(dict(rg, **bad), overlays.Timer(rg, caps), 25)
+        with self.assertRaises(ValueError):
+            overlays.ring_props({"start_say": "Con IA"}, overlays.Timer(rg, caps), 25)
+        self.assertEqual((overlays.TEMPLATES["countdown"], overlays.TEMPLATES["ring"]), ("Countdown", "ProgressRing"))
+        # bar chart: each bar on its phrase, 2 to 5, no negatives, max not below the biggest bar
+        bc = {"start_say": "Con IA", "suffix": " h", "bars": [{"label": "Antes", "value": 10, "say": "tres horas"},
+                                                           {"label": "IA", "value": 3, "say": "doble"}]}
+        bc_timer = overlays.Timer(bc, caps)
+        body, _, timeline = overlays.barchart_props(bc, bc_timer, 25)
+        self.assertEqual(body["bars"][0]["frame"], round((when("tres") - bc_timer.start - overlays.LEAD) * 25))
+        self.assertEqual(body["max"], 10.0)                                       # the biggest value if "max" is left out
+        self.assertEqual(timeline[0][1], "Antes: 10 h")
+        for bad in (dict(bc, bars=bc["bars"][:1]), dict(bc, bars=bc["bars"] * 3), dict(bc, max=5),
+                    dict(bc, bars=[{"label": "x", "value": -1}] * 2), dict(bc, bars=[{"label": "x"}] * 2)):
+            with self.assertRaises(ValueError):
+                overlays.barchart_props(bad, overlays.Timer(bc, caps), 25)
+        # key phrase and subscribe button
+        hl = {"text": "Esto es clave", "start_say": "Con IA", "seconds": 2.5}
+        body, last, _ = overlays.highlight_props(hl, overlays.Timer(hl, caps), 25)
+        self.assertEqual(overlays.Timer(hl, caps).length(hl, last), 2.5)         # the length asked for is kept
+        for bad in ({"text": " "}, {"top": 1.5}):
+            with self.assertRaises(ValueError):
+                overlays.highlight_props(dict(hl, **bad), overlays.Timer(hl, caps), 25)
+        sb = {"sub": "para más vídeos", "done_text": "Suscrito", "start_say": "Con IA"}
+        body, _, timeline = overlays.subscribe_props(sb, overlays.Timer(sb, caps), 25)
+        self.assertEqual((body["text"], body["doneText"]), ("Suscríbete", "Suscrito"))   # a default label
+        self.assertEqual(len(timeline), 2)                                        # the press is in the timeline
+        self.assertEqual(len(overlays.subscribe_props(dict(sb, done_text=""), overlays.Timer(sb, caps), 25)[2]), 1)
+        self.assertEqual((overlays.TEMPLATES["barchart"], overlays.TEMPLATES["highlight"], overlays.TEMPLATES["subscribe"]),
+                         ("BarChart", "KeyPhrase", "SubscribeReminder"))
+        # chapter title: a title is required, number and label optional; notifications: 2 to 8, each with a text
+        chs = {"number": 2, "label": "Capítulo", "title": "Tres ejemplos", "start_say": "Con IA"}
+        body, _, timeline = overlays.chapter_props(chs, overlays.Timer(chs, caps), 25)
+        self.assertEqual((body["number"], body["label"], body["title"]), ("2", "Capítulo", "Tres ejemplos"))
+        self.assertEqual(timeline[0][1], "Capítulo 2 Tres ejemplos")
+        self.assertEqual(overlays.chapter_props({"title": "Solo título", "start_say": "Con IA"},
+                                                overlays.Timer(chs, caps), 25)[0]["number"], "")
+        long_timer = overlays.Timer(chs, caps)
+        overlays.chapter_props(dict(chs, title="x" * 70), long_timer, 25)
+        self.assertTrue(long_timer.problems)                                      # a very long title is flagged
+        with self.assertRaises(ValueError):
+            overlays.chapter_props(dict(chs, title=" "), overlays.Timer(chs, caps), 25)
+        nt = {"start_say": "Con IA", "notifications": [{"app": "Gmail", "text": "Factura", "say": "tres horas"},
+                                                      {"app": "Slack", "text": "Listo", "say": "doble"}]}
+        nt_timer = overlays.Timer(nt, caps)
+        body, _, timeline = overlays.notify_props(nt, nt_timer, 25)
+        self.assertEqual(body["notifications"][0]["frame"], round((when("tres") - nt_timer.start - overlays.LEAD) * 25))
+        self.assertEqual(timeline[0][1], "Gmail: Factura")
+        for bad in (nt["notifications"][:1], nt["notifications"] * 5, [{"app": "x", "text": " "}] * 2):
+            with self.assertRaises(ValueError):
+                overlays.notify_props(dict(nt, notifications=bad), overlays.Timer(nt, caps), 25)
+        self.assertEqual((overlays.TEMPLATES["chapter"], overlays.TEMPLATES["notify"]), ("ChapterTitle", "Notifications"))
+        # picture in picture: exactly one of image / video, the right extension, a known corner, a sane size
+        pp = {"image": "pip/a.png", "start_say": "Con IA"}
+        body, _, _ = overlays.pip_props(pp, overlays.Timer(pp, caps), 25, public=str(self.dir))
+        self.assertEqual((body["kind"], body["corner"], body["size"]), ("image", "top-right", 0.32))
+        self.assertEqual(overlays.pip_props({"video": "pip/a.MP4", "video_start": 2, "start_say": "Con IA"},
+                                            overlays.Timer(pp, caps), 25)[0]["videoStart"], 2.0)
+        missing = overlays.Timer(pp, caps)
+        overlays.pip_props(pp, missing, 25, public=str(self.dir))
+        self.assertTrue(missing.problems)                                         # the file isn't in the public folder
+        for bad in ({"image": "a.png", "video": "b.mp4"}, {}, {"image": "a.mp4"}, {"video": "a.png"}, dict(pp, corner="middle"),
+                    dict(pp, size=0.9), dict(pp, ratio=10)):
+            with self.assertRaises(ValueError):
+                overlays.pip_props(dict(bad, start_say="Con IA"), overlays.Timer(pp, caps), 25)
+        self.assertEqual(overlays.TEMPLATES["pip"], "PictureInPicture")
+        for name, props in (("PictureInPicture", ("src", "kind", "corner", "size", "ratio", "label", "videoStart")),
+                            ("ChapterTitle", ("title", "number", "label")),
+                            ("Notifications", ("notifications", "app", "text", "frame")),
+                            ("BarChart", ("bars", "label", "value", "frame", "max", "decimals", "prefix", "suffix")),
+                            ("KeyPhrase", ("text", "top")),
+                            ("SubscribeReminder", ("text", "sub", "doneText", "pressFrame")),
+                            ("Countdown", ("numbers", "text", "frame", "everyFrames")),
+                            ("ProgressRing", ("value", "max", "decimals", "prefix", "suffix", "label", "frame")),
+                            ("LowerThird", ("name", "role", "top")),
+                            ("QuoteCard", ("quote", "author", "authorFrame", "wordFrames")),
+                            ("ProgressSteps", ("steps", "label", "frame", "title")),
+                            ("Checklist", ("items", "text", "frame", "title", "doneText", "doneFrame")),
+                            ("StatTiles", ("tiles", "value", "decimals", "prefix", "suffix", "label", "frame")),
                             ("BeforeAfter", ("before", "after", "reveal", "revealFrames", "label", "text", "image")),
                             ("BrowserPage", ("image", "url", "pageWidth", "pageHeight", "scroll", "boxes", "to"))):
             tsx = (SCRIPTS / "remotion" / f"{name}.tsx").read_text("utf-8")
