@@ -1,4 +1,4 @@
-"""Twelve more graphics for educational videos (about AI or anything else), timed to what the speaker says:
+"""Fourteen more graphics for educational videos (about AI or anything else), timed to what the speaker says:
 
   python -I overlays.py browser     page.json  --captions captions.json --size 1920x1080 --fps 25 [style] [--out ...]
   python -I overlays.py stats       stats.json --captions captions.json ...
@@ -12,6 +12,8 @@
   python -I overlays.py barchart    bars.json  --captions captions.json ...
   python -I overlays.py highlight   phrase.json --captions captions.json ...
   python -I overlays.py subscribe   sub.json   --captions captions.json ...
+  python -I overlays.py chapter     chapter.json --captions captions.json ...
+  python -I overlays.py notify      toasts.json --captions captions.json ...
 
 Every spec has "start_say"/"end_say" (phrases; or "start"/"end" in seconds, or "seconds" for the length), and each
 timed part has "say" (it happens 0.2 s before that phrase) or "at" (seconds after the graphic starts). Style options:
@@ -75,7 +77,16 @@ highlight: a short phrase the speaker stresses, big on a marker sweep ("esto es 
 subscribe: a subscribe button that gets pressed, then turns into "subscribed".
   {"text": "Suscríbete", "sub": "para más vídeos de IA", "done_text": "Suscrito", "start_say": "suscríbete", "seconds": 4}
 
-Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx, ProgressRing.tsx, BarChart.tsx, KeyPhrase.tsx or SubscribeReminder.tsx and prints the
+chapter: the title of a section on screen, with its number and lines that grow out from it.
+  {"number": 2, "label": "Capítulo", "title": "Tres ejemplos reales", "start_say": "vamos con los ejemplos",
+   "seconds": 3}   (label and number are both optional; the titles can be the ones of chapters.json)
+notify: message notifications stacking in a corner, each appearing as it's said (a phone filling with messages, emails
+  arriving, an automation reporting back). Up to four at a time; a fifth pushes the first out.
+  {"start_say": "...", "end_say": "...",
+   "notifications": [{"app": "WhatsApp", "text": "Nuevo pedido de Ana", "say": "un pedido"},
+                     {"app": "Gmail", "text": "Factura recibida", "say": "una factura"}]}
+
+Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx, ProgressRing.tsx, BarChart.tsx, KeyPhrase.tsx or SubscribeReminder.tsx, ChapterTitle.tsx or Notifications.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
 """
 import argparse
@@ -96,7 +107,8 @@ TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "Bef
              "checklist": "Checklist", "steps": "ProgressSteps",
              "lowerthird": "LowerThird", "quote": "QuoteCard",
              "countdown": "Countdown", "ring": "ProgressRing",
-             "barchart": "BarChart", "highlight": "KeyPhrase", "subscribe": "SubscribeReminder"}
+             "barchart": "BarChart", "highlight": "KeyPhrase", "subscribe": "SubscribeReminder",
+             "chapter": "ChapterTitle", "notify": "Notifications"}
 
 
 def stamp(seconds):
@@ -419,6 +431,34 @@ def subscribe_props(spec, timer, fps):
             3.0, [(0.0, f"button: {text}")] + ([(1.2, f"pressed: {done}")] if done else []))
 
 
+def chapter_props(spec, timer, fps):
+    title = str(spec.get("title", "")).strip()
+    if not title:
+        raise ValueError('chapter needs a "title".')
+    if len(title) > 60:
+        timer.problems.append(f"The title is {len(title)} characters: it wraps onto several lines; a short one reads better.")
+    number = spec.get("number")
+    label = str(spec.get("label", "")).strip()
+    return ({"title": title, "number": "" if number is None else str(number), "label": label}, 1.0,
+            [(0.0, " ".join(x for x in (label, "" if number is None else str(number), title) if x))])
+
+
+def notify_props(spec, timer, fps):
+    toasts = spec.get("notifications", [])
+    if not 2 <= len(toasts) <= 8:
+        raise ValueError("notify needs 2 to 8 notifications: one is a pop-up, more than eight don't read in time.")
+    frame = lambda s: int(round(s * fps))
+    out, timeline = [], []
+    for i, n in enumerate(toasts):
+        text = str(n.get("text", "")).strip()
+        if not text:
+            raise ValueError(f"notification {i + 1} needs a text.")
+        t = timer.part(n, f"notification {i + 1}")
+        out.append({"app": str(n.get("app", "")).strip(), "text": text, "frame": frame(t)})
+        timeline.append((t, f'{n.get("app", "")}: {text}'.strip(": ")))
+    return {"notifications": out}, max(o["frame"] for o in out) / fps + 1.5, timeline
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", choices=sorted(TEMPLATES))
@@ -448,6 +488,10 @@ def main():
             body, last, timeline = browser_props(spec, timer, fps, a.public, width, height)
         elif a.kind == "stats":
             body, last, timeline = stats_props(spec, timer, fps)
+        elif a.kind == "chapter":
+            body, last, timeline = chapter_props(spec, timer, fps)
+        elif a.kind == "notify":
+            body, last, timeline = notify_props(spec, timer, fps)
         elif a.kind == "barchart":
             body, last, timeline = barchart_props(spec, timer, fps)
         elif a.kind == "highlight":

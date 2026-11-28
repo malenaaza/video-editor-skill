@@ -1356,7 +1356,31 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(len(overlays.subscribe_props(dict(sb, done_text=""), overlays.Timer(sb, caps), 25)[2]), 1)
         self.assertEqual((overlays.TEMPLATES["barchart"], overlays.TEMPLATES["highlight"], overlays.TEMPLATES["subscribe"]),
                          ("BarChart", "KeyPhrase", "SubscribeReminder"))
-        for name, props in (("BarChart", ("bars", "label", "value", "frame", "max", "decimals", "prefix", "suffix")),
+        # chapter title: a title is required, number and label optional; notifications: 2 to 8, each with a text
+        chs = {"number": 2, "label": "Capítulo", "title": "Tres ejemplos", "start_say": "Con IA"}
+        body, _, timeline = overlays.chapter_props(chs, overlays.Timer(chs, caps), 25)
+        self.assertEqual((body["number"], body["label"], body["title"]), ("2", "Capítulo", "Tres ejemplos"))
+        self.assertEqual(timeline[0][1], "Capítulo 2 Tres ejemplos")
+        self.assertEqual(overlays.chapter_props({"title": "Solo título", "start_say": "Con IA"},
+                                                overlays.Timer(chs, caps), 25)[0]["number"], "")
+        long_timer = overlays.Timer(chs, caps)
+        overlays.chapter_props(dict(chs, title="x" * 70), long_timer, 25)
+        self.assertTrue(long_timer.problems)                                      # a very long title is flagged
+        with self.assertRaises(ValueError):
+            overlays.chapter_props(dict(chs, title=" "), overlays.Timer(chs, caps), 25)
+        nt = {"start_say": "Con IA", "notifications": [{"app": "Gmail", "text": "Factura", "say": "tres horas"},
+                                                      {"app": "Slack", "text": "Listo", "say": "doble"}]}
+        nt_timer = overlays.Timer(nt, caps)
+        body, _, timeline = overlays.notify_props(nt, nt_timer, 25)
+        self.assertEqual(body["notifications"][0]["frame"], round((when("tres") - nt_timer.start - overlays.LEAD) * 25))
+        self.assertEqual(timeline[0][1], "Gmail: Factura")
+        for bad in (nt["notifications"][:1], nt["notifications"] * 5, [{"app": "x", "text": " "}] * 2):
+            with self.assertRaises(ValueError):
+                overlays.notify_props(dict(nt, notifications=bad), overlays.Timer(nt, caps), 25)
+        self.assertEqual((overlays.TEMPLATES["chapter"], overlays.TEMPLATES["notify"]), ("ChapterTitle", "Notifications"))
+        for name, props in (("ChapterTitle", ("title", "number", "label")),
+                            ("Notifications", ("notifications", "app", "text", "frame")),
+                            ("BarChart", ("bars", "label", "value", "frame", "max", "decimals", "prefix", "suffix")),
                             ("KeyPhrase", ("text", "top")),
                             ("SubscribeReminder", ("text", "sub", "doneText", "pressFrame")),
                             ("Countdown", ("numbers", "text", "frame", "everyFrames")),

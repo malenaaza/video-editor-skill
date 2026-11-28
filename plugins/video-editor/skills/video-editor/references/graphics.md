@@ -43,6 +43,8 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `BarChart` | Two to five bars to compare, each growing as its value is said | written by `overlays.py barchart` | the stretch it shows |
 | `KeyPhrase` | A short phrase the speaker stresses, big on a marker sweep | written by `overlays.py highlight` | 2.5 s |
 | `SubscribeReminder` | A subscribe button that slides in, gets pressed and turns into "subscribed" | written by `overlays.py subscribe` | 4 s |
+| `ChapterTitle` | The title of a section on screen, with its number and lines growing out from it | written by `overlays.py chapter` | 3 s |
+| `Notifications` | Message notifications stacking in a corner, each sliding in as it's said | written by `overlays.py notify` | the stretch it shows |
 | `Checklist` | Two to five items appearing one by one as they're said, each ticking off ("three things": 1, 2, 3) | written by `overlays.py checklist` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
@@ -134,9 +136,9 @@ named one after another stack into one group, each appearing on its own word.
 3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
 4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
 
-## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring, bars, key phrase, subscribe
+## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring, bars, key phrase, subscribe, chapter title, notifications
 
-Twelve graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring|barchart|highlight|subscribe>
+Fourteen graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring|barchart|highlight|subscribe|chapter|notify>
 <spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
 `--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
 phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
@@ -189,6 +191,15 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
 - **Subscribe** (`subscribe`, template `SubscribeReminder`): where the speaker asks to subscribe: a button that slides in
   from the left, gets pressed and turns into `done_text` ("Suscrito") with a tick, 4 s by default. Once per video, at
   the moment it's asked or near the end.
+- **Chapter title** (`chapter`, template `ChapterTitle`): when the speaker starts a new part of a longer video ("vamos con
+  los ejemplos"): `title`, and optionally `number` and `label` ("Capítulo"), 3 s by default (`seconds`). Use the same
+  titles as `chapters.py` (the YouTube chapters in the description) so the two match; that script only writes the
+  timestamps, so this is what shows them on screen. Short titles read better; it warns above 60 characters.
+- **Notifications** (`notify`, template `Notifications`): when the speaker lists things arriving ("te llega un pedido, una
+  factura, un aviso", an automation reporting back): two to eight toasts in the top right corner (top centre on
+  vertical video), each on its own `say`, the newest on top; four show at once and a fifth pushes the first out. The
+  `app` is shown as its first letter in an accent-coloured tile, never a real logo. Texts the speaker says or the user
+  gave, never invented messages that look like a real person's.
 
 ## Letters behind you
 

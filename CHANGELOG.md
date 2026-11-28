@@ -20,7 +20,10 @@ What each update of the video-editor skill brings. Newest first.
   as a ring that fills while its number counts up.
 - **Bars, a key phrase and a subscribe button** (`overlays.py barchart`, `highlight` and `subscribe`, new templates
   `BarChart`, `KeyPhrase` and `SubscribeReminder`): two to five bars that grow as you say their values, a phrase you
-  stress on a marker sweep, and a subscribe button that slides in, gets pressed and turns into "subscribed". While editing, the skill now looks for these moments in the transcript and
+  stress on a marker sweep, and a subscribe button that slides in, gets pressed and turns into "subscribed".
+- **Section titles and notifications** (`overlays.py chapter` and `notify`, new templates `ChapterTitle` and
+  `Notifications`): the title of each part of a longer video on screen, with its number, and message notifications
+  that stack up in a corner as you list them. While editing, the skill now looks for these moments in the transcript and
   offers it.
 
 ## 2026-11-26 · version 2.19.0
