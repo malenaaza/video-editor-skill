@@ -115,7 +115,10 @@ plugins/video-editor/
   skills/video-editor/
     SKILL.md               the instructions Claude follows on every edit
     references/            details Claude reads only when a video needs them: setup, fillers,
-                           Log footage, sound, retouch and blur, graphics, covers, brand sheet, batches of several videos
+                           Log footage, sound, retouch and blur, graphics, covers, brand sheet, batches of several videos,
+                           scripts, cameras, a brand's look defaults (brand-defaults.md), white balance, black and white
+                           and push in (look.md), Shorts, screen recordings, chapters and thumbnails (youtube.md),
+                           hashtags (posting.md), logging problems and reporting them (feedback.md)
     project-template.md    becomes project.md in each video's folder, so an edit can continue later
     support.json           where reports go: the GitHub page and, if set, an email address
     setup-template.md      becomes ~/.video-editor/my-setup.md on first use (your hardware, brands, choices)

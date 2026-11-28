@@ -2720,6 +2720,22 @@ class SkillTest(unittest.TestCase):
             self.assertIn(name, in_menu, f"add {name} to the menu in What I can do and to this test")
             self.assertIn(in_menu[name], menu, name)
 
+    def test_94_skill_file_stays_lean_and_links_every_reference(self):
+        skill = (ROOT / "SKILL.md").read_text("utf-8")
+        # Claude reads all of SKILL.md on every edit: detail for an optional step belongs in references/
+        self.assertLess(len(skill.encode("utf-8")), 52_000, "move detail for an optional step to references/")
+        table = skill.split("## How this skill is organized", 1)[1].split("### Build order", 1)[0]
+        for ref in sorted((ROOT / "references").glob("*.md")):
+            self.assertIn(f"references/{ref.name}", table, f"add {ref.name} to the table in SKILL.md")
+            first = ref.read_text("utf-8").split("\n## ", 1)[0]
+            self.assertTrue(first.startswith("# "), ref.name)
+        readme = (REPO / "README.md").read_text("utf-8")
+        for name in ("feedback.md", "look.md", "youtube.md", "posting.md", "brand-defaults.md"):
+            self.assertIn(name, readme)
+        feedback = (ROOT / "references" / "feedback.md").read_text("utf-8")
+        for kept in ("Status: open", "report.py", "never include frames"):   # the moved steps came along whole
+            self.assertIn(kept, feedback)
+
     def test_93_filler_prompt_for_each_way_of_naming_a_language(self):
         sys.path.insert(0, str(SCRIPTS))
         try:
