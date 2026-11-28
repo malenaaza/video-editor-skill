@@ -1,4 +1,4 @@
-"""Fourteen more graphics for educational videos (about AI or anything else), timed to what the speaker says:
+"""Fifteen more graphics for educational videos (about AI or anything else), timed to what the speaker says:
 
   python -I overlays.py browser     page.json  --captions captions.json --size 1920x1080 --fps 25 [style] [--out ...]
   python -I overlays.py stats       stats.json --captions captions.json ...
@@ -14,6 +14,7 @@
   python -I overlays.py subscribe   sub.json   --captions captions.json ...
   python -I overlays.py chapter     chapter.json --captions captions.json ...
   python -I overlays.py notify      toasts.json --captions captions.json ...
+  python -I overlays.py pip         pip.json    --captions captions.json ...
 
 Every spec has "start_say"/"end_say" (phrases; or "start"/"end" in seconds, or "seconds" for the length), and each
 timed part has "say" (it happens 0.2 s before that phrase) or "at" (seconds after the graphic starts). Style options:
@@ -86,7 +87,15 @@ notify: message notifications stacking in a corner, each appearing as it's said 
    "notifications": [{"app": "WhatsApp", "text": "Nuevo pedido de Ana", "say": "un pedido"},
                      {"app": "Gmail", "text": "Factura recibida", "say": "una factura"}]}
 
-Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx, ProgressRing.tsx, BarChart.tsx, KeyPhrase.tsx or SubscribeReminder.tsx, ChapterTitle.tsx or Notifications.tsx and prints the
+pip: a picture or a short video in a framed window in a corner while the speaker keeps talking (a tool's screen, a
+  photo, a result). A video is muted: the speaker stays the only voice.
+  {"image": "pip/result.png", "corner": "bottom-right", "size": 0.32, "label": "Claude", "start_say": "...",
+   "end_say": "..."}    (or "video": "pip/demo.mp4", with "video_start" seconds into it, 0 if left out)
+  The file is in the Remotion project's public folder. corner: top-left, top-right, bottom-left or bottom-right
+  (default top-right: the captions are low); size: its width as a share of the video's, 0.15 to 0.6 (0.32);
+  ratio: width/height of the window (16/9 if left out; the picture is cropped to fill it).
+
+Writes <kind>-props.json for scripts/remotion/BrowserPage.tsx, StatTiles.tsx, BeforeAfter.tsx, Checklist.tsx, ProgressSteps.tsx, LowerThird.tsx, QuoteCard.tsx, Countdown.tsx, ProgressRing.tsx, BarChart.tsx, KeyPhrase.tsx or SubscribeReminder.tsx, ChapterTitle.tsx, Notifications.tsx or PictureInPicture.tsx and prints the
 timeline and how to render and place it. These graphics make no sound: nothing on screen would. Standard library only.
 """
 import argparse
@@ -108,7 +117,8 @@ TEMPLATES = {"browser": "BrowserPage", "stats": "StatTiles", "beforeafter": "Bef
              "lowerthird": "LowerThird", "quote": "QuoteCard",
              "countdown": "Countdown", "ring": "ProgressRing",
              "barchart": "BarChart", "highlight": "KeyPhrase", "subscribe": "SubscribeReminder",
-             "chapter": "ChapterTitle", "notify": "Notifications"}
+             "chapter": "ChapterTitle", "notify": "Notifications",
+             "pip": "PictureInPicture"}
 
 
 def stamp(seconds):
@@ -459,6 +469,38 @@ def notify_props(spec, timer, fps):
     return {"notifications": out}, max(o["frame"] for o in out) / fps + 1.5, timeline
 
 
+PIP_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
+PIP_FILES = {".png": "image", ".jpg": "image", ".jpeg": "image", ".webp": "image", ".gif": "image",
+             ".mp4": "video", ".mov": "video", ".webm": "video", ".mkv": "video"}
+
+
+def pip_props(spec, timer, fps, public="."):
+    given = [k for k in ("image", "video") if spec.get(k)]
+    if len(given) != 1:
+        raise ValueError('pip needs exactly one of "image" or "video": a file in the Remotion project\'s public folder.')
+    kind = given[0]
+    src = str(spec[kind])
+    expected = PIP_FILES.get(os.path.splitext(src)[1].lower())
+    if expected != kind:
+        raise ValueError(f'"{src}" is not {"an image" if kind == "image" else "a video"}: check the extension.')
+    corner = spec.get("corner", "top-right")
+    if corner not in PIP_CORNERS:
+        raise ValueError(f'pip "corner" is one of {", ".join(PIP_CORNERS)}.')
+    size = float(spec.get("size", 0.32))
+    if not 0.15 <= size <= 0.6:
+        raise ValueError('pip "size" is its width as a share of the video\'s: 0.15 to 0.6.')
+    ratio = float(spec.get("ratio", 16 / 9))
+    if not 0.4 <= ratio <= 3:
+        raise ValueError('pip "ratio" is width divided by height: 0.4 to 3.')
+    problems = []
+    if os.path.isdir(public) and not os.path.exists(os.path.join(public, src)):
+        problems.append(f'{os.path.join(public, src)} not found: copy it into the Remotion project\'s public folder.')
+    timer.problems.extend(problems)
+    return ({"src": src, "kind": kind, "corner": corner, "size": size, "ratio": ratio, "label": str(spec.get("label", "")).strip(),
+             "videoStart": float(spec.get("video_start", 0))}, 1.0,
+            [(0.0, f"{kind} {src} in the {corner} corner")])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kind", choices=sorted(TEMPLATES))
@@ -488,6 +530,8 @@ def main():
             body, last, timeline = browser_props(spec, timer, fps, a.public, width, height)
         elif a.kind == "stats":
             body, last, timeline = stats_props(spec, timer, fps)
+        elif a.kind == "pip":
+            body, last, timeline = pip_props(spec, timer, fps, a.public)
         elif a.kind == "chapter":
             body, last, timeline = chapter_props(spec, timer, fps)
         elif a.kind == "notify":

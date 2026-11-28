@@ -45,6 +45,7 @@ Use these before writing a new graphic from scratch. Each renders one short tran
 | `SubscribeReminder` | A subscribe button that slides in, gets pressed and turns into "subscribed" | written by `overlays.py subscribe` | 4 s |
 | `ChapterTitle` | The title of a section on screen, with its number and lines growing out from it | written by `overlays.py chapter` | 3 s |
 | `Notifications` | Message notifications stacking in a corner, each sliding in as it's said | written by `overlays.py notify` | the stretch it shows |
+| `PictureInPicture` | A picture or a short muted video in a framed window in a corner while the speaker keeps talking | written by `overlays.py pip` | the stretch it shows |
 | `Checklist` | Two to five items appearing one by one as they're said, each ticking off ("three things": 1, 2, 3) | written by `overlays.py checklist` | the stretch it shows |
 | `ProductPop` | The product's B-roll photo or clip popping in beside the speaker when they name it (see Product pop-in below) | `image` (a cut-out) or `clip` + `clipStart`, `side`, `top`, `size`, optional `name`, `price`, `note` | 2.6 s |
 
@@ -136,9 +137,9 @@ named one after another stack into one group, each appearing on its own word.
 3. **Render each group** (the command it prints, as ProRes 4444) and overlay it from its time. Mix the pops from 0 s.
 4. **Check** a frame of each group on the real video: off the face, above the captions, readable on a phone.
 
-## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring, bars, key phrase, subscribe, chapter title, notifications
+## Web page, numbers, before and after, checklist, steps, lower third, quote, countdown, ring, bars, key phrase, subscribe, chapter title, notifications, picture in picture
 
-Fourteen graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring|barchart|highlight|subscribe|chapter|notify>
+Fifteen graphics for educational videos, all made with `python -I <skill>/scripts/overlays.py <browser|stats|beforeafter|checklist|steps|lowerthird|quote|countdown|ring|barchart|highlight|subscribe|chapter|notify|pip>
 <spec.json> --captions captions.json --size <video size> --fps <video fps>` and the brand's `--accent`, `--font`,
 `--font-file` and background (`--background transparent` lays one over the speaker). Each spec starts and ends on
 phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `say`. The formats are at the top of
@@ -200,6 +201,13 @@ phrases (`start_say`, `end_say`), and each part happens 0.2 s before its own `sa
   vertical video), each on its own `say`, the newest on top; four show at once and a fifth pushes the first out. The
   `app` is shown as its first letter in an accent-coloured tile, never a real logo. Texts the speaker says or the user
   gave, never invented messages that look like a real person's.
+- **Picture in picture** (`pip`, template `PictureInPicture`): a second picture next to the speaker: a tool's screen, a
+  result, a photo, or a short video (muted, so the speaker stays the only voice; `video_start` is where in it to
+  begin). Copy the file into the Remotion project's `public/pip/` first. `corner` defaults to top right because the
+  captions are low; `size` is its width as a share of the video's (0.32), `ratio` its shape (16/9: the picture is cropped
+  to fill it). Put it where it doesn't cover the face. For a long screen recording with the speaker small in a
+  corner, or the screen above the speaker in a Short, use `screen.py` instead. Only pictures and videos the user owns
+  or may use, and nothing with other people's private details.
 
 ## Letters behind you
 

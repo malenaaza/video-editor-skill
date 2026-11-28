@@ -1378,7 +1378,22 @@ class SkillTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 overlays.notify_props(dict(nt, notifications=bad), overlays.Timer(nt, caps), 25)
         self.assertEqual((overlays.TEMPLATES["chapter"], overlays.TEMPLATES["notify"]), ("ChapterTitle", "Notifications"))
-        for name, props in (("ChapterTitle", ("title", "number", "label")),
+        # picture in picture: exactly one of image / video, the right extension, a known corner, a sane size
+        pp = {"image": "pip/a.png", "start_say": "Con IA"}
+        body, _, _ = overlays.pip_props(pp, overlays.Timer(pp, caps), 25, public=str(self.dir))
+        self.assertEqual((body["kind"], body["corner"], body["size"]), ("image", "top-right", 0.32))
+        self.assertEqual(overlays.pip_props({"video": "pip/a.MP4", "video_start": 2, "start_say": "Con IA"},
+                                            overlays.Timer(pp, caps), 25)[0]["videoStart"], 2.0)
+        missing = overlays.Timer(pp, caps)
+        overlays.pip_props(pp, missing, 25, public=str(self.dir))
+        self.assertTrue(missing.problems)                                         # the file isn't in the public folder
+        for bad in ({"image": "a.png", "video": "b.mp4"}, {}, {"image": "a.mp4"}, {"video": "a.png"}, dict(pp, corner="middle"),
+                    dict(pp, size=0.9), dict(pp, ratio=10)):
+            with self.assertRaises(ValueError):
+                overlays.pip_props(dict(bad, start_say="Con IA"), overlays.Timer(pp, caps), 25)
+        self.assertEqual(overlays.TEMPLATES["pip"], "PictureInPicture")
+        for name, props in (("PictureInPicture", ("src", "kind", "corner", "size", "ratio", "label", "videoStart")),
+                            ("ChapterTitle", ("title", "number", "label")),
                             ("Notifications", ("notifications", "app", "text", "frame")),
                             ("BarChart", ("bars", "label", "value", "frame", "max", "decimals", "prefix", "suffix")),
                             ("KeyPhrase", ("text", "top")),
